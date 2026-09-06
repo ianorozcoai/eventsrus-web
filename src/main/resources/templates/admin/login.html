@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Admin Login - EventsRUs</title>
+
+	<!-- Global stylesheets -->
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+	<!-- /global stylesheets -->
+
+	<!-- Core JS files -->
+	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+	<!-- /core JS files -->
+</head>
+
+<body class="bg-body">
+
+	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3">
+
+		<a th:href="@{/}" class="d-inline-flex align-items-center text-decoration-none mb-4">
+			<span class="d-flex align-items-center justify-content-center bg-dark text-white rounded-pill fw-bold" style="width:36px;height:36px;">E</span>
+			<span class="fw-bold fs-lg ms-2">EventsRUs <span class="text-muted fw-normal">Admin</span></span>
+		</a>
+
+		<div class="card" style="max-width:380px;width:100%;">
+			<div class="card-body p-4">
+				<h5 class="mb-1 text-center">Admin Login</h5>
+				<p class="text-muted fs-sm mb-4 text-center">Internal access only.</p>
+
+				<div th:if="${loginError}" class="alert alert-danger mb-3">
+					<span th:text="${loginError}">Invalid username or password.</span>
+				</div>
+
+				<form th:action="@{/admin/login}" method="post">
+					<div class="mb-3">
+						<label class="form-label">Username</label>
+						<input type="text" name="username" class="form-control" required autofocus autocomplete="username">
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Password</label>
+						<input type="password" name="password" class="form-control" required autocomplete="current-password">
+					</div>
+					<button type="submit" class="btn btn-dark w-100">Log In</button>
+				</form>
+			</div>
+		</div>
+
+	</div>
+
+</body>
+</html>

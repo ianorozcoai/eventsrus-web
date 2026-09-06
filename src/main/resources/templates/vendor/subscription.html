@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Billing &amp; Subscription - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('subscription')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Billing &amp; Subscription</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Billing &amp; Subscription</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${subscriptionConfirmed}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Payment confirmed. Your subscription is now active.
+					</div>
+
+					<div th:if="${subscriptionError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${subscriptionError}">Error</span>
+					</div>
+
+					<div class="row">
+						<div class="col-lg-5">
+
+							<!-- Current plan -->
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Current Plan</h6>
+								</div>
+								<div class="card-body">
+									<div class="d-flex align-items-center mb-3">
+										<div>
+											<h4 class="mb-0" th:text="${status.plan() != null ? 'PRO' : 'No active plan'}">PRO</h4>
+											<span th:if="${status.plan() != null and status.expired()}" class="badge bg-danger">Expired</span>
+											<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired()}" class="badge bg-warning text-dark">Renews soon</span>
+											<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired()}" class="badge bg-success">Active</span>
+										</div>
+									</div>
+									<p class="mb-1" th:if="${status.expiresAt() != null}">
+										<span th:if="${status.expired()}">Expired on</span>
+										<span th:unless="${status.expired()}">Renews on / expires</span>
+										<span th:text="${#temporals.format(status.expiresAt(), 'MMMM d, yyyy')}">January 1, 2026</span>
+									</p>
+									<p class="text-muted fs-sm mb-0" th:if="${status.expired()}">
+										Quotations, chat, and bookings are disabled, and your storefront no longer
+										appears in planner search, until you renew.
+									</p>
+								</div>
+							</div>
+							<!-- /current plan -->
+
+							<!-- Renew / subscribe -->
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0" th:text="${status.plan() != null ? 'Renew PRO' : 'Subscribe to PRO'}">Subscribe to PRO</h6>
+								</div>
+								<div class="card-body">
+									<form th:action="@{/vendor/subscription/subscribe}" method="post">
+										<div class="mb-3">
+											<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
+												<span>
+													<input type="radio" name="billingCycle" value="MONTHLY" class="form-check-input me-2" checked>
+													Monthly
+												</span>
+												<span class="fw-semibold">&#8369;999 / month</span>
+											</label>
+											<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-0">
+												<span>
+													<input type="radio" name="billingCycle" value="ANNUAL" class="form-check-input me-2">
+													Annual
+												</span>
+												<span class="fw-semibold">&#8369;9,999 / year</span>
+											</label>
+										</div>
+										<button type="submit" class="btn btn-primary w-100">
+											<span th:text="${status.plan() != null ? 'Renew with PayPal' : 'Subscribe with PayPal'}">Subscribe with PayPal</span>
+										</button>
+									</form>
+								</div>
+							</div>
+							<!-- /renew / subscribe -->
+
+						</div>
+
+						<div class="col-lg-7">
+
+							<!-- Billing history -->
+							<div class="card">
+								<div class="card-header d-flex align-items-center">
+									<h6 class="mb-0">Billing &amp; Payment History</h6>
+									<span class="badge bg-primary ms-auto" th:text="${#lists.size(history)} + ' total'">0 total</span>
+								</div>
+
+								<div class="table-responsive" th:if="${not #lists.isEmpty(history)}">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Date</th>
+												<th>Plan</th>
+												<th>Source</th>
+												<th>Amount</th>
+												<th>Period</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="entry : ${history}">
+												<td th:text="${#temporals.format(entry.occurredAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
+												<td th:text="${entry.plan()}">PRO</td>
+												<td>
+													<span th:if="${entry.billingSource().name() == 'FREE_GRANT'}" class="badge bg-info">Free Trial</span>
+													<span th:if="${entry.billingSource().name() == 'PAYPAL'}" class="badge bg-primary">PayPal</span>
+												</td>
+												<td>
+													<span th:if="${entry.amount() != null}">&#8369;<span th:text="${#numbers.formatDecimal(entry.amount(), 1, 'COMMA', 2, 'POINT')}">0.00</span></span>
+													<span th:unless="${entry.amount() != null}" class="text-muted">&mdash;</span>
+												</td>
+												<td class="text-muted fs-sm">
+													<span th:text="${#temporals.format(entry.periodStart(), 'MMM d')}">Jan 1</span> -
+													<span th:text="${#temporals.format(entry.periodEnd(), 'MMM d, yyyy')}">Jul 1, 2026</span>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+
+								<div class="card-body text-center text-muted" th:if="${#lists.isEmpty(history)}">
+									No billing history yet.
+								</div>
+							</div>
+							<!-- /billing history -->
+
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

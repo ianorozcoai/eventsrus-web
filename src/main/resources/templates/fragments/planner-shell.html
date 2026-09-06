@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--/* Planner-side shell - mirrors fragments/common.html's vendor topnavbar/sidebar,
+     but the sidebar lists the planner's events (ChatGPT-style history) instead of
+     static nav links. Reuses fragments/common.html's own head(pageTitle) fragment -
+     no need to duplicate it here. */-->
+<body>
+
+	<!--/* Top navbar - identical shape to the vendor one, just pointed at /planner/events. */-->
+	<div th:fragment="topnavbar" class="navbar navbar-dark navbar-expand-lg navbar-static border-bottom border-bottom-white border-opacity-10">
+		<div class="container-fluid">
+			<div class="d-flex d-lg-none me-2">
+				<button type="button" class="navbar-toggler sidebar-mobile-main-toggle rounded">
+					<i class="ph-list"></i>
+				</button>
+			</div>
+
+			<div class="navbar-brand">
+				<a th:href="@{/planner/events}" class="d-inline-flex align-items-center text-white text-decoration-none">
+					<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold" style="width:28px;height:28px;">E</span>
+					<span class="d-none d-sm-inline-block fw-bold fs-lg ms-2 text-white">EventsRUs</span>
+				</a>
+			</div>
+
+			<div class="d-lg-none ms-2">
+				<button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-mobile" aria-expanded="false">
+					<i class="ph-squares-four"></i>
+				</button>
+			</div>
+
+			<div class="navbar-collapse order-2 order-lg-1 collapse" id="navbar-mobile">
+				<ul class="navbar-nav mt-2 mt-lg-0"></ul>
+			</div>
+
+			<ul class="nav gap-sm-2 order-1 order-lg-2 ms-auto">
+				<li class="nav-item">
+					<a href="#" class="navbar-nav-link navbar-nav-link-icon rounded">
+						<i class="ph-bell"></i>
+					</a>
+				</li>
+				<li class="nav-item nav-item-dropdown-lg dropdown">
+					<a href="#" class="navbar-nav-link align-items-center rounded p-1" data-bs-toggle="dropdown" aria-expanded="false">
+						<div class="status-indicator-container">
+							<i class="ph-user-circle ph-2x"></i>
+							<span class="status-indicator bg-success"></span>
+						</div>
+						<span class="d-none d-lg-inline-block mx-lg-2" th:text="${currentUserFirstName}">Planner</span>
+					</a>
+
+					<div class="dropdown-menu dropdown-menu-end">
+						<a th:href="@{/planner/profile}" class="dropdown-item">Profile</a>
+						<a th:href="@{/planner/support}" class="dropdown-item">Support</a>
+						<div class="dropdown-divider"></div>
+						<form th:action="@{/logout}" method="post">
+							<button type="submit" class="dropdown-item">Log out</button>
+						</form>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+
+	<!--/* Main sidebar - lists the planner's events instead of static nav links. */-->
+	<div th:fragment="sidebar(events, activeEventId)" class="sidebar sidebar-dark sidebar-main sidebar-expand-lg">
+
+		<div class="sidebar-content">
+
+			<!--/* Sidebar header - collapse controls, same as the vendor shell's. */-->
+			<div class="sidebar-section">
+				<div class="sidebar-section-body d-flex justify-content-center">
+					<h5 class="sidebar-resize-hide flex-grow-1 my-auto">My Events</h5>
+
+					<div>
+						<button type="button" class="btn btn-flat-white btn-icon btn-sm rounded-pill border-transparent sidebar-control sidebar-main-resize d-none d-lg-inline-flex">
+							<i class="ph-arrows-left-right"></i>
+						</button>
+
+						<button type="button" class="btn btn-flat-white btn-icon btn-sm rounded-pill border-transparent sidebar-mobile-main-toggle d-lg-none">
+							<i class="ph-x"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="sidebar-section">
+				<div class="sidebar-section-body">
+					<a th:href="@{/planner/events}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+						<i class="ph-plus me-2"></i>
+						<span class="sidebar-resize-hide">New Event</span>
+					</a>
+				</div>
+			</div>
+
+			<div class="sidebar-section">
+				<ul class="nav nav-sidebar">
+					<li class="nav-item" th:each="event : ${events}">
+						<a th:href="@{/planner/events(eventId=${event.id()})}" class="nav-link py-2"
+							th:classappend="${activeEventId != null and activeEventId == event.id()} ? 'active'">
+							<i th:classappend="${event.eventType().name() == 'WEDDING'} ? 'ph-diamond' : (${event.eventType().name() == 'BIRTHDAY'} ? 'ph-cake' : (${event.eventType().name() == 'ANNIVERSARY'} ? 'ph-heart' : 'ph-confetti'))"></i>
+							<div class="sidebar-resize-hide overflow-hidden">
+								<div class="text-truncate" th:text="${event.name()}">Event name</div>
+								<div class="fs-sm opacity-50 text-truncate">
+									<span th:text="${event.eventType().label}">Type</span>
+									<span th:if="${event.eventDate() != null}"> &middot; <span th:text="${#temporals.format(event.eventDate(), 'MMM d, yyyy')}">Date</span></span>
+								</div>
+							</div>
+						</a>
+					</li>
+					<li th:if="${#lists.isEmpty(events)}" class="px-3 py-2 text-white-50 fs-sm sidebar-resize-hide">
+						No events yet - start one above.
+					</li>
+				</ul>
+			</div>
+
+		</div>
+
+	</div>
+
+</body>
+</html>

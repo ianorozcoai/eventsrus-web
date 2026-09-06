@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--/* Shared <head> for every admin page - separate from fragments/common.html's
+     head since the admin module doesn't need the messenger two-pane CSS or
+     dropzone JS the vendor/planner side pulls in. */-->
+<head th:fragment="head(pageTitle)">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title th:text="${pageTitle}">EventsRUs Admin</title>
+
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+
+	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+	<script th:src="@{/assets/js/app.js}"></script>
+</head>
+
+<body>
+
+	<!--/* Top navbar - identical on every admin page. Dark theme mirrors
+	     fragments/common.html's vendor navbar, but with no notification bell
+	     or Settings link - the admin module has nothing analogous yet. */-->
+	<div th:fragment="topnavbar" class="navbar navbar-dark navbar-expand-lg navbar-static border-bottom border-bottom-white border-opacity-10">
+		<div class="container-fluid">
+			<div class="d-flex d-lg-none me-2">
+				<button type="button" class="navbar-toggler sidebar-mobile-main-toggle rounded">
+					<i class="ph-list"></i>
+				</button>
+			</div>
+
+			<div class="navbar-brand">
+				<a th:href="@{/admin/dashboard}" class="d-inline-flex align-items-center text-white text-decoration-none">
+					<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold" style="width:28px;height:28px;">E</span>
+					<span class="d-none d-sm-inline-block fw-bold fs-lg ms-2 text-white">EventsRUs <span class="opacity-50 fw-normal">Admin</span></span>
+				</a>
+			</div>
+
+			<div class="d-lg-none ms-2">
+				<button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-mobile" aria-expanded="false">
+					<i class="ph-squares-four"></i>
+				</button>
+			</div>
+
+			<div class="navbar-collapse order-2 order-lg-1 collapse" id="navbar-mobile">
+				<ul class="navbar-nav mt-2 mt-lg-0"></ul>
+			</div>
+
+			<ul class="nav gap-sm-2 order-1 order-lg-2 ms-auto">
+				<li class="nav-item nav-item-dropdown-lg dropdown">
+					<a href="#" class="navbar-nav-link align-items-center rounded p-1" data-bs-toggle="dropdown" aria-expanded="false">
+						<div class="status-indicator-container">
+							<i class="ph-shield-check ph-2x"></i>
+							<span class="status-indicator bg-success"></span>
+						</div>
+						<span class="d-none d-lg-inline-block mx-lg-2" th:text="${adminUsername}">admin</span>
+					</a>
+
+					<div class="dropdown-menu dropdown-menu-end">
+						<form th:action="@{/admin/logout}" method="post">
+							<button type="submit" class="dropdown-item">Log out</button>
+						</form>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+
+	<!--/* Main sidebar - `activePage` highlights the current section. */-->
+	<div th:fragment="sidebar(activePage)" class="sidebar sidebar-dark sidebar-main sidebar-expand-lg">
+		<div class="sidebar-content">
+
+			<div class="sidebar-section">
+				<div class="sidebar-section-body d-flex justify-content-center">
+					<h5 class="sidebar-resize-hide flex-grow-1 my-auto">Navigation</h5>
+					<div>
+						<button type="button" class="btn btn-flat-white btn-icon btn-sm rounded-pill border-transparent sidebar-control sidebar-main-resize d-none d-lg-inline-flex">
+							<i class="ph-arrows-left-right"></i>
+						</button>
+						<button type="button" class="btn btn-flat-white btn-icon btn-sm rounded-pill border-transparent sidebar-mobile-main-toggle d-lg-none">
+							<i class="ph-x"></i>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="sidebar-section">
+				<ul class="nav nav-sidebar" data-nav-type="accordion">
+					<li class="nav-item-header pt-0">
+						<div class="text-uppercase fs-sm lh-sm opacity-50 sidebar-resize-hide">Main</div>
+						<i class="ph-dots-three sidebar-resize-show"></i>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/dashboard}" class="nav-link" th:classappend="${activePage == 'dashboard'} ? 'active'">
+							<i class="ph-gauge"></i>
+							<span>Dashboard</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/planners}" class="nav-link" th:classappend="${activePage == 'planners'} ? 'active'">
+							<i class="ph-users"></i>
+							<span>Planners</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/vendors}" class="nav-link" th:classappend="${activePage == 'vendors'} ? 'active'">
+							<i class="ph-storefront"></i>
+							<span>Vendors</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/admins}" class="nav-link" th:classappend="${activePage == 'admins'} ? 'active'">
+							<i class="ph-shield-check"></i>
+							<span>Admins</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+
+		</div>
+	</div>
+
+</body>
+</html>

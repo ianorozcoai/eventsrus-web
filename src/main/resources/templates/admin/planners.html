@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Planners - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('planners')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Planners</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+					<div class="card">
+						<div class="card-header d-flex align-items-center">
+							<h6 class="mb-0">All Planners</h6>
+							<span class="badge bg-primary ms-auto" th:text="${#lists.size(planners)} + ' total'">0 total</span>
+						</div>
+
+						<div class="table-responsive">
+							<table class="table table-hover">
+								<thead>
+									<tr>
+										<th>Name</th>
+										<th>Email</th>
+										<th>Mobile Number</th>
+										<th>Location</th>
+										<th>Events</th>
+										<th>Joined</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="planner : ${planners}">
+										<td th:text="${planner.firstName()} + ' ' + ${planner.lastName()}">Name</td>
+										<td th:text="${planner.email()}">email@example.com</td>
+										<td th:text="${planner.mobileNumber()}">+63 900 000 0000</td>
+										<td th:text="${planner.city()} + ', ' + ${planner.state()}">City, Province</td>
+										<td th:text="${planner.eventsCount()}">0</td>
+										<td th:text="${#temporals.format(planner.joinedAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
+										<td class="text-end">
+											<a th:href="@{/admin/planners/{id}(id=${planner.id()})}" class="btn btn-light btn-sm">
+												<i class="ph-eye me-1"></i> View Profile
+											</a>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

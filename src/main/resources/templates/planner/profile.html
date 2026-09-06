@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('My Profile - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/planner-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/planner-shell :: sidebar(${events}, ${activeEventId})}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div class="row justify-content-center">
+						<div class="col-lg-8">
+
+							<div th:if="${profileSaved}" class="alert alert-success alert-dismissible">
+								<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+								Your profile has been saved. <span class="text-muted">(stub only for now)</span>
+							</div>
+
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">My Profile</h6>
+								</div>
+
+								<form th:action="@{/planner/profile}" th:object="${plannerProfileForm}" method="post">
+									<div class="card-body">
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">First name</label>
+													<input type="text" th:field="*{firstName}" class="form-control" required>
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Last name</label>
+													<input type="text" th:field="*{lastName}" class="form-control" required>
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Email</label>
+													<input type="email" th:field="*{email}" class="form-control" required>
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Mobile number</label>
+													<input type="tel" th:field="*{mobileNumber}" class="form-control" placeholder="+63 917 123 4567" required>
+												</div>
+											</div>
+										</div>
+
+										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Address <span class="text-muted fs-sm fw-normal">(Optional)</span></h6>
+
+										<div class="mb-3">
+											<label class="form-label">Address line 1</label>
+											<input type="text" th:field="*{addressLine1}" class="form-control">
+										</div>
+
+										<div class="mb-3">
+											<label class="form-label">Address line 2</label>
+											<input type="text" th:field="*{addressLine2}" class="form-control">
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">City</label>
+													<input type="text" th:field="*{city}" class="form-control">
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-0">
+													<label class="form-label">Province</label>
+													<select th:field="*{state}" class="form-select">
+														<option value="">Select a province</option>
+														<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
+													</select>
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-0">
+													<label class="form-label">Postal code</label>
+													<input type="text" th:field="*{postalCode}" class="form-control">
+												</div>
+											</div>
+										</div>
+
+									</div>
+
+									<div class="card-body d-flex justify-content-end border-top">
+										<button type="submit" class="btn btn-primary">
+											<i class="ph-check-circle me-2"></i>
+											Save Changes
+										</button>
+									</div>
+								</form>
+							</div>
+
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

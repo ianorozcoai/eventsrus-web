@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Planner Profile - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('planners')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0" th:text="${planner.firstName()} + ' ' + ${planner.lastName()}">Planner Profile</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/admin/planners}" class="breadcrumb-item"><i class="ph-users"></i> Planners</a>
+								<span class="breadcrumb-item active" th:text="${planner.firstName()} + ' ' + ${planner.lastName()}">Profile</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+					<div class="row">
+						<div class="col-lg-7">
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Profile</h6>
+								</div>
+								<div class="card-body">
+									<div class="row mb-3">
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">First Name</div>
+											<div th:text="${planner.firstName()}">First</div>
+										</div>
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">Last Name</div>
+											<div th:text="${planner.lastName()}">Last</div>
+										</div>
+									</div>
+									<div class="row mb-3">
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">Email</div>
+											<div th:text="${planner.email()}">email@example.com</div>
+										</div>
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">Mobile Number</div>
+											<div th:text="${planner.mobileNumber()}">+63 900 000 0000</div>
+										</div>
+									</div>
+									<div class="row mb-3">
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">City</div>
+											<div th:text="${planner.city()}">City</div>
+										</div>
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">Province</div>
+											<div th:text="${planner.state()}">Province</div>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">Events Created</div>
+											<div th:text="${planner.eventsCount()}">0</div>
+										</div>
+										<div class="col-sm-6">
+											<div class="text-muted fs-sm">Joined</div>
+											<div th:text="${#temporals.format(planner.joinedAt(), 'MMMM d, yyyy')}">January 1, 2026</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

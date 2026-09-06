@@ -1,0 +1,40 @@
+package com.web.eventsrus.model;
+
+import java.util.List;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * Mirrors eventsrus-backend's dto.VendorOnboardingRequest field-for-field
+ * (file uploads aside, which the controller will bind separately as
+ * MultipartFile parameters once this posts to the real backend), plus one
+ * stub-only addition: operatingAreas. The real request DTO doesn't have
+ * this yet - same speculative field already added to VendorSettingsForm's
+ * Tab 2, required here since the vendor should be forced to state where
+ * they operate before finishing onboarding. acceptedTerms mirrors the real
+ * request DTO's own new field (@AssertTrue there) - required in the UI,
+ * linking to /terms.
+ * A mutable POJO rather than a record - Thymeleaf's th:field="*{...}"
+ * binding needs a no-arg constructor and setters.
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+public class VendorOnboardingForm {
+
+    private String businessName;
+    private BusinessType businessType;
+    private String ownerName;
+    private String description;
+    private String contactEmail;
+    private String phoneNumber;
+    private String addressLine1;
+    private String addressLine2;
+    private String city;
+    private String state;
+    private String postalCode;
+    private String country;
+    private List<String> operatingAreas;
+    private boolean acceptedTerms;
+}

@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('My Events - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/planner-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/planner-shell :: sidebar(${events}, ${activeEventId})}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Content area -->
+				<div class="content">
+
+					<!-- No event selected: start a new one -->
+					<div th:if="${selectedEvent == null}" class="row justify-content-center">
+						<div class="col-lg-7">
+							<div class="card border-0 shadow-sm">
+								<div class="card-body p-4 p-md-5">
+
+									<div class="text-center mb-4">
+										<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" class="mb-3" style="width:180px;height:auto;">
+										<h5 class="fw-bold mb-0">Tell me more about your event plans.</h5>
+									</div>
+
+									<form th:action="@{/planner/events}" th:object="${plannerIntakeForm}" method="post">
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Event name</label>
+													<input type="text" th:field="*{name}" class="form-control" placeholder="e.g., Ian's Birthday" required>
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Type of event</label>
+													<select th:field="*{eventType}" class="form-select" required>
+														<option value="">Select a type</option>
+														<option th:each="type : ${eventTypes}" th:value="${type}" th:text="${type.label}"></option>
+													</select>
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Date <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<input type="date" th:field="*{eventDate}" class="form-control">
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Location <span class="text-muted fs-sm fw-normal">(helps us match nearby vendors)</span></label>
+													<select th:field="*{location}" class="form-select">
+														<option value="">Select a province</option>
+														<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
+													</select>
+												</div>
+											</div>
+										</div>
+
+										<div class="mb-4">
+											<div class="d-flex align-items-center justify-content-between mb-1">
+												<label class="form-label mb-0">Tell us more <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+												<button type="button" class="btn btn-light btn-icon btn-sm rounded-circle voice-input-btn" data-target-input="description" title="Speak instead of typing">
+													<i class="ph-microphone"></i>
+												</button>
+											</div>
+											<textarea th:field="*{description}" rows="6" class="form-control" placeholder="Guest count, theme, budget - anything that helps us match you with the right vendors."></textarea>
+										</div>
+
+										<button type="submit" class="btn btn-primary w-100 fw-semibold py-3">
+											Continue
+										</button>
+										<p class="text-muted fs-sm text-center mt-3 mb-0">By continuing, you agree that payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
+									</form>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /no event selected -->
+
+
+					<!-- Event workspace -->
+					<div th:if="${selectedEvent != null}">
+
+						<div class="page-header page-header-light shadow mb-3">
+							<div class="page-header-content d-lg-flex">
+								<div class="d-flex">
+									<h4 class="page-title mb-0" th:text="${selectedEvent.name()}">Event name</h4>
+								</div>
+							</div>
+						</div>
+
+						<!-- Tabs -->
+						<ul class="nav nav-tabs mb-3">
+							<li class="nav-item">
+								<a href="#tab-overview" class="nav-link" th:classappend="${activeTab == 'overview'} ? 'active'" data-bs-toggle="tab">
+									<i class="ph-sparkle me-2"></i>
+									Overview
+								</a>
+							</li>
+							<li class="nav-item">
+								<a href="#tab-chats" class="nav-link" th:classappend="${activeTab == 'chats'} ? 'active'" data-bs-toggle="tab">
+									<i class="ph-chat-circle-text me-2"></i>
+									Chats
+								</a>
+							</li>
+							<li class="nav-item">
+								<a href="#tab-quotations" class="nav-link" th:classappend="${activeTab == 'quotations'} ? 'active'" data-bs-toggle="tab">
+									<i class="ph-file-text me-2"></i>
+									Quotations
+								</a>
+							</li>
+							<li class="nav-item">
+								<a href="#tab-bookings" class="nav-link" th:classappend="${activeTab == 'bookings'} ? 'active'" data-bs-toggle="tab">
+									<i class="ph-calendar-check me-2"></i>
+									Bookings
+								</a>
+							</li>
+						</ul>
+						<!-- /tabs -->
+
+						<div class="tab-content">
+
+							<!-- Overview -->
+							<div class="tab-pane fade" th:classappend="${activeTab == 'overview'} ? 'show active'" id="tab-overview">
+								<div class="row g-3">
+
+									<!-- Coordinator chat -->
+									<div class="col-lg-6">
+										<div class="card mb-0 h-100 d-flex flex-column">
+											<div class="card-header bg-white">
+												<h6 class="mb-0">
+													<i class="ph-sparkle me-2"></i>
+													Coordinator Chat
+												</h6>
+											</div>
+											<div class="card-body flex-grow-1 overflow-auto" style="max-height:60vh;">
+												<th:block th:each="chatMessage : ${chatThread}">
+													<div class="d-flex justify-content-end mb-3" th:if="${chatMessage.plannerMessage()}">
+														<div class="rounded-4 px-3 py-2 bg-primary text-white" style="max-width:85%;" th:text="${chatMessage.body()}">Planner message</div>
+													</div>
+													<div class="d-flex align-items-start mb-3" th:unless="${chatMessage.plannerMessage()}">
+														<div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white flex-shrink-0 me-2" style="width:32px;height:32px;">
+															<i class="ph-robot"></i>
+														</div>
+														<div class="rounded-4 px-3 py-2 bg-light" style="max-width:85%;" th:text="${chatMessage.body()}">Coordinator reply</div>
+													</div>
+												</th:block>
+											</div>
+											<div class="card-footer bg-white">
+												<form th:action="@{/planner/events/{eventId}/coordinator-chat(eventId=${selectedEvent.id()})}" method="post" class="d-flex align-items-center gap-2">
+													<input type="text" id="coordinatorChatInput" name="message" class="form-control rounded-pill" placeholder="Ask your coordinator a follow-up question..." required>
+													<button type="button" class="btn btn-light btn-icon rounded-circle flex-shrink-0 voice-input-btn" data-target-input="coordinatorChatInput" title="Speak instead of typing">
+														<i class="ph-microphone"></i>
+													</button>
+													<button type="submit" class="btn btn-primary btn-icon rounded-circle flex-shrink-0">
+														<i class="ph-paper-plane-tilt"></i>
+													</button>
+												</form>
+											</div>
+										</div>
+									</div>
+									<!-- /coordinator chat -->
+
+
+									<!-- Recommended suppliers -->
+									<div class="col-lg-6">
+										<div class="card mb-0 h-100">
+											<div class="card-header bg-white">
+												<h6 class="mb-0">
+													<i class="ph-users-three me-2"></i>
+													Recommended Suppliers
+												</h6>
+											</div>
+											<div class="card-body overflow-auto" style="max-height:60vh;">
+												<div class="row g-3" th:if="${not #lists.isEmpty(selectedEvent.suggestedSuppliers())}">
+													<div class="col-md-6" th:each="supplier : ${selectedEvent.suggestedSuppliers()}">
+														<div class="border rounded p-3 h-100 d-flex flex-column">
+															<span class="badge bg-indigo mb-2 align-self-start" th:text="${supplier.businessType().label}">Category</span>
+															<h6 class="mb-1" th:text="${supplier.businessName()}">Business name</h6>
+															<div class="text-muted fs-sm mb-2">
+																<i class="ph-map-pin me-1"></i>
+																<span th:text="${supplier.city()}">City</span>
+															</div>
+															<p class="text-muted fs-sm mb-3" th:text="${supplier.description()}">Description</p>
+															<a th:if="${supplier.slug() != null}" th:href="@{'/vendor/storefront/' + ${supplier.slug()}(eventId=${selectedEvent.id()})}" target="_blank" class="btn btn-outline-primary btn-sm mt-auto">
+																<i class="ph-storefront me-1"></i>
+																View Storefront
+															</a>
+															<span th:if="${supplier.slug() == null}" class="text-muted fs-sm mt-auto">
+																<i class="ph-clock me-1"></i>
+																Storefront coming soon
+															</span>
+														</div>
+													</div>
+												</div>
+												<p class="text-muted mb-0" th:if="${#lists.isEmpty(selectedEvent.suggestedSuppliers())}">No suppliers matched this event's location yet.</p>
+											</div>
+										</div>
+									</div>
+									<!-- /recommended suppliers -->
+
+								</div>
+							</div>
+							<!-- /overview -->
+
+
+							<!-- Chats -->
+							<div class="tab-pane fade" th:classappend="${activeTab == 'chats'} ? 'show active'" id="tab-chats">
+								<div class="card mb-0" th:if="${not #lists.isEmpty(conversations)}">
+									<div class="d-flex messenger-shell">
+
+										<div class="border-end d-flex flex-column flex-shrink-0 messenger-list-pane">
+											<div class="flex-grow-1 overflow-auto">
+												<a th:each="conversation : ${conversations}"
+													th:href="@{/planner/events(eventId=${selectedEvent.id()}, tab='chats', conversationId=${conversation.id()})}"
+													class="d-flex align-items-center text-decoration-none text-body p-3 border-bottom"
+													th:classappend="${selectedConversation != null and selectedConversation.id() == conversation.id()} ? 'bg-light'">
+
+													<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:44px;height:44px;"
+														th:classappend="${conversation.id() % 3 == 0} ? 'bg-indigo' : (${conversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
+														th:text="${#strings.substring(vendorBusinessName, 0, 1)}">V</div>
+
+													<div class="ms-3 flex-grow-1 overflow-hidden">
+														<div class="fw-semibold text-truncate" th:text="${vendorBusinessName}">Vendor</div>
+														<div class="text-truncate text-muted fs-sm" th:text="${conversation.lastMessagePreview()}">Last message</div>
+													</div>
+												</a>
+											</div>
+										</div>
+
+										<div class="d-flex flex-column flex-grow-1" th:if="${selectedConversation != null}">
+
+											<div class="d-flex align-items-center p-3 border-bottom">
+												<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:36px;height:36px;"
+													th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
+													th:text="${#strings.substring(vendorBusinessName, 0, 1)}">V</div>
+												<div class="ms-3">
+													<a class="fw-semibold text-body" th:href="@{'/vendor/storefront/' + ${vendorSlug}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${vendorBusinessName}">Vendor name</a>
+													<div class="text-muted fs-sm">
+														<i class="ph-user-circle me-1"></i>
+														Vendor
+													</div>
+												</div>
+											</div>
+
+											<div class="flex-grow-1 overflow-auto p-3">
+
+												<div th:if="${chatNotice}" class="alert alert-success alert-dismissible">
+													<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+													<span th:text="${chatNotice}">Notice</span>
+												</div>
+												<div th:if="${replySent}" class="alert alert-success alert-dismissible">
+													<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+													Your reply has been sent. <span class="text-muted">(stub only for now - won't appear in the thread below)</span>
+												</div>
+
+												<th:block th:each="message : ${thread}">
+													<div class="d-flex mb-2" th:classappend="${message.senderUserId() == plannerUserId} ? 'justify-content-end' : 'justify-content-start'">
+														<div class="rounded-pill px-3 py-2" style="max-width:60%;"
+															th:classappend="${message.senderUserId() == plannerUserId} ? 'bg-primary text-white' : 'bg-light'"
+															th:text="${message.body()}">Message body</div>
+													</div>
+												</th:block>
+
+												<div class="text-center text-muted fs-sm py-4" th:if="${#lists.isEmpty(thread)}">
+													No messages yet in this conversation.
+												</div>
+											</div>
+
+											<div class="border-top p-3">
+												<form th:action="@{/planner/events/{eventId}/conversations/{id}/reply(eventId=${selectedEvent.id()}, id=${selectedConversation.id()})}" method="post" class="d-flex align-items-center gap-2">
+													<input type="text" id="chatReplyInput" name="body" class="form-control rounded-pill" placeholder="Type a message..." required>
+													<button type="button" class="btn btn-light btn-icon rounded-circle flex-shrink-0 voice-input-btn" data-target-input="chatReplyInput" title="Speak instead of typing">
+														<i class="ph-microphone"></i>
+													</button>
+													<button type="submit" class="btn btn-primary btn-icon rounded-circle flex-shrink-0">
+														<i class="ph-paper-plane-tilt"></i>
+													</button>
+												</form>
+											</div>
+
+										</div>
+									</div>
+								</div>
+
+								<div class="card" th:if="${#lists.isEmpty(conversations)}">
+									<div class="card-body text-center py-5">
+										<i class="ph-chat-circle-text ph-3x text-muted mb-3 d-block"></i>
+										<p class="text-muted mb-0">No conversations yet for this event. Visit a supplier's storefront from Overview to send an inquiry.</p>
+									</div>
+								</div>
+							</div>
+							<!-- /chats -->
+
+
+							<!-- Quotations -->
+							<div class="tab-pane fade" th:classappend="${activeTab == 'quotations'} ? 'show active'" id="tab-quotations">
+
+								<div th:if="${bookingSubmitted}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									<span th:if="${bookingIncludedScreenshot}">Your booking and payment screenshot have been submitted - the vendor will confirm once they've verified it.</span>
+									<span th:unless="${bookingIncludedScreenshot}">Your booking has been submitted. You can upload a payment screenshot anytime from the Bookings tab.</span>
+									<span class="text-muted">(stub only for now)</span>
+								</div>
+								<div th:if="${quotationDeclined}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Quotation declined. <span class="text-muted">(stub only for now)</span>
+								</div>
+								<div th:if="${quotationRevised}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Revision request sent to the vendor - they'll send an updated quotation. <span class="text-muted">(stub only for now)</span>
+								</div>
+								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									<span th:text="${bookingsError}">Error</span>
+								</div>
+
+								<div class="card">
+									<div class="card-header d-flex align-items-center">
+										<h6 class="mb-0">Quotations for this event</h6>
+										<span class="badge bg-primary ms-auto" th:text="${#lists.size(quotations)} + ' total'">0 total</span>
+									</div>
+
+									<div class="table-responsive" th:if="${not #lists.isEmpty(quotations)}">
+										<table class="table table-hover">
+											<thead>
+												<tr>
+													<th>Vendor</th>
+													<th>Target date</th>
+													<th>Message</th>
+													<th>Status</th>
+													<th>Quote</th>
+													<th class="text-end">Actions</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr th:each="quotation : ${quotations}">
+													<td>
+														<a th:if="${quotation.vendorSlug() != null}" th:href="@{'/vendor/storefront/' + ${quotation.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${quotation.vendorBusinessName()}">Vendor</a>
+														<span th:if="${quotation.vendorSlug() == null}" th:text="${quotation.vendorBusinessName()}">Vendor</span>
+													</td>
+													<td th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">-</td>
+													<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
+													<td>
+														<span class="badge" th:classappend="${quotation.status().name() == 'RESPONDED'} ? 'bg-success' : (${quotation.status().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-warning')" th:text="${quotation.status()}">STATUS</span>
+													</td>
+													<td>
+														<a th:if="${quotation.pdfUrl() != null}" th:href="${quotation.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
+															<i class="ph-file-pdf me-1"></i> View
+														</a>
+														<span th:if="${quotation.pdfUrl() == null}" class="text-muted fs-sm">Not sent yet</span>
+													</td>
+													<td class="text-end">
+														<div class="d-flex justify-content-end gap-1 flex-wrap">
+															<button th:if="${quotation.status().name() == 'RESPONDED'}" type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#bookQuotationModal-' + ${quotation.id()}">
+																<i class="ph-check-circle me-1"></i>
+																Book This
+															</button>
+															<button th:if="${quotation.status().name() == 'RESPONDED'}" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#reviseQuotationModal-' + ${quotation.id()}">
+																<i class="ph-pencil-simple me-1"></i>
+																Request Revision
+															</button>
+															<button th:if="${#sets.contains({'REQUESTED','RESPONDED'}, quotation.status().name())}" type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#declineQuotationModal-' + ${quotation.id()}">
+																<i class="ph-x-circle me-1"></i>
+																Decline
+															</button>
+														</div>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+
+									<div class="card-body text-center py-5" th:if="${#lists.isEmpty(quotations)}">
+										<i class="ph-file-text ph-3x text-muted mb-3 d-block"></i>
+										<p class="text-muted mb-0">No quotations yet. Request one from a supplier's storefront in Overview.</p>
+									</div>
+								</div>
+
+								<!-- Per-quotation "Book This" modals -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${quotation.status().name() == 'RESPONDED'}" th:id="'bookQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<!-- No th:object/th:field here on purpose - bookFromQuotationForm is one
+											     shared (always-empty) model attribute, but this modal is repeated once
+											     per quotation via th:each, and each needs ITS OWN quotation's price/date
+											     prefilled. Plain name attributes still bind fine on submit
+											     (@ModelAttribute BookFromQuotationForm matches by request param name). -->
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/book(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Book ' + ${quotation.vendorBusinessName()} + '\'s Quotation'">Book This Quotation</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<div class="mb-3">
+														<label class="form-label">Agreed price</label>
+														<div class="form-control-feedback form-control-feedback-start">
+															<input type="number" step="0.01" min="0" name="price" th:value="${quotation.quotedAmount()}" class="form-control" placeholder="0.00" required>
+															<div class="form-control-feedback-icon">
+																<span class="text-muted">&#8369;</span>
+															</div>
+														</div>
+													</div>
+													<div class="mb-3">
+														<label class="form-label">Event date</label>
+														<input type="date" name="eventDatetime" th:value="${quotation.targetDate()}" class="form-control" required>
+													</div>
+													<div class="mb-3">
+														<label class="form-label">Agreement details <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<textarea name="agreementDetails" rows="3" class="form-control" placeholder="Anything you and the vendor agreed on beyond the quotation."></textarea>
+													</div>
+													<div class="mb-0">
+														<label class="form-label">Payment screenshot <span class="text-muted fs-sm fw-normal">(Optional - you can also upload this later from Bookings)</span></label>
+														<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg">
+														<div class="fs-sm text-muted mt-1">PNG or JPEG only. Upload proof of payment now if you've already paid, so the vendor can confirm right away.</div>
+													</div>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+													<button type="submit" class="btn btn-primary">
+														<i class="ph-check-circle me-2"></i>
+														Confirm Booking
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-quotation modals -->
+
+								<!-- Per-quotation "Request Revision" modals - sends the quotation back
+								     to the vendor with an updated ask instead of starting a whole new
+								     thread (see QuotationService#requestRevision). Only for RESPONDED
+								     quotations, same visibility as "Book This". -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${quotation.status().name() == 'RESPONDED'}" th:id="'reviseQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/revise(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Request Revision - ' + ${quotation.vendorBusinessName()}">Request Revision</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<p class="text-muted fs-sm">This sends the quotation back to <span th:text="${quotation.vendorBusinessName()}">the vendor</span> for an updated quote - e.g. a different package, guest count, or date.</p>
+													<div class="mb-3">
+														<label class="form-label">Target date <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="date" name="targetDate" th:value="${quotation.targetDate()}" class="form-control">
+													</div>
+													<div class="mb-0">
+														<label class="form-label">What would you like changed?</label>
+														<textarea name="message" rows="3" class="form-control" placeholder="e.g., Please drop the photobooth package and add catering for 100 guests instead." required></textarea>
+													</div>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+													<button type="submit" class="btn btn-outline-secondary">
+														<i class="ph-pencil-simple me-2"></i>
+														Send Revision Request
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-quotation "Request Revision" modals -->
+
+								<!-- Per-quotation "Decline" modals - a lightweight confirmation
+								     rather than a raw JS confirm(), matching every other
+								     destructive action on this page. No reason required (see
+								     QuotationService#declineQuotation). -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'REQUESTED','RESPONDED'}, quotation.status().name())}" th:id="'declineQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/decline(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Decline Quotation - ' + ${quotation.vendorBusinessName()}">Decline Quotation</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<p class="mb-0">Not going with <span th:text="${quotation.vendorBusinessName()}">this vendor</span> for this quote? This closes it out - it won't affect any other quotations for this event.</p>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Never mind</button>
+													<button type="submit" class="btn btn-outline-danger">
+														<i class="ph-x-circle me-2"></i>
+														Decline Quotation
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-quotation "Decline" modals -->
+
+							</div>
+							<!-- /quotations -->
+
+
+							<!-- Bookings -->
+							<div class="tab-pane fade" th:classappend="${activeTab == 'bookings'} ? 'show active'" id="tab-bookings">
+
+								<div th:if="${screenshotSubmitted}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Your payment screenshot has been submitted for the vendor's review. <span class="text-muted">(stub only for now)</span>
+								</div>
+								<div th:if="${bookingCancelled}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Booking cancelled. The vendor has been notified. <span class="text-muted">(stub only for now)</span>
+								</div>
+								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									<span th:text="${bookingsError}">Error</span>
+								</div>
+
+								<div class="card">
+									<div class="card-header d-flex align-items-center">
+										<h6 class="mb-0">Bookings for this event</h6>
+										<span class="badge bg-primary ms-auto" th:text="${#lists.size(bookings)} + ' total'">0 total</span>
+									</div>
+
+									<div class="table-responsive" th:if="${not #lists.isEmpty(bookings)}">
+										<table class="table table-hover">
+											<thead>
+												<tr>
+													<th>Vendor</th>
+													<th>Event date</th>
+													<th>Price</th>
+													<th>Status</th>
+													<th class="text-end">Actions</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr th:each="booking : ${bookings}">
+													<td>
+														<div>
+															<a th:if="${booking.vendorSlug() != null}" class="fw-semibold text-body" th:href="@{'/vendor/storefront/' + ${booking.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${booking.vendorBusinessName()}">Vendor</a>
+															<span th:if="${booking.vendorSlug() == null}" th:text="${booking.vendorBusinessName()}">Vendor</span>
+														</div>
+														<div class="text-muted fs-sm" th:text="${booking.agreementDetails()}">Details</div>
+														<div class="text-danger fs-sm mt-1" th:if="${booking.paymentRejectionReason() != null}">
+															<i class="ph-warning-circle me-1"></i>
+															<span th:text="${booking.paymentRejectionReason()}">Rejection reason</span>
+														</div>
+														<div class="text-muted fs-sm mt-1" th:if="${booking.status().name() == 'CANCELLED'}">
+															<i class="ph-x-circle me-1"></i>
+															Cancelled by <span th:text="${booking.cancelledByUserId() == plannerUserId} ? 'you' : 'the vendor'">who</span>:
+															<span th:text="${booking.cancellationReason()}">Reason</span>
+														</div>
+													</td>
+													<td th:text="${#temporals.format(booking.eventDatetime(), 'MMM dd, yyyy')}">-</td>
+													<td>&#8369;<span th:text="${#numbers.formatDecimal(booking.price(), 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+													<td>
+														<span class="badge"
+															th:classappend="${#sets.contains({'APPROVED','BOOKED'}, booking.status().name())} ? 'bg-success' : (${#sets.contains({'PROPOSED','PAYMENT_SUBMITTED'}, booking.status().name())} ? 'bg-warning' : (${booking.status().name() == 'AWAITING_PAYMENT'} ? 'bg-info' : (${booking.status().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-danger')))"
+															th:text="${booking.status()}">STATUS</span>
+													</td>
+													<td class="text-end">
+														<div class="d-flex justify-content-end gap-1 flex-wrap">
+															<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
+																<i class="ph-warning-circle me-1"></i>
+																View Reason
+															</button>
+															<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="btn btn-light btn-sm">
+																<i class="ph-image me-1"></i>
+																View Screenshot
+															</a>
+															<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" th:href="${booking.invoiceUrl()}" target="_blank" class="btn btn-light btn-sm">
+																<i class="ph-file-text me-1"></i>
+																View Invoice
+															</a>
+															<button th:if="${#sets.contains({'AWAITING_PAYMENT','PAYMENT_REJECTED'}, booking.status().name())}" type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#uploadScreenshotModal-' + ${booking.id()}">
+																<i class="ph-upload-simple me-1"></i>
+																Upload Payment Screenshot
+															</button>
+															<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
+																<i class="ph-prohibit me-1"></i>
+																Cancel
+															</button>
+														</div>
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+
+									<div class="card-body text-center py-5" th:if="${#lists.isEmpty(bookings)}">
+										<i class="ph-calendar-check ph-3x text-muted mb-3 d-block"></i>
+										<p class="text-muted mb-0">No bookings yet for this event.</p>
+									</div>
+								</div>
+
+								<!-- Per-booking "Upload Payment Screenshot" modals -->
+								<div class="modal fade" th:each="booking : ${bookings}" th:if="${#sets.contains({'AWAITING_PAYMENT','PAYMENT_REJECTED'}, booking.status().name())}" th:id="'uploadScreenshotModal-' + ${booking.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form th:action="@{/planner/events/{eventId}/bookings/{id}/payment-screenshot(eventId=${selectedEvent.id()}, id=${booking.id()})}" method="post" enctype="multipart/form-data">
+												<div class="modal-header">
+													<h5 class="modal-title">Upload Payment Screenshot</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<label class="form-label">Screenshot</label>
+													<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg" required>
+													<div class="fs-sm text-muted mt-1">PNG or JPEG only. The vendor will confirm once they've verified it.</div>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+													<button type="submit" class="btn btn-primary">
+														<i class="ph-upload-simple me-2"></i>
+														Upload
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-booking modals -->
+
+								<!-- Per-booking cancellation modals - either side can cancel from any
+								     non-terminal status with a mandatory reason (see BookingService#cancel). -->
+								<div class="modal fade" th:each="booking : ${bookings}" th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" th:id="'cancelBookingModal-' + ${booking.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form th:action="@{/planner/events/{eventId}/bookings/{id}/cancel(eventId=${selectedEvent.id()}, id=${booking.id()})}" method="post">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Cancel Booking - ' + ${booking.vendorBusinessName()}">Cancel Booking</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<p class="text-muted fs-sm">This marks the booking as <strong>CANCELLED</strong> and notifies the vendor. This can't be undone.</p>
+													<label class="form-label">Reason for cancellation</label>
+													<textarea name="reason" rows="3" class="form-control" placeholder="e.g., Change of plans, going with another vendor..." required></textarea>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Never mind</button>
+													<button type="submit" class="btn btn-outline-danger">
+														<i class="ph-prohibit me-2"></i>
+														Cancel Booking
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-booking cancellation modals -->
+
+								<!-- Per-booking "View Reason" modals -->
+								<div class="modal fade" th:each="booking : ${bookings}" th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" th:id="'viewReasonModal-' + ${booking.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<div class="modal-header">
+												<h5 class="modal-title" th:text="${booking.vendorBusinessName()} + ' - Why it was rejected'">Payment Rejected</h5>
+												<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+											</div>
+											<div class="modal-body">
+												<label class="form-label">Message from the vendor</label>
+												<div class="alert alert-danger mb-3" th:text="${booking.paymentRejectionReason()}">Rejection reason</div>
+
+												<div th:if="${booking.paymentScreenshotUrl() != null}">
+													<label class="form-label">Screenshot you submitted</label>
+													<div>
+														<a th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="btn btn-light btn-sm">
+															<i class="ph-image me-1"></i>
+															View attached screenshot
+														</a>
+													</div>
+												</div>
+											</div>
+											<div class="modal-footer">
+												<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- /per-booking "View Reason" modals -->
+
+							</div>
+							<!-- /bookings -->
+
+						</div>
+
+					</div>
+					<!-- /event workspace -->
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+						<ul class="nav ms-auto">
+							<li class="nav-item">
+								<a th:href="@{/vendor/onboarding}" class="navbar-nav-link">
+									Are you a vendor? Get listed
+								</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+
+	<!-- Voice input - speak instead of typing, for the coordinator chat and
+	     vendor message boxes. Uses the browser's built-in Web Speech API
+	     (SpeechRecognition) - entirely client-side, no server round trip.
+	     Chrome/Edge support this; browsers that don't (Firefox, most of
+	     Safari) just don't get a mic button, rather than a broken one. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+			var micButtons = document.querySelectorAll('.voice-input-btn');
+
+			if (!SpeechRecognition) {
+				micButtons.forEach(function (btn) { btn.classList.add('d-none'); });
+				return;
+			}
+
+			micButtons.forEach(function (btn) {
+				var input = document.getElementById(btn.getAttribute('data-target-input'));
+				if (!input) {
+					return;
+				}
+
+				var recognition = new SpeechRecognition();
+				recognition.lang = 'en-US';
+				recognition.interimResults = false;
+				recognition.maxAlternatives = 1;
+				var listening = false;
+
+				function setListening(isListening) {
+					listening = isListening;
+					btn.classList.toggle('btn-light', !isListening);
+					btn.classList.toggle('btn-danger', isListening);
+					btn.querySelector('i').className = isListening ? 'ph-stop-circle' : 'ph-microphone';
+				}
+
+				recognition.addEventListener('result', function (event) {
+					var transcript = event.results[0][0].transcript;
+					input.value = input.value.trim() ? input.value.trim() + ' ' + transcript : transcript;
+					input.focus();
+				});
+				recognition.addEventListener('end', function () { setListening(false); });
+				recognition.addEventListener('error', function () { setListening(false); });
+
+				btn.addEventListener('click', function () {
+					if (listening) {
+						recognition.stop();
+					} else {
+						setListening(true);
+						recognition.start();
+					}
+				});
+			});
+		});
+	</script>
+	<!-- /voice input -->
+
+</body>
+</html>

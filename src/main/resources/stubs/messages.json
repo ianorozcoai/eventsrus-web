@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "eventId": 502,
+    "eventName": "Santos Corp Year-End Gala",
+    "otherPartyUserId": 104,
+    "otherPartyName": "Marga Santos",
+    "lastMessagePreview": "Can you also handle the stage backdrop, or should we source that separately?",
+    "lastMessageAt": "2026-09-01T20:14:00Z",
+    "unreadCount": 2
+  },
+  {
+    "id": 2,
+    "eventId": 501,
+    "eventName": "Rodriguez Wedding Reception",
+    "otherPartyUserId": 101,
+    "otherPartyName": "Ivs Phil",
+    "lastMessagePreview": "Perfect, the deposit has been sent. Thank you!",
+    "lastMessageAt": "2026-08-30T15:02:00Z",
+    "unreadCount": 0
+  },
+  {
+    "id": 3,
+    "eventId": 505,
+    "eventName": "Reyes Family Reunion",
+    "otherPartyUserId": 110,
+    "otherPartyName": "Divine Reyes",
+    "lastMessagePreview": "What's included in the standard package price?",
+    "lastMessageAt": "2026-09-01T09:55:00Z",
+    "unreadCount": 1
+  },
+  {
+    "id": 4,
+    "eventId": 503,
+    "eventName": "Dizon 18th Debut",
+    "otherPartyUserId": 107,
+    "otherPartyName": "Carlo Dizon",
+    "lastMessagePreview": "We'll get back to you once we finalize the guest count.",
+    "lastMessageAt": "2026-08-27T20:05:00Z",
+    "unreadCount": 0
+  },
+  {
+    "id": 5,
+    "eventId": 506,
+    "eventName": "Ramos Product Launch",
+    "otherPartyUserId": 113,
+    "otherPartyName": "Nico Ramos",
+    "lastMessagePreview": "Hi! Do you have availability the last week of October?",
+    "lastMessageAt": "2026-09-02T07:12:00Z",
+    "unreadCount": 3
+  },
+  {
+    "id": 6,
+    "eventId": 510,
+    "eventName": "Dela Cruz Debut",
+    "otherPartyUserId": 101,
+    "otherPartyName": "Ivs Phil",
+    "lastMessagePreview": "Sent the payment screenshot just now - let me know once you've confirmed it!",
+    "lastMessageAt": "2026-09-01T14:25:00Z",
+    "unreadCount": 0
+  },
+  {
+    "id": 7,
+    "eventId": 515,
+    "eventName": "Cruz 60th Birthday",
+    "otherPartyUserId": 101,
+    "otherPartyName": "Ivs Phil",
+    "lastMessagePreview": "Sure, uploading a clearer one now.",
+    "lastMessageAt": "2026-08-22T16:38:00Z",
+    "unreadCount": 1
+  }
+]

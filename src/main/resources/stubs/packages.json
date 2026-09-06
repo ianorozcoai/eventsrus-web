@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "name": "Essential Reception Package",
+    "description": "Basic venue styling, floral centerpieces, and lighting for up to 100 guests.",
+    "packageType": "SERVICE",
+    "pricingType": "FIXED",
+    "price": 35000.00,
+    "minPrice": null,
+    "maxPrice": null,
+    "active": true,
+    "imageCaptions": ["Table Setup", "Floral Centerpiece", "Venue Styling"]
+  },
+  {
+    "id": 2,
+    "name": "Premium Wedding Package",
+    "description": "Full-day coverage: ceremony and reception decor, staging, AV, and coordination for up to 200 guests.",
+    "packageType": "SERVICE",
+    "pricingType": "RANGE",
+    "price": null,
+    "minPrice": 85000.00,
+    "maxPrice": 150000.00,
+    "active": true,
+    "imageCaptions": ["Ceremony Backdrop", "Reception Hall", "Stage Setup", "Guest Seating"]
+  },
+  {
+    "id": 3,
+    "name": "Corporate Event Package",
+    "description": "Stage setup, branding backdrop, and AV coordination for conferences and product launches.",
+    "packageType": "SERVICE",
+    "pricingType": "QUOTE",
+    "price": null,
+    "minPrice": null,
+    "maxPrice": null,
+    "active": true,
+    "imageCaptions": ["Stage & AV Setup", "Branding Backdrop"]
+  },
+  {
+    "id": 4,
+    "name": "Floral Centerpiece Add-on",
+    "description": "Custom floral centerpieces, priced per table.",
+    "packageType": "PRODUCT",
+    "pricingType": "FIXED",
+    "price": 1500.00,
+    "minPrice": null,
+    "maxPrice": null,
+    "active": true,
+    "imageCaptions": ["Centerpiece Sample 1", "Centerpiece Sample 2"]
+  },
+  {
+    "id": 5,
+    "name": "String Light Backdrop",
+    "description": "Rental of a string-light photo backdrop with setup and teardown.",
+    "packageType": "PRODUCT",
+    "pricingType": "FIXED",
+    "price": 8000.00,
+    "minPrice": null,
+    "maxPrice": null,
+    "active": true,
+    "imageCaptions": ["Backdrop Installed", "Backdrop Detail"]
+  },
+  {
+    "id": 6,
+    "name": "Legacy Balloon Arch",
+    "description": "Discontinued - kept for reference only, not offered to new clients.",
+    "packageType": "PRODUCT",
+    "pricingType": "FIXED",
+    "price": 4500.00,
+    "minPrice": null,
+    "maxPrice": null,
+    "active": false,
+    "imageCaptions": ["Balloon Arch Sample"]
+  }
+]

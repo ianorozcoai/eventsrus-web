@@ -1,0 +1,151 @@
+{
+  "vendorUserId": 9001,
+  "businessName": "Ian's Premium Events",
+  "ownerName": "Ian Orozco",
+  "description": "Full-service event styling and coordination for weddings, corporate events, and celebrations across Metro Manila. From intimate garden ceremonies to 300-guest galas, we handle decor, staging, and on-site coordination from start to finish.",
+  "logoImageUrl": null,
+  "businessType": "DECORATION_PRODUCTION",
+  "city": "Quezon City",
+  "state": "Metro Manila",
+  "country": "Philippines",
+  "contactEmail": "ianorozco22@gmail.com",
+  "phoneNumber": "+63 917 123 4567",
+  "tierLabel": "Top Tier Vendor",
+  "primaryRegion": "Nationwide Coverage",
+  "rating": 4.9,
+  "bookingsCount": 100,
+  "responseTime": "Instantly within 1 hour",
+  "legalDocuments": [
+    {
+      "id": 1,
+      "documentType": "DTI_PERMIT",
+      "label": null,
+      "url": "https://eventsrus-private.s3.amazonaws.com/vendors/9001/legal-document-dti-sample.jpg?X-Amz-Signature=stub",
+      "createdAt": "2026-01-15T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "documentType": "MAYORS_PERMIT",
+      "label": null,
+      "url": "https://eventsrus-private.s3.amazonaws.com/vendors/9001/legal-document-mayors-sample.jpg?X-Amz-Signature=stub",
+      "createdAt": "2026-02-03T09:00:00Z"
+    },
+    {
+      "id": 3,
+      "documentType": "BARANGAY_CLEARANCE",
+      "label": null,
+      "url": "https://eventsrus-private.s3.amazonaws.com/vendors/9001/legal-document-barangay-sample.jpg?X-Amz-Signature=stub",
+      "createdAt": "2026-02-03T09:05:00Z"
+    }
+  ],
+  "identityVerified": true,
+  "galleryCaptions": [
+    "Garden Wedding Reception",
+    "Corporate Gala Stage Setup",
+    "Debut Celebration Decor",
+    "Engagement Party Styling",
+    "Anniversary Dinner Setup",
+    "Product Launch Backdrop"
+  ],
+  "packages": [
+    {
+      "id": 1,
+      "name": "Essential Reception Package",
+      "description": "Basic venue styling, floral centerpieces, and lighting for up to 100 guests.",
+      "packageType": "SERVICE",
+      "pricingType": "FIXED",
+      "price": 35000.00,
+      "minPrice": null,
+      "maxPrice": null,
+      "active": true,
+      "imageCaptions": ["Table Setup", "Floral Centerpiece", "Venue Styling"]
+    },
+    {
+      "id": 2,
+      "name": "Premium Wedding Package",
+      "description": "Full-day coverage: ceremony and reception decor, staging, AV, and coordination for up to 200 guests.",
+      "packageType": "SERVICE",
+      "pricingType": "RANGE",
+      "price": null,
+      "minPrice": 85000.00,
+      "maxPrice": 150000.00,
+      "active": true,
+      "imageCaptions": ["Ceremony Backdrop", "Reception Hall", "Stage Setup", "Guest Seating"]
+    },
+    {
+      "id": 3,
+      "name": "Corporate Event Package",
+      "description": "Stage setup, branding backdrop, and AV coordination for conferences and product launches.",
+      "packageType": "SERVICE",
+      "pricingType": "QUOTE",
+      "price": null,
+      "minPrice": null,
+      "maxPrice": null,
+      "active": true,
+      "imageCaptions": ["Stage & AV Setup", "Branding Backdrop"]
+    },
+    {
+      "id": 4,
+      "name": "Floral Centerpiece Add-on",
+      "description": "Custom floral centerpieces, priced per table.",
+      "packageType": "PRODUCT",
+      "pricingType": "FIXED",
+      "price": 1500.00,
+      "minPrice": null,
+      "maxPrice": null,
+      "active": true,
+      "imageCaptions": ["Centerpiece Sample 1", "Centerpiece Sample 2"]
+    },
+    {
+      "id": 5,
+      "name": "String Light Backdrop",
+      "description": "Rental of a string-light photo backdrop with setup and teardown.",
+      "packageType": "PRODUCT",
+      "pricingType": "FIXED",
+      "price": 8000.00,
+      "minPrice": null,
+      "maxPrice": null,
+      "active": true,
+      "imageCaptions": ["Backdrop Installed", "Backdrop Detail"]
+    }
+  ],
+  "reviews": [
+    {
+      "reviewerName": "Sarah M.",
+      "reviewerInitials": "SM",
+      "reviewerRole": "Corporate Event Organizer",
+      "rating": 5,
+      "quote": "Absolute professionals! The setup and coordination were perfectly streamlined from start to finish. Highly recommend their premium package."
+    },
+    {
+      "reviewerName": "David K.",
+      "reviewerInitials": "DK",
+      "reviewerRole": "Wedding Coordinator",
+      "rating": 5,
+      "quote": "Flawless execution and attention to detail. They handled last-minute changes beautifully and stayed calm under pressure."
+    },
+    {
+      "reviewerName": "Marga S.",
+      "reviewerInitials": "MS",
+      "reviewerRole": "Corporate Client",
+      "rating": 5,
+      "quote": "Our year-end gala looked incredible thanks to their styling and stage setup. We'll definitely book again for future events."
+    },
+    {
+      "reviewerName": "Carlo D.",
+      "reviewerInitials": "CD",
+      "reviewerRole": "Debut Host",
+      "rating": 4,
+      "quote": "Great communication throughout and the decor exceeded our expectations for the price point."
+    }
+  ],
+  "paymentInstructions": "GCash and Maya are preferred for the down payment; bank transfer is available for balances over PHP 20,000. Please send proof of payment via the messages tab.",
+  "paymentMethods": [
+    {
+      "id": 1,
+      "label": "GCash",
+      "qrImageUrl": "https://eventsrus-public.s3.amazonaws.com/vendors/9001/payment-method-gcash-sample.png",
+      "status": "APPROVED"
+    }
+  ]
+}

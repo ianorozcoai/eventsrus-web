@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Admins - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('admins')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Admins</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${adminCreated}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Admin account created.
+					</div>
+
+					<div th:if="${adminsError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${adminsError}">Error</span>
+					</div>
+
+					<div class="row">
+						<div class="col-lg-5">
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Create Admin Account</h6>
+								</div>
+								<div class="card-body">
+									<form th:action="@{/admin/admins}" method="post">
+										<div class="mb-3">
+											<label class="form-label">Username</label>
+											<input type="text" name="username" class="form-control" required>
+										</div>
+										<div class="mb-3">
+											<label class="form-label">Password</label>
+											<input type="password" name="password" class="form-control" minlength="8" required>
+											<div class="form-text">At least 8 characters.</div>
+										</div>
+										<button type="submit" class="btn btn-primary w-100">Create Admin</button>
+									</form>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-lg-7">
+							<div class="card">
+								<div class="card-header d-flex align-items-center">
+									<h6 class="mb-0">All Admins</h6>
+									<span class="badge bg-primary ms-auto" th:text="${#lists.size(admins)} + ' total'">0 total</span>
+								</div>
+								<div class="table-responsive">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Username</th>
+												<th>Created</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="account : ${admins}">
+												<td th:text="${account.username()}">username</td>
+												<td th:text="${#temporals.format(account.createdAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Support - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('support')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Support</h4>
+						</div>
+						<div class="ms-lg-auto my-2 my-lg-0">
+							<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+								<i class="ph-plus me-2"></i>
+								New Ticket
+							</button>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Support</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${ticketCreated}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Your ticket has been submitted. Our support team will get back to you soon. <span class="text-muted">(stub only for now)</span>
+					</div>
+
+					<div class="card mb-0" th:if="${not #lists.isEmpty(tickets)}">
+						<div class="d-flex messenger-shell">
+
+							<!-- Ticket list -->
+							<div class="border-end d-flex flex-column flex-shrink-0 messenger-list-pane">
+								<div class="p-3 border-bottom">
+									<h5 class="fw-bold mb-0">Your Tickets</h5>
+								</div>
+
+								<div class="flex-grow-1 overflow-auto">
+									<a th:each="ticket : ${tickets}"
+										th:href="@{/vendor/support(ticketId=${ticket.id()})}"
+										class="d-block text-decoration-none text-body p-3 border-bottom"
+										th:classappend="${selectedTicket != null and selectedTicket.id() == ticket.id()} ? 'bg-light'">
+
+										<div class="d-flex align-items-center mb-1">
+											<span class="fw-semibold text-truncate" th:text="${ticket.subject()}">Subject</span>
+											<span class="badge ms-auto flex-shrink-0"
+												th:classappend="${ticket.status().name() == 'OPEN'} ? 'bg-warning' : (${ticket.status().name() == 'IN_PROGRESS'} ? 'bg-info' : (${ticket.status().name() == 'RESOLVED'} ? 'bg-success' : 'bg-secondary'))"
+												th:text="${ticket.status()}">STATUS</span>
+										</div>
+										<div class="fs-sm text-muted mb-1" th:text="${ticket.category().getLabel()}">Category</div>
+										<div class="text-truncate text-muted fs-sm" th:text="${ticket.lastMessagePreview()}">Last message preview</div>
+									</a>
+								</div>
+							</div>
+							<!-- /ticket list -->
+
+
+							<!-- Thread -->
+							<div class="d-flex flex-column flex-grow-1" th:if="${selectedTicket != null}">
+
+								<div class="d-flex align-items-center p-3 border-bottom">
+									<div>
+										<div class="fw-semibold" th:text="${selectedTicket.subject()}">Subject</div>
+										<div class="text-muted fs-sm">
+											<span th:text="${selectedTicket.category().getLabel()}">Category</span>
+											<span th:if="${selectedTicket.relatedEventName() != null}"> &middot; Re: <span th:text="${selectedTicket.relatedEventName()}">Event</span></span>
+										</div>
+									</div>
+									<span class="badge ms-auto"
+										th:classappend="${selectedTicket.status().name() == 'OPEN'} ? 'bg-warning' : (${selectedTicket.status().name() == 'IN_PROGRESS'} ? 'bg-info' : (${selectedTicket.status().name() == 'RESOLVED'} ? 'bg-success' : 'bg-secondary'))"
+										th:text="${selectedTicket.status()}">STATUS</span>
+								</div>
+
+								<div class="flex-grow-1 overflow-auto p-3">
+
+									<div th:if="${replySent}" class="alert alert-success alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										Your reply has been sent. <span class="text-muted">(stub only for now - won't appear in the thread below)</span>
+									</div>
+									<div th:if="${supportError}" class="alert alert-danger alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										<span th:text="${supportError}">Error</span>
+									</div>
+
+									<th:block th:each="message : ${thread}">
+										<div class="d-flex mb-2" th:classappend="${message.senderUserId() == currentUserId} ? 'justify-content-end' : 'justify-content-start'">
+											<div style="max-width:70%;">
+												<div class="fs-sm text-muted mb-1" th:classappend="${message.senderUserId() == currentUserId} ? 'text-end' : ''"
+													th:text="${message.senderUserId() == currentUserId ? 'You' : (message.senderRole() == 'ADMIN' ? 'EventsRUs Support' : message.senderName())}">Sender</div>
+												<div class="rounded-3 px-3 py-2"
+													th:classappend="${message.senderUserId() == currentUserId} ? 'bg-purple text-white' : (${message.senderRole() == 'ADMIN'} ? 'bg-info-subtle' : 'bg-light')"
+													th:text="${message.body()}">Message body</div>
+											</div>
+										</div>
+									</th:block>
+
+									<div class="text-center text-muted fs-sm py-4" th:if="${#lists.isEmpty(thread)}">
+										No messages yet.
+									</div>
+
+								</div>
+
+								<div class="border-top p-3" th:if="${selectedTicket.status().name() != 'CLOSED'}">
+									<form th:action="@{/vendor/support/{id}/reply(id=${selectedTicket.id()})}" method="post" class="d-flex align-items-center gap-2">
+										<input type="text" name="message" class="form-control rounded-pill" placeholder="Type a reply..." required>
+										<button type="submit" class="btn btn-purple btn-icon rounded-circle flex-shrink-0">
+											<i class="ph-paper-plane-tilt"></i>
+										</button>
+									</form>
+								</div>
+								<p class="text-muted fs-sm text-center p-3 mb-0" th:if="${selectedTicket.status().name() == 'CLOSED'}">
+									This ticket is closed. Raise a new ticket if you need further help.
+								</p>
+
+							</div>
+							<!-- /thread -->
+
+						</div>
+					</div>
+
+					<div class="card" th:if="${#lists.isEmpty(tickets)}">
+						<div class="card-body text-center py-5">
+							<i class="ph-lifebuoy ph-3x text-muted mb-3 d-block"></i>
+							<p class="text-muted mb-3">No support tickets yet.</p>
+							<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+								<i class="ph-plus me-2"></i>
+								Raise a Ticket
+							</button>
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+	<!-- New Ticket modal -->
+	<div class="modal fade" id="newTicketModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<form th:action="@{/vendor/support}" th:object="${createTicketForm}" method="post">
+					<div class="modal-header">
+						<h5 class="modal-title">Raise a Support Ticket</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label">Subject</label>
+							<input type="text" th:field="*{subject}" class="form-control" placeholder="Briefly summarize your concern" required>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Category</label>
+							<select th:field="*{category}" class="form-select">
+								<option th:each="cat : ${ticketCategories}" th:value="${cat}" th:text="${cat.getLabel()}"></option>
+							</select>
+						</div>
+						<div class="mb-0">
+							<label class="form-label">Details</label>
+							<textarea th:field="*{message}" rows="4" class="form-control" placeholder="Tell us what's going on, including any event, booking, or quotation this is about." required></textarea>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-primary">
+							<i class="ph-paper-plane-tilt me-2"></i>
+							Submit Ticket
+						</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	<!-- /New Ticket modal -->
+
+</body>
+</html>

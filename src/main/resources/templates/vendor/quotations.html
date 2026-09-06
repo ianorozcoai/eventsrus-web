@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Quotations - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('quotations')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Quotations</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Quotations</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div class="card">
+						<div class="card-header d-flex align-items-center">
+							<h6 class="mb-0">Quotation requests from planners</h6>
+							<span class="badge bg-primary ms-auto" th:text="${#lists.size(quotations)} + ' total'">0 total</span>
+						</div>
+
+						<div class="table-responsive" th:if="${not #lists.isEmpty(quotations)}">
+							<table class="table table-hover">
+								<thead>
+									<tr>
+										<th>Event</th>
+										<th>Target date</th>
+										<th>Message</th>
+										<th>Status</th>
+										<th>Requested</th>
+										<th>Quote</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="quotation : ${quotations}">
+										<td th:text="${quotation.eventName()}">Event</td>
+										<td th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">-</td>
+										<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
+										<td>
+											<span class="badge" th:classappend="${quotation.status().name() == 'RESPONDED'} ? 'bg-success' : (${quotation.status().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-warning')" th:text="${quotation.status()}">STATUS</span>
+										</td>
+										<td th:text="${#temporals.format(quotation.createdAt(), 'MMM dd, yyyy')}">-</td>
+										<td>
+											<a th:if="${quotation.pdfUrl() != null}" th:href="${quotation.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
+												<i class="ph-file-pdf me-1"></i> View
+											</a>
+											<span th:if="${quotation.pdfUrl() == null}" class="text-muted fs-sm">Not sent yet</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="card-body text-center py-5" th:if="${#lists.isEmpty(quotations)}">
+							<i class="ph-file-text ph-3x text-muted mb-3 d-block"></i>
+							<p class="text-muted mb-0">No quotation requests yet. They'll show up here once planners request one.</p>
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

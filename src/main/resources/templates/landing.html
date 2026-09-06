@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>EventsRUs</title>
+
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+
+	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+</head>
+
+<body class="bg-body">
+
+	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3 text-center">
+
+		<span class="d-flex align-items-center justify-content-center bg-primary text-white rounded-pill fw-bold mb-3" style="width:56px;height:56px;font-size:24px;">E</span>
+		<h3 class="fw-bold mb-1">Welcome to EventsRUs</h3>
+		<p class="text-muted mb-4">Plan an event, or grow your business as a vendor.</p>
+
+		<div class="d-flex flex-column flex-sm-row gap-3">
+			<a th:href="@{/planner/}" class="btn btn-primary btn-lg px-4">
+				<i class="ph-confetti me-2"></i> I'm a Planner
+			</a>
+			<a th:href="@{/vendor/}" class="btn btn-outline-primary btn-lg px-4">
+				<i class="ph-storefront me-2"></i> I'm a Vendor
+			</a>
+		</div>
+
+	</div>
+
+	<!-- Same choice, as a pop-up shown on arrival - dismissible, since the
+	     two buttons above are always there behind it either way. -->
+	<div class="modal fade" id="rolePickerModal" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-body text-center p-4">
+					<button type="button" class="btn-close float-end" data-bs-dismiss="modal"></button>
+					<span class="d-flex align-items-center justify-content-center bg-primary text-white rounded-pill fw-bold mx-auto mb-3" style="width:48px;height:48px;font-size:20px;">E</span>
+					<h5 class="mb-1">What brings you here today?</h5>
+					<p class="text-muted fs-sm mb-4">Choose how you'd like to use EventsRUs.</p>
+					<div class="d-flex flex-column gap-2">
+						<a th:href="@{/planner/}" class="btn btn-primary">
+							<i class="ph-confetti me-2"></i> I'm planning an event
+						</a>
+						<a th:href="@{/vendor/}" class="btn btn-outline-primary">
+							<i class="ph-storefront me-2"></i> I'm a vendor
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			new bootstrap.Modal(document.getElementById('rolePickerModal')).show();
+		});
+	</script>
+
+</body>
+</html>

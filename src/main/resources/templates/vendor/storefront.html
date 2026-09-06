@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head(${profile.businessName()} + ' - EventsRUs')}"></head>
+
+<body>
+
+	<!-- Main navbar -->
+	<div class="navbar navbar-dark navbar-static py-2">
+		<div class="container-fluid">
+			<div class="navbar-brand">
+				<a th:href="@{/}" class="d-inline-flex align-items-center text-white text-decoration-none">
+					<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold" style="width:28px;height:28px;">E</span>
+					<span class="d-none d-sm-inline-block fw-bold fs-lg ms-2 text-white">EventsRUs</span>
+				</a>
+			</div>
+		</div>
+	</div>
+	<!-- /main navbar -->
+
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Content area -->
+				<div class="content pt-4">
+
+					<!-- Storefront header -->
+					<div class="card mb-3 border-0 text-white" style="background: linear-gradient(135deg, #171a37 0%, #262a52 55%, #2f2560 100%);">
+						<div class="card-body p-4 p-md-5">
+							<div class="row align-items-center g-4">
+
+								<div class="col-md-8">
+									<div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+										<span class="badge bg-warning text-dark fw-bold px-3 py-2 text-uppercase" style="letter-spacing:.5px;" th:if="${profile.tierLabel() != null}">
+											<i class="ph-trophy me-1"></i> <span th:text="${profile.tierLabel()}">Top Tier Vendor</span>
+										</span>
+										<span class="badge bg-success text-white fw-bold px-3 py-2" th:if="${not #lists.isEmpty(profile.legalDocuments())}">
+											<i class="ph-shield-check me-1"></i> Verified Vendor
+										</span>
+										<span class="badge bg-purple text-white fw-bold px-3 py-2" th:if="${#lists.isEmpty(profile.legalDocuments())}">
+											<i class="ph-clock me-1"></i> Verification Pending
+										</span>
+									</div>
+
+									<h1 class="fw-bold mb-2" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
+									<p class="mb-4 opacity-75" style="max-width:640px;" th:text="${profile.description()}">Description</p>
+
+									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10">
+										<div>
+											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-map-pin me-1"></i> Primary Region</div>
+											<div class="fw-bold" th:text="${profile.primaryRegion()}">Nationwide Coverage</div>
+										</div>
+										<div>
+											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-star me-1"></i> Rating</div>
+											<div class="fw-bold">
+												<span th:text="${profile.rating()}">4.9</span>
+												<span class="opacity-75 fw-normal">(<span th:text="${profile.bookingsCount()}">100</span>+ bookings)</span>
+											</div>
+										</div>
+										<div>
+											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-lightning me-1"></i> Response</div>
+											<div class="fw-bold" th:text="${profile.responseTime()}">Instantly within 1 hour</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="col-md-4 text-center">
+									<div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mx-auto" style="width:150px;height:150px;">
+										<span class="fw-bold text-primary" style="font-size:3rem;" th:text="${#strings.substring(profile.businessName(), 0, 1)}">B</span>
+									</div>
+								</div>
+
+							</div>
+						</div>
+					</div>
+					<!-- /storefront header -->
+
+
+					<div class="row">
+
+						<!-- Main column: gallery + packages -->
+						<div class="col-lg-8">
+
+							<!-- Gallery -->
+							<div class="card mb-3">
+								<div class="card-header">
+									<h6 class="mb-0">Gallery</h6>
+								</div>
+								<div class="card-body">
+									<div class="row g-3">
+										<div class="col-6 col-md-4" th:each="caption, iter : ${profile.galleryCaptions()}">
+											<div class="rounded d-flex flex-column align-items-center justify-content-center text-white text-center p-3" style="height:130px;"
+												th:classappend="${iter.index % 3 == 0} ? 'bg-indigo' : (${iter.index % 3 == 1} ? 'bg-teal' : 'bg-pink')">
+												<i class="ph-image ph-2x mb-2 opacity-75"></i>
+												<span class="fs-sm" th:text="${caption}">Caption</span>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /gallery -->
+
+
+							<!-- Packages -->
+							<div class="card mb-3 mb-lg-0">
+								<div class="card-header">
+									<h6 class="mb-0">Packages</h6>
+								</div>
+								<div class="card-body">
+									<div class="row g-3">
+										<div class="col-md-6" th:each="pkg : ${profile.packages()}">
+											<div class="border rounded p-3 h-100">
+												<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
+												<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
+												<p class="text-muted fs-sm mb-2" th:text="${pkg.description()}">Description</p>
+												<div class="fw-semibold mb-2" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</div>
+
+												<button type="button" class="btn btn-outline-secondary btn-sm" th:if="${not #lists.isEmpty(pkg.imageCaptions())}" data-bs-toggle="modal" th:attr="data-bs-target='#packageImagesModal-' + ${pkg.id()}">
+													<i class="ph-image me-1"></i>
+													Browse Photos (<span th:text="${#lists.size(pkg.imageCaptions())}">0</span>)
+												</button>
+											</div>
+
+											<!-- Per-package photo browser -->
+											<div class="modal fade" th:id="'packageImagesModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
+												<div class="modal-dialog modal-dialog-centered modal-lg">
+													<div class="modal-content">
+														<div class="modal-header">
+															<h5 class="modal-title" th:text="${pkg.name()} + ' - Photos'">Package Photos</h5>
+															<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+														</div>
+														<div class="modal-body">
+															<div class="row g-3">
+																<div class="col-6 col-md-4" th:each="caption, iter : ${pkg.imageCaptions()}">
+																	<div class="rounded d-flex flex-column align-items-center justify-content-center text-white text-center p-3" style="height:120px;"
+																		th:classappend="${iter.index % 3 == 0} ? 'bg-indigo' : (${iter.index % 3 == 1} ? 'bg-teal' : 'bg-pink')">
+																		<i class="ph-image ph-2x mb-2 opacity-75"></i>
+																		<span class="fs-sm" th:text="${caption}">Caption</span>
+																	</div>
+																</div>
+															</div>
+														</div>
+													</div>
+												</div>
+											</div>
+											<!-- /photo browser -->
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /packages -->
+
+
+							<!-- Client reviews -->
+							<div class="card mb-3 mb-lg-0 border-0 shadow-sm">
+								<div class="card-body p-4">
+									<div class="d-flex align-items-center mb-3">
+										<h6 class="text-uppercase fw-bold text-muted mb-0" style="letter-spacing:.5px;">Client Reviews &amp; Testimonials</h6>
+										<a href="#" class="text-decoration-none fw-semibold ms-auto" style="color:#ff6b35;">
+											View More <i class="ph-caret-right"></i>
+										</a>
+									</div>
+
+									<div class="row g-3">
+										<div class="col-md-6" th:each="review, iter : ${profile.reviews()}" th:if="${iter.index < 2}">
+											<div class="border rounded p-3 h-100">
+												<div class="d-flex align-items-start justify-content-between mb-2">
+													<div class="d-flex align-items-center">
+														<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:40px;height:40px;" th:classappend="${iter.index % 2 == 0} ? 'bg-indigo' : 'bg-dark'" th:text="${review.reviewerInitials()}">XX</div>
+														<div class="ms-2">
+															<div class="fw-semibold" th:text="${review.reviewerName()}">Reviewer name</div>
+															<div class="text-muted fs-sm" th:text="${review.reviewerRole()}">Role</div>
+														</div>
+													</div>
+													<div class="flex-shrink-0">
+														<i class="ph-star" th:each="i : ${#numbers.sequence(1, 5)}" th:classappend="${i <= review.rating()} ? 'text-warning' : 'text-muted opacity-25'"></i>
+													</div>
+												</div>
+												<p class="fst-italic text-muted mb-0" th:text="'&quot;' + ${review.quote()} + '&quot;'">"Quote"</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /client reviews -->
+
+
+							<!-- Verification & Legalities - a business can have several
+							     registration documents (DTI, SEC, Mayor's Permit, Barangay
+							     Clearance, BIR, ...), so this is a list, not one badge - the
+							     actual scanned upload is shown for each, since business
+							     paperwork is safe to show planners directly. Identity
+							     Documents (ID card + selfie) deliberately stays a separate
+							     yes/no badge only - those are personal identity documents,
+							     and showing them to anonymous storefront visitors would be a
+							     real privacy/security exposure. The images themselves stay
+							     admin-only either way (see AdminVendorController). -->
+							<div class="card mb-3 mb-lg-0 border-0 shadow-sm">
+								<div class="card-body p-4">
+									<h6 class="text-uppercase fw-bold text-muted mb-3" style="letter-spacing:.5px;">Verification &amp; Legalities</h6>
+
+									<p class="fw-semibold mb-2">Business Registration Documents</p>
+									<div class="row g-3 mb-3" th:if="${not #lists.isEmpty(profile.legalDocuments())}">
+										<div class="col-md-4 col-6" th:each="doc : ${profile.legalDocuments()}">
+											<div class="border rounded p-3 h-100">
+												<div class="fs-sm text-success fw-semibold mb-2">
+													<i class="ph-check-circle me-1"></i>
+													<span th:text="${doc.label() != null} ? ${doc.label()} : ${doc.documentType().getLabel()}">Document type</span>
+												</div>
+												<a th:href="${doc.url()}" target="_blank" class="d-block text-decoration-none">
+													<img th:src="${doc.url()}" alt="Legal document" class="img-fluid rounded border mb-2"
+														style="max-height:160px;width:100%;object-fit:cover;"
+														onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+													<div class="d-none align-items-center justify-content-center bg-light rounded mb-2" style="height:130px;">
+														<i class="ph-file-text ph-2x text-muted"></i>
+													</div>
+													<span class="fs-sm"><i class="ph-arrow-square-out me-1"></i>View document</span>
+												</a>
+											</div>
+										</div>
+									</div>
+									<p class="text-muted fs-sm mb-4" th:if="${#lists.isEmpty(profile.legalDocuments())}">
+										No business registration documents on file yet.
+									</p>
+
+									<p class="fw-semibold mb-2">Identity Documents</p>
+									<div class="border rounded p-3" style="max-width:260px;">
+										<div class="d-flex align-items-center justify-content-center bg-light rounded mb-2" style="height:100px;">
+											<i class="ph-fw ph-2x" th:classappend="${profile.identityVerified()} ? 'ph-shield-check text-success' : 'ph-clock text-muted'"></i>
+										</div>
+										<span class="fs-sm" th:classappend="${profile.identityVerified()} ? 'text-success' : 'text-muted'"
+											th:text="${profile.identityVerified()} ? 'Verified' : 'Not yet uploaded'">Status</span>
+										<p class="text-muted fs-sm mb-0 mt-1">Kept private for the vendor's security - not shown here.</p>
+									</div>
+								</div>
+							</div>
+							<!-- /verification & legalities -->
+
+						</div>
+						<!-- /main column -->
+
+
+						<!-- Sidebar: contact + quotation + inquiry -->
+						<div class="col-lg-4">
+
+							<!-- Contact info -->
+							<div class="card mb-3">
+								<div class="card-header">
+									<h6 class="mb-0">Contact</h6>
+								</div>
+								<div class="card-body">
+									<div class="d-flex align-items-center mb-2">
+										<i class="ph-at text-muted me-2"></i>
+										<span th:text="${profile.contactEmail()}">email@example.com</span>
+									</div>
+									<div class="d-flex align-items-center">
+										<i class="ph-phone text-muted me-2"></i>
+										<span th:text="${profile.phoneNumber()}">+63 900 000 0000</span>
+									</div>
+								</div>
+							</div>
+							<!-- /contact info -->
+
+
+							<!-- Payment methods -->
+							<div class="card mb-3" th:if="${not #lists.isEmpty(profile.paymentMethods())}">
+								<div class="card-header">
+									<h6 class="mb-0">Payment Methods</h6>
+								</div>
+								<div class="card-body">
+									<p class="text-muted fs-sm mb-3" th:if="${profile.paymentInstructions() != null}" th:text="${profile.paymentInstructions()}">Payment instructions</p>
+
+									<div class="row g-3">
+										<div class="col-6" th:each="method : ${profile.paymentMethods()}">
+											<div class="border rounded p-3 text-center h-100">
+												<div class="d-flex align-items-center justify-content-center bg-light rounded mb-2 mx-auto" style="width:90px;height:90px;">
+													<i class="ph-qr-code ph-2x text-muted"></i>
+												</div>
+												<div class="fw-semibold fs-sm" th:text="${method.label()}">Payment method</div>
+											</div>
+										</div>
+									</div>
+
+									<p class="text-muted fs-sm mt-3 mb-0"><i class="ph-shield-check me-1"></i> Verified by EventsRUs. Payment is handled directly between you and the vendor.</p>
+								</div>
+							</div>
+							<!-- /payment methods -->
+
+
+							<!-- Quotation request -->
+							<div class="card mb-3 border-0 shadow-sm">
+								<div class="card-body p-4">
+									<h5 class="fw-bold mb-1">Request for Quotation</h5>
+									<p class="text-muted fs-sm mb-4">Receive a customized price estimate and package breakdown.</p>
+
+									<div th:if="${quotationRequestSubmitted}" class="alert alert-success alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										Your quotation request has been sent. <span class="text-muted">(stub only for now)</span>
+									</div>
+
+									<form th:action="@{/vendor/storefront/quotation-request}" th:object="${quotationRequestForm}" method="post">
+										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
+										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
+										<div class="mb-3">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Your Full Name</label>
+											<input type="text" th:field="*{plannerName}" class="form-control bg-light border-0 px-3 py-2" style="border-radius:50px;" placeholder="e.g., Jane Smith" required>
+										</div>
+										<div class="mb-3">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Target Event Date</label>
+											<input type="date" th:field="*{targetDate}" class="form-control bg-light border-0 px-3 py-2" style="border-radius:50px;">
+										</div>
+										<div class="mb-3">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Select Target Package(s)</label>
+											<select th:field="*{packageIds}" multiple="multiple" class="form-control multiselect-quotation-packages"
+												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+												data-filter-placeholder="Search packages..." data-number-displayed="999" data-none-selected-text="Choose a package...">
+												<option th:each="pkg : ${profile.packages()}" th:value="${pkg.id()}" th:text="${pkg.name()}"></option>
+											</select>
+											<div class="fs-sm text-muted mt-1">Select every package you'd like included in this quote - more than one is fine.</div>
+										</div>
+										<div class="mb-4">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Details &amp; Specifications</label>
+											<textarea th:field="*{message}" rows="3" class="form-control bg-light border-0 px-3 py-2" style="border-radius:16px;" placeholder="Tell us about your event, guest count, and any special requests..." required></textarea>
+										</div>
+										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
+										<button type="submit" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;">
+											Submit Quotation Request
+										</button>
+									</form>
+								</div>
+							</div>
+							<!-- /quotation request -->
+
+
+							<!-- Inquiry -->
+							<div class="card border-0 shadow-sm">
+								<div class="card-body p-4">
+									<h5 class="fw-bold mb-1">Direct Client Inquiry</h5>
+									<p class="text-muted fs-sm mb-4">Ask a question or check availability directly.</p>
+
+									<div th:if="${inquirySubmitted}" class="alert alert-success alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										Your message has been sent. <span class="text-muted">(stub only for now)</span>
+									</div>
+
+									<form th:action="@{/vendor/storefront/inquiry}" th:object="${inquiryForm}" method="post">
+										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
+										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
+										<div class="mb-3">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Your Full Name</label>
+											<input type="text" th:field="*{plannerName}" class="form-control px-3 py-2" style="border-radius:50px;" placeholder="e.g., Jane Smith" required>
+										</div>
+										<div class="mb-3">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Target Booking Date</label>
+											<input type="date" th:field="*{targetDate}" class="form-control px-3 py-2" style="border-radius:50px;">
+										</div>
+										<div class="mb-4">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Message</label>
+											<textarea th:field="*{message}" rows="3" class="form-control px-3 py-2" style="border-radius:16px;" placeholder="Ask a quick question..." required></textarea>
+										</div>
+										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
+										<button type="submit" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;">
+											Submit Availability Inquiry
+										</button>
+									</form>
+								</div>
+							</div>
+							<!-- /inquiry -->
+
+						</div>
+						<!-- /sidebar -->
+
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+	<!-- Target package multiselect (same widget as vendor operating-area/event-type selects) -->
+	<link th:href="@{/assets/css/multiselect.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/forms/selects/bootstrap_multiselect.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+				jQuery('.multiselect-quotation-packages').multiselect();
+			}
+		});
+	</script>
+
+</body>
+</html>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Dashboard - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('dashboard')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Dashboard</h4>
+
+							<a href="#page_header" class="btn btn-light align-self-center collapsed d-lg-none border-transparent rounded-pill p-0 ms-auto" data-bs-toggle="collapse">
+								<i class="ph-caret-down collapsible-indicator ph-sm m-1"></i>
+							</a>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Dashboard</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<!-- Quick stats boxes -->
+					<div class="row">
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-teal text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0" th:text="${dashboard.newLeadsCount}">0</h3>
+									</div>
+									<div>New Leads</div>
+									<div class="fs-sm opacity-75">Planners who viewed your page</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-indigo text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0" th:text="${dashboard.newMessagesCount}">0</h3>
+									</div>
+									<div>New Inquiries</div>
+									<div class="fs-sm opacity-75">Unread messages</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-warning text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0" th:text="${dashboard.newQuotationsCount}">0</h3>
+									</div>
+									<div>New Quotations</div>
+									<div class="fs-sm opacity-75">Awaiting your reply</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-primary text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0" th:text="${dashboard.newBookingsCount}">0</h3>
+									</div>
+									<div>New Bookings</div>
+									<div class="fs-sm opacity-75">Confirmed this week</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-pink text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0" th:text="${dashboard.upcomingEventsCount}">0</h3>
+									</div>
+									<div>Upcoming Events</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-success text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0">&#8369;<span th:text="${#numbers.formatDecimal(dashboard.totalIncome, 1, 'COMMA', 2, 'POINT')}">0.00</span></h3>
+									</div>
+									<div>Total Income</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="col-xl-3 col-md-6">
+							<div class="card bg-danger text-white">
+								<div class="card-body">
+									<div class="d-flex">
+										<h3 class="mb-0" th:text="${dashboard.cancellationsCount}">0</h3>
+									</div>
+									<div>Cancellations</div>
+								</div>
+							</div>
+						</div>
+
+					</div>
+					<!-- /quick stats boxes -->
+
+
+					<!-- Packages reminder -->
+					<div class="alert alert-warning alert-dismissible d-flex align-items-center" th:unless="${dashboard.hasPackages}">
+						<i class="ph-warning me-3"></i>
+						<span class="flex-1">You haven't added any packages yet. Add one so planners can find and book your services.</span>
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+					</div>
+					<!-- /packages reminder -->
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

@@ -1,0 +1,126 @@
+[
+  {
+    "id": 501,
+    "name": "Rodriguez Wedding Reception",
+    "eventType": "WEDDING",
+    "eventDate": "2026-11-12",
+    "location": "Metro Manila (NCR)",
+    "description": "Full-day wedding reception for about 150 guests - looking for a venue, catering, and decor.",
+    "coordinatorReply": "For a memorable wedding, start by locking in your venue and date, then layer in catering, photography, and decor around a single cohesive theme. Book your highest-demand vendors (venue and photographer) first - they tend to fill up fastest for popular dates.",
+    "suggestedSuppliers": [
+      {
+        "businessName": "Manila Grand Ballroom",
+        "businessType": "VENUE",
+        "city": "Pasay",
+        "operatingAreas": ["Metro Manila (NCR)"],
+        "description": "A 500-guest ballroom with in-house lighting rigs and a bridal suite.",
+        "slug": "manila-grand-ballroom"
+      },
+      {
+        "businessName": "Fiesta Feast Catering",
+        "businessType": "CATERING",
+        "city": "Makati",
+        "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Rizal"],
+        "description": "Buffet and plated Filipino-fusion catering, from intimate dinners to 300-guest galas.",
+        "slug": "fiesta-feast-catering"
+      },
+      {
+        "businessName": "Ian's Premium Events",
+        "businessType": "DECORATION_PRODUCTION",
+        "city": "Quezon City",
+        "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Laguna", "Rizal"],
+        "description": "Full-service event styling and coordination for weddings, corporate events, and celebrations.",
+        "slug": "ians-premium-events"
+      },
+      {
+        "businessName": "Lens & Light Studio",
+        "businessType": "PHOTO_AND_VIDEO",
+        "city": "Quezon City",
+        "operatingAreas": ["Entire Philippines"],
+        "description": "Destination and same-day-edit wedding photography and videography.",
+        "slug": "lens-light-studio"
+      }
+    ]
+  },
+  {
+    "id": 504,
+    "name": "Rodriguez Engagement Party",
+    "eventType": "PARTY",
+    "eventDate": "2026-09-20",
+    "location": "Metro Manila (NCR)",
+    "description": "Garden-theme engagement party for 60 guests, half-day setup.",
+    "coordinatorReply": "Keep it simple: a flexible venue, crowd-pleasing catering, and entertainment that matches your guest list's energy.",
+    "suggestedSuppliers": [
+      {
+        "businessName": "Ian's Premium Events",
+        "businessType": "DECORATION_PRODUCTION",
+        "city": "Quezon City",
+        "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Laguna", "Rizal"],
+        "description": "Full-service event styling and coordination for weddings, corporate events, and celebrations.",
+        "slug": "ians-premium-events"
+      },
+      {
+        "businessName": "Fiesta Feast Catering",
+        "businessType": "CATERING",
+        "city": "Makati",
+        "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Rizal"],
+        "description": "Buffet and plated Filipino-fusion catering, from intimate dinners to 300-guest galas.",
+        "slug": "fiesta-feast-catering"
+      }
+    ]
+  },
+  {
+    "id": 510,
+    "name": "Dela Cruz Debut",
+    "eventType": "BIRTHDAY",
+    "eventDate": "2026-10-24",
+    "location": "Metro Manila (NCR)",
+    "description": "18 roses & candles debut program, stage backdrop and lighting for 120 guests.",
+    "coordinatorReply": "Birthdays are all about the guest of honor - pick a venue and entertainment that match their personality, and build catering and decor around that theme.",
+    "suggestedSuppliers": [
+      {
+        "businessName": "Ian's Premium Events",
+        "businessType": "DECORATION_PRODUCTION",
+        "city": "Quezon City",
+        "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Laguna", "Rizal"],
+        "description": "Full-service event styling and coordination for weddings, corporate events, and celebrations.",
+        "slug": "ians-premium-events"
+      },
+      {
+        "businessName": "Manila Grand Ballroom",
+        "businessType": "VENUE",
+        "city": "Pasay",
+        "operatingAreas": ["Metro Manila (NCR)"],
+        "description": "A 500-guest ballroom with in-house lighting rigs and a bridal suite.",
+        "slug": "manila-grand-ballroom"
+      }
+    ]
+  },
+  {
+    "id": 515,
+    "name": "Cruz 60th Birthday",
+    "eventType": "BIRTHDAY",
+    "eventDate": "2026-11-28",
+    "location": "Metro Manila (NCR)",
+    "description": "60th birthday celebration for 100 guests, garden-theme decor and a live band.",
+    "coordinatorReply": "Birthdays are all about the guest of honor - pick a venue and entertainment that match their personality, and build catering and decor around that theme.",
+    "suggestedSuppliers": [
+      {
+        "businessName": "Ian's Premium Events",
+        "businessType": "DECORATION_PRODUCTION",
+        "city": "Quezon City",
+        "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Laguna", "Rizal"],
+        "description": "Full-service event styling and coordination for weddings, corporate events, and celebrations.",
+        "slug": "ians-premium-events"
+      },
+      {
+        "businessName": "SoundWave Entertainment",
+        "businessType": "ENTERTAINMENT",
+        "city": "Taguig",
+        "operatingAreas": ["Entire Philippines"],
+        "description": "DJs, live bands, and full sound/lighting rigs for weddings, parties, and corporate events.",
+        "slug": "soundwave-entertainment"
+      }
+    ]
+  }
+]

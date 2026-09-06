@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Leads - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('leads')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Leads</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Leads</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${leadMessageSent}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Your message has been sent. <span class="text-muted">(stub only for now - won't appear in the thread)</span>
+					</div>
+
+					<div th:if="${leadsError}" class="alert alert-warning alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${leadsError}">Error</span>
+						<a th:href="@{/vendor/subscription}" class="alert-link">Renew now</a>
+					</div>
+
+					<div class="card">
+						<div class="card-header d-flex align-items-center">
+							<h6 class="mb-0">Planners who viewed your storefront</h6>
+							<span class="badge bg-primary ms-auto" th:text="${#lists.size(leads)} + ' total'">0 total</span>
+						</div>
+
+						<div class="table-responsive" th:if="${not #lists.isEmpty(leads)}">
+							<table class="table table-hover">
+								<thead>
+									<tr>
+										<th>Planner</th>
+										<th>Event</th>
+										<th>First visited</th>
+										<th>Last visited</th>
+										<th class="text-end">Actions</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="lead : ${leads}">
+										<td>
+											<div class="d-flex align-items-center">
+												<i class="ph-user-circle ph-lg text-muted me-2"></i>
+												<span th:text="${lead.plannerName()}">Planner</span>
+											</div>
+										</td>
+										<td th:text="${lead.eventName()}">Event</td>
+										<td th:text="${#temporals.format(lead.firstVisitedAt(), 'MMM dd, yyyy - h:mm a')}">-</td>
+										<td>
+											<span th:text="${#temporals.format(lead.lastVisitedAt(), 'MMM dd, yyyy - h:mm a')}">-</span>
+										</td>
+										<td class="text-end">
+											<a th:if="${conversationIdByEventId.get(lead.eventId()) != null}"
+												th:href="@{/vendor/messages(conversationId=${conversationIdByEventId.get(lead.eventId())})}"
+												class="btn btn-primary btn-sm">
+												<i class="ph-chat-circle-text me-1"></i>
+												Send Message
+											</a>
+											<button th:if="${conversationIdByEventId.get(lead.eventId()) == null}" type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#sendLeadMessageModal-' + ${lead.id()}">
+												<i class="ph-chat-circle-text me-1"></i>
+												Send Message
+											</button>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="card-body text-center py-5" th:if="${#lists.isEmpty(leads)}">
+							<i class="ph-users ph-3x text-muted mb-3 d-block"></i>
+							<p class="text-muted mb-0">No leads yet. Planners who view your storefront will show up here.</p>
+						</div>
+					</div>
+
+					<!-- Per-lead "Send Message" compose modals - only for leads with no
+					     existing conversation yet (see conversationIdByEventId above);
+					     leads who've already messaged get a direct link to that thread
+					     instead. -->
+					<div class="modal fade" th:each="lead : ${leads}" th:if="${conversationIdByEventId.get(lead.eventId()) == null}" th:id="'sendLeadMessageModal-' + ${lead.id()}" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<form th:action="@{'/vendor/leads/' + ${lead.eventId()} + '/message'}" method="post">
+									<div class="modal-header">
+										<h5 class="modal-title" th:text="'Message ' + ${lead.plannerName()}">Send Message</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+									</div>
+									<div class="modal-body">
+										<label class="form-label">Message</label>
+										<textarea name="message" rows="3" class="form-control" placeholder="Introduce yourself and offer your services..." required></textarea>
+										<div class="fs-sm text-muted mt-1">This starts a new conversation with <span th:text="${lead.plannerName()}">planner</span> about <span th:text="${lead.eventName()}">event</span>.</div>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+										<button type="submit" class="btn btn-primary">
+											<i class="ph-paper-plane-tilt me-2"></i>
+											Send Message
+										</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					<!-- /per-lead compose modals -->
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

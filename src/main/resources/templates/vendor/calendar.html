@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Calendar - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('calendar')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Calendar</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Calendar</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<!-- Tabs -->
+					<ul class="nav nav-tabs mb-3">
+						<li class="nav-item">
+							<a href="#tab-all-events" class="nav-link active" data-bs-toggle="tab">
+								<i class="ph-list-bullets me-2"></i>
+								All Events
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#tab-calendar-view" class="nav-link" data-bs-toggle="tab">
+								<i class="ph-calendar-blank me-2"></i>
+								Calendar
+							</a>
+						</li>
+					</ul>
+					<!-- /tabs -->
+
+					<div class="tab-content">
+
+						<!-- All events -->
+						<div class="tab-pane fade show active" id="tab-all-events">
+							<div class="card">
+								<div class="card-header d-flex align-items-center">
+									<h6 class="mb-0">Your booked and pending event dates</h6>
+									<span class="badge bg-primary ms-auto" th:text="${#lists.size(entries)} + ' total'">0 total</span>
+								</div>
+
+								<div class="table-responsive" th:if="${not #lists.isEmpty(entries)}">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Date</th>
+												<th>Event</th>
+												<th>Planner</th>
+												<th>Status</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="entry : ${entries}">
+												<td th:text="${#temporals.format(entry.eventDatetime(), 'MMM dd, yyyy - h:mm a')}">-</td>
+												<td th:text="${entry.eventName()}">Event</td>
+												<td th:text="${entry.plannerName()}">Planner</td>
+												<td>
+													<span class="badge" th:classappend="${entry.status() == 'BOOKED'} ? 'bg-success' : (${entry.status() == 'INQUIRY'} ? 'bg-warning' : 'bg-danger')" th:text="${entry.status()}">STATUS</span>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+
+								<div class="card-body text-center py-5" th:if="${#lists.isEmpty(entries)}">
+									<i class="ph-calendar-blank ph-3x text-muted mb-3 d-block"></i>
+									<p class="text-muted mb-0">No event dates yet. Your booked and pending dates will show up here.</p>
+								</div>
+							</div>
+						</div>
+						<!-- /all events -->
+
+
+						<!-- Calendar view -->
+						<div class="tab-pane fade" id="tab-calendar-view">
+							<div class="card">
+								<div class="card-body">
+									<div id="vendorCalendar"></div>
+								</div>
+							</div>
+						</div>
+						<!-- /calendar view -->
+
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+
+	<!-- FullCalendar -->
+	<link th:href="@{/assets/css/fullcalendar.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/vendor/ui/fullcalendar/main.min.js}"></script>
+	<script th:utext="'const calendarEvents = ' + ${calendarEventsJson} + ';'"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var calendarEl = document.getElementById('vendorCalendar');
+			var calendar;
+
+			if (calendarEl && typeof FullCalendar !== 'undefined') {
+				calendar = new FullCalendar.Calendar(calendarEl, {
+					headerToolbar: {
+						left: 'prev,next today',
+						center: 'title',
+						right: 'dayGridMonth,dayGridWeek,dayGridDay'
+					},
+					dayMaxEvents: true,
+					events: calendarEvents
+				});
+				calendar.render();
+			}
+
+			// FullCalendar can't measure a hidden tab-pane on init - re-measure
+			// once the Calendar tab is actually shown.
+			var calendarTabLink = document.querySelector('a[href="#tab-calendar-view"]');
+			if (calendarTabLink && calendar) {
+				calendarTabLink.addEventListener('shown.bs.tab', function () {
+					calendar.updateSize();
+				});
+			}
+		});
+	</script>
+	<!-- /FullCalendar -->
+
+</body>
+</html>

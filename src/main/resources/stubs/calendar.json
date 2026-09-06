@@ -1,0 +1,92 @@
+[
+  {
+    "eventId": 507,
+    "eventName": "Villanueva Anniversary Dinner",
+    "eventDatetime": "2026-08-05T19:00:00Z",
+    "endDatetime": null,
+    "status": "CANCELLED",
+    "vendorNames": null,
+    "plannerName": "Rico Villanueva"
+  },
+  {
+    "eventId": 509,
+    "eventName": "Site Visit - Santos Corp Venue",
+    "eventDatetime": "2026-09-15T09:00:00Z",
+    "endDatetime": null,
+    "status": "INQUIRY",
+    "vendorNames": null,
+    "plannerName": "Marga Santos"
+  },
+  {
+    "eventId": 510,
+    "eventName": "Consultation Call - New Client",
+    "eventDatetime": "2026-09-15T13:00:00Z",
+    "endDatetime": null,
+    "status": "INQUIRY",
+    "vendorNames": null,
+    "plannerName": "Unassigned"
+  },
+  {
+    "eventId": 511,
+    "eventName": "Package Delivery - Reyes Family",
+    "eventDatetime": "2026-09-15T16:00:00Z",
+    "endDatetime": null,
+    "status": "BOOKED",
+    "vendorNames": null,
+    "plannerName": "Divine Reyes"
+  },
+  {
+    "eventId": 504,
+    "eventName": "Rodriguez Engagement Party",
+    "eventDatetime": "2026-09-20T17:00:00Z",
+    "endDatetime": null,
+    "status": "BOOKED",
+    "vendorNames": null,
+    "plannerName": "Ivs Phil"
+  },
+  {
+    "eventId": 505,
+    "eventName": "Reyes Family Reunion",
+    "eventDatetime": "2026-10-24T12:00:00Z",
+    "endDatetime": null,
+    "status": "INQUIRY",
+    "vendorNames": null,
+    "plannerName": "Divine Reyes"
+  },
+  {
+    "eventId": 506,
+    "eventName": "Ramos Product Launch",
+    "eventDatetime": "2026-10-30T18:00:00Z",
+    "endDatetime": null,
+    "status": "INQUIRY",
+    "vendorNames": null,
+    "plannerName": "Nico Ramos"
+  },
+  {
+    "eventId": 508,
+    "eventName": "Rodriguez Wedding - Setup & Teardown",
+    "eventDatetime": "2026-11-11T08:00:00Z",
+    "endDatetime": "2026-11-14T00:00:00Z",
+    "status": "BOOKED",
+    "vendorNames": null,
+    "plannerName": "Ivs Phil"
+  },
+  {
+    "eventId": 501,
+    "eventName": "Rodriguez Wedding Reception",
+    "eventDatetime": "2026-11-12T15:00:00Z",
+    "endDatetime": null,
+    "status": "BOOKED",
+    "vendorNames": null,
+    "plannerName": "Ivs Phil"
+  },
+  {
+    "eventId": 502,
+    "eventName": "Santos Corp Year-End Gala",
+    "eventDatetime": "2026-12-18T18:00:00Z",
+    "endDatetime": null,
+    "status": "INQUIRY",
+    "vendorNames": null,
+    "plannerName": "Marga Santos"
+  }
+]

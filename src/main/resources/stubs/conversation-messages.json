@@ -1,0 +1,200 @@
+{
+  "1": [
+    {
+      "id": 1,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Hi Marga! Thanks for reaching out about the Year-End Gala.",
+      "createdAt": "2026-08-29T08:30:00Z"
+    },
+    {
+      "id": 2,
+      "senderUserId": 104,
+      "senderName": "Marga Santos",
+      "targetDate": null,
+      "body": "Hi Ian! We're looking at around 300 guests for the gala.",
+      "createdAt": "2026-08-29T09:10:00Z"
+    },
+    {
+      "id": 3,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Got it. Our Corporate Event Package should cover staging and AV for that size.",
+      "createdAt": "2026-08-29T09:20:00Z"
+    },
+    {
+      "id": 4,
+      "senderUserId": 104,
+      "senderName": "Marga Santos",
+      "targetDate": null,
+      "body": "Can you also handle the stage backdrop, or should we source that separately?",
+      "createdAt": "2026-09-01T20:14:00Z"
+    }
+  ],
+  "2": [
+    {
+      "id": 1,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Hi Ivs! Excited to be part of the wedding reception.",
+      "createdAt": "2026-08-24T10:00:00Z"
+    },
+    {
+      "id": 2,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Same here! When do you need the deposit by?",
+      "createdAt": "2026-08-24T10:30:00Z"
+    },
+    {
+      "id": 3,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "A 30% deposit within a week of booking secures the date.",
+      "createdAt": "2026-08-24T10:35:00Z"
+    },
+    {
+      "id": 4,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Perfect, the deposit has been sent. Thank you!",
+      "createdAt": "2026-08-30T15:02:00Z"
+    }
+  ],
+  "3": [
+    {
+      "id": 1,
+      "senderUserId": 110,
+      "senderName": "Divine Reyes",
+      "targetDate": null,
+      "body": "Hi, I saw your Essential Reception Package online.",
+      "createdAt": "2026-08-31T13:20:00Z"
+    },
+    {
+      "id": 2,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Hi Divine! Yes, that one covers venue styling for up to 100 guests.",
+      "createdAt": "2026-08-31T14:00:00Z"
+    },
+    {
+      "id": 3,
+      "senderUserId": 110,
+      "senderName": "Divine Reyes",
+      "targetDate": null,
+      "body": "What's included in the standard package price?",
+      "createdAt": "2026-09-01T09:55:00Z"
+    }
+  ],
+  "4": [
+    {
+      "id": 1,
+      "senderUserId": 107,
+      "senderName": "Carlo Dizon",
+      "targetDate": null,
+      "body": "Hi! Interested in decor for a debut celebration.",
+      "createdAt": "2026-08-27T19:45:00Z"
+    },
+    {
+      "id": 2,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Congrats in advance! How many guests are you expecting?",
+      "createdAt": "2026-08-27T19:50:00Z"
+    },
+    {
+      "id": 3,
+      "senderUserId": 107,
+      "senderName": "Carlo Dizon",
+      "targetDate": null,
+      "body": "We'll get back to you once we finalize the guest count.",
+      "createdAt": "2026-08-27T20:05:00Z"
+    }
+  ],
+  "5": [
+    {
+      "id": 1,
+      "senderUserId": 113,
+      "senderName": "Nico Ramos",
+      "targetDate": null,
+      "body": "Hi! Do you have availability the last week of October?",
+      "createdAt": "2026-09-02T07:12:00Z"
+    }
+  ],
+  "6": [
+    {
+      "id": 1,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Hi Ivs! Here's the quotation PDF for the debut - let me know if the price works for you.",
+      "createdAt": "2026-08-31T08:50:00Z"
+    },
+    {
+      "id": 2,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Looks good, booking it now.",
+      "createdAt": "2026-09-01T14:10:00Z"
+    },
+    {
+      "id": 3,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Sent the payment screenshot just now - let me know once you've confirmed it!",
+      "createdAt": "2026-09-01T14:25:00Z"
+    }
+  ],
+  "7": [
+    {
+      "id": 1,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Hi Ivs! Here's the quotation for your mom's 60th - let me know if the price works.",
+      "createdAt": "2026-08-20T11:25:00Z"
+    },
+    {
+      "id": 2,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Looks great, booking it and sending payment now.",
+      "createdAt": "2026-08-22T16:20:00Z"
+    },
+    {
+      "id": 3,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Sent the payment screenshot - let me know once it's confirmed!",
+      "createdAt": "2026-08-22T16:22:00Z"
+    },
+    {
+      "id": 4,
+      "senderUserId": 9001,
+      "senderName": "Ian Orozco",
+      "targetDate": null,
+      "body": "Thanks! The photo you sent is a bit blurry though - I can't clearly read the amount or reference number. Could you upload another, clearer screenshot so I can verify it before approving?",
+      "createdAt": "2026-08-22T16:35:00Z"
+    },
+    {
+      "id": 5,
+      "senderUserId": 101,
+      "senderName": "Ivs Phil",
+      "targetDate": null,
+      "body": "Sure, uploading a clearer one now.",
+      "createdAt": "2026-08-22T16:38:00Z"
+    }
+  ]
+}

@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Account Settings - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('settings')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Account Settings</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Account Settings</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${settingsSaved}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Your account settings have been saved. <span class="text-muted">(stub only for now)</span>
+					</div>
+
+					<div th:if="${settingsError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${settingsError}">Error</span>
+					</div>
+
+					<div th:if="${paymentMethodAdded}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Your payment method has been submitted for review. <span class="text-muted">(stub only for now)</span>
+					</div>
+
+					<div th:if="${legalDocumentAdded}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Document added. <span class="text-muted">(stub only for now - won't appear in the list below)</span>
+					</div>
+
+					<div th:if="${legalDocumentRemoved}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Document removed. <span class="text-muted">(stub only for now)</span>
+					</div>
+
+					<!-- Tabs -->
+					<ul class="nav nav-tabs mb-3">
+						<li class="nav-item">
+							<a href="#tab-business-info" class="nav-link active" data-bs-toggle="tab">
+								<i class="ph-storefront me-2"></i>
+								Business Info &amp; Credentials
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#tab-service-scope" class="nav-link" data-bs-toggle="tab">
+								<i class="ph-ruler me-2"></i>
+								Service Scope &amp; Metrics
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#tab-policies" class="nav-link" data-bs-toggle="tab">
+								<i class="ph-shield-check me-2"></i>
+								Marketplace Escrow &amp; Policies
+							</a>
+						</li>
+						<li class="nav-item">
+							<a href="#tab-payment-methods" class="nav-link" data-bs-toggle="tab">
+								<i class="ph-qr-code me-2"></i>
+								Payment Methods
+							</a>
+						</li>
+					</ul>
+					<!-- /tabs -->
+
+					<form th:action="@{/vendor/settings}" th:object="${vendorSettingsForm}" method="post" enctype="multipart/form-data">
+
+						<div class="tab-content">
+
+							<!-- Business Info & Credentials -->
+							<div class="tab-pane fade show active" id="tab-business-info">
+								<div class="card">
+									<div class="card-header">
+										<h6 class="mb-0">Business Info &amp; Credentials</h6>
+									</div>
+									<div class="card-body">
+
+										<div class="mb-3">
+											<label class="form-label">Business name</label>
+											<div class="form-control-feedback form-control-feedback-start">
+												<input type="text" th:field="*{businessName}" class="form-control" placeholder="Ian's Premium Events">
+												<div class="form-control-feedback-icon">
+													<i class="ph-storefront text-muted"></i>
+												</div>
+											</div>
+										</div>
+
+										<div class="mb-3">
+											<label class="form-label">Business description</label>
+											<textarea th:field="*{description}" rows="2" class="form-control" placeholder="A short tagline describing what your business offers."></textarea>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Owner name</label>
+													<div class="form-control-feedback form-control-feedback-start">
+														<input type="text" th:field="*{ownerName}" class="form-control" placeholder="Ian Orozco">
+														<div class="form-control-feedback-icon">
+															<i class="ph-user-circle text-muted"></i>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Business type</label>
+													<select th:field="*{businessType}" class="form-select">
+														<option value="">Select a type</option>
+														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
+													</select>
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Primary category</label>
+													<select th:field="*{primaryCategory}" class="form-select">
+														<option value="">Select a category</option>
+														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
+													</select>
+													<div class="fs-sm text-muted mt-1">The main category shown on your storefront - can differ from your business type above.</div>
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Contact email</label>
+													<div class="form-control-feedback form-control-feedback-start">
+														<input type="email" th:field="*{contactEmail}" class="form-control" placeholder="business@example.com">
+														<div class="form-control-feedback-icon">
+															<i class="ph-at text-muted"></i>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Phone number</label>
+													<div class="form-control-feedback form-control-feedback-start">
+														<input type="tel" th:field="*{phoneNumber}" class="form-control" placeholder="+63 917 123 4567">
+														<div class="form-control-feedback-icon">
+															<i class="ph-phone text-muted"></i>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Address</h6>
+
+										<div class="mb-3">
+											<label class="form-label">Address line 1</label>
+											<input type="text" th:field="*{addressLine1}" class="form-control">
+										</div>
+
+										<div class="mb-3">
+											<label class="form-label">Address line 2</label>
+											<input type="text" th:field="*{addressLine2}" class="form-control">
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">City</label>
+													<input type="text" th:field="*{city}" class="form-control">
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Province</label>
+													<select th:field="*{state}" class="form-select">
+														<option value="">Select a province</option>
+														<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
+													</select>
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-0">
+													<label class="form-label">Postal code</label>
+													<input type="text" th:field="*{postalCode}" class="form-control">
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-0">
+													<label class="form-label">Country</label>
+													<select th:field="*{country}" class="form-select">
+														<option value="Philippines">Philippines</option>
+													</select>
+												</div>
+											</div>
+										</div>
+
+										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Documents</h6>
+										<p class="text-muted fs-sm mb-3">What you uploaded at onboarding. Replace any of these to update what's on file - the ID card, selfie, and business permit stay private and are only visible to EventsRUs admins.</p>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Logo</label>
+													<div class="mb-2" th:if="${settingsDocuments.logoImageUrl() != null}">
+														<a th:href="${settingsDocuments.logoImageUrl()}" target="_blank" class="btn btn-light btn-sm">
+															<i class="ph-image me-1"></i>
+															View current logo
+														</a>
+													</div>
+													<p class="text-muted fs-sm mb-2" th:if="${settingsDocuments.logoImageUrl() == null}">No logo uploaded yet.</p>
+													<input type="file" name="logo" class="form-control" accept="image/*">
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">ID card</label>
+													<div class="mb-2" th:if="${settingsDocuments.idCardUrl() != null}">
+														<a th:href="${settingsDocuments.idCardUrl()}" target="_blank" class="btn btn-light btn-sm">
+															<i class="ph-identification-card me-1"></i>
+															View current file
+														</a>
+													</div>
+													<p class="text-muted fs-sm mb-2" th:if="${settingsDocuments.idCardUrl() == null}">No file uploaded yet.</p>
+													<input type="file" name="idCard" class="form-control" accept="image/*">
+												</div>
+											</div>
+										</div>
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-0">
+													<label class="form-label">Selfie</label>
+													<div class="mb-2" th:if="${settingsDocuments.selfieUrl() != null}">
+														<a th:href="${settingsDocuments.selfieUrl()}" target="_blank" class="btn btn-light btn-sm">
+															<i class="ph-user-focus me-1"></i>
+															View current file
+														</a>
+													</div>
+													<p class="text-muted fs-sm mb-2" th:if="${settingsDocuments.selfieUrl() == null}">No file uploaded yet.</p>
+													<input type="file" name="selfie" class="form-control" accept="image/*">
+												</div>
+											</div>
+										</div>
+
+										<!-- Legal Documents - a business can have several of these
+										     (DTI, SEC, Mayor's Permit, Barangay Clearance, BIR, ...),
+										     so this replaced the single "Business permit" upload above -
+										     each is added/removed one at a time, not part of this
+										     page's big Save Changes submit (see VendorLegalDocumentController). -->
+										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4 d-flex align-items-center">
+											Legal Documents
+											<span class="fs-sm fw-normal text-muted ms-2">DTI, SEC, Mayor's Permit, Barangay Clearance, BIR, etc.</span>
+											<button type="button" class="btn btn-primary btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#addLegalDocumentModal">
+												<i class="ph-plus me-1"></i>
+												Add Document
+											</button>
+										</h6>
+
+										<div class="row g-3" th:if="${not #lists.isEmpty(legalDocuments)}">
+											<div class="col-lg-4 col-md-6" th:each="doc : ${legalDocuments}">
+												<div class="border rounded p-3">
+													<div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+														<span class="fw-semibold fs-sm text-truncate" style="min-width:0;" th:text="${doc.label() != null} ? ${doc.label()} : ${doc.documentType().getLabel()}">Document type</span>
+														<form th:action="@{'/vendor/settings/legal-documents/' + ${doc.id()} + '/delete'}" method="post" class="flex-shrink-0">
+															<button type="submit" class="btn btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width:28px;height:28px;" title="Remove">
+																<i class="ph-x fs-sm"></i>
+															</button>
+														</form>
+													</div>
+													<a th:href="${doc.url()}" target="_blank" class="btn btn-light btn-sm">
+														<i class="ph-file-text me-1"></i>
+														View file
+													</a>
+												</div>
+											</div>
+										</div>
+										<p class="text-muted fs-sm mb-0" th:if="${#lists.isEmpty(legalDocuments)}">No legal documents uploaded yet.</p>
+
+									</div>
+								</div>
+							</div>
+							<!-- /business info & credentials -->
+
+
+							<!-- Service Scope & Metrics -->
+							<div class="tab-pane fade" id="tab-service-scope">
+								<div class="card">
+									<div class="card-header">
+										<h6 class="mb-0">Service Scope &amp; Metrics</h6>
+									</div>
+									<div class="card-body">
+
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Lead time (days)</label>
+													<input type="number" min="0" th:field="*{leadTimeDays}" class="form-control" placeholder="e.g., 14">
+												</div>
+											</div>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Max customers per day</label>
+													<input type="number" min="0" th:field="*{maxCustomersPerDay}" class="form-control" placeholder="e.g., 3">
+												</div>
+											</div>
+										</div>
+
+										<div class="mb-3">
+											<label class="form-label">Operating area</label>
+											<select th:field="*{operatingAreas}" multiple="multiple" class="form-control multiselect-operating-areas"
+												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+												data-filter-placeholder="Search for a province..." data-number-displayed="999">
+												<option th:each="area : ${operatingAreaOptions}" th:value="${area}" th:text="${area}"></option>
+											</select>
+											<div class="fs-sm text-muted mt-1">Search and select every province you serve, or select "Entire Philippines" if you operate nationwide.</div>
+										</div>
+
+										<div class="mb-0">
+											<label class="form-label">Event types you cater to</label>
+											<select th:field="*{cateredEventTypes}" multiple="multiple" class="form-control multiselect-event-types"
+												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+												data-filter-placeholder="Search for an event type..." data-number-displayed="999">
+												<option th:each="type : ${eventTypeOptions}" th:value="${type}" th:text="${type.label}"></option>
+											</select>
+											<div class="fs-sm text-muted mt-1">Select every type of event you take on - this helps planners find you for the right occasions.</div>
+										</div>
+
+									</div>
+								</div>
+							</div>
+							<!-- /service scope & metrics -->
+
+
+							<!-- Marketplace Escrow & Policies -->
+							<div class="tab-pane fade" id="tab-policies">
+								<div class="card">
+									<div class="card-header">
+										<h6 class="mb-0">Marketplace Escrow &amp; Policies</h6>
+									</div>
+									<div class="card-body">
+
+										<p class="text-muted fs-sm mb-4">Upload these as PDF documents - planners can view them directly on your storefront. Only PDF files are accepted.</p>
+
+										<div class="mb-4">
+											<label class="form-label">Cancellation policy</label>
+
+											<div class="mb-2" th:if="${settingsDocuments.cancellationPolicyUrl() != null}">
+												<a th:href="${settingsDocuments.cancellationPolicyUrl()}" target="_blank" class="btn btn-light btn-sm">
+													<i class="ph-file-pdf me-1"></i>
+													View current file
+												</a>
+											</div>
+											<p class="text-muted fs-sm mb-2" th:if="${settingsDocuments.cancellationPolicyUrl() == null}">No file uploaded yet.</p>
+
+											<input type="file" name="cancellationPolicyFile" accept="application/pdf" onpaste="return false;" class="form-control">
+											<div class="fs-sm text-muted mt-1">PDF only. Uploading a new file replaces the current one.</div>
+										</div>
+
+										<div class="mb-0">
+											<label class="form-label">Refund terms</label>
+
+											<div class="mb-2" th:if="${settingsDocuments.refundTermsUrl() != null}">
+												<a th:href="${settingsDocuments.refundTermsUrl()}" target="_blank" class="btn btn-light btn-sm">
+													<i class="ph-file-pdf me-1"></i>
+													View current file
+												</a>
+											</div>
+											<p class="text-muted fs-sm mb-2" th:if="${settingsDocuments.refundTermsUrl() == null}">No file uploaded yet.</p>
+
+											<input type="file" name="refundTermsFile" accept="application/pdf" onpaste="return false;" class="form-control">
+											<div class="fs-sm text-muted mt-1">PDF only. Uploading a new file replaces the current one.</div>
+										</div>
+
+									</div>
+								</div>
+							</div>
+							<!-- /marketplace escrow & policies -->
+
+
+							<!-- Payment Methods -->
+							<div class="tab-pane fade" id="tab-payment-methods">
+								<div class="card">
+									<div class="card-header">
+										<h6 class="mb-0">Payment Methods</h6>
+									</div>
+									<div class="card-body">
+
+										<div class="alert alert-info">
+											<i class="ph-info me-2"></i>
+											All payment methods are subject to verification before they go live on your storefront. Newly added QR codes stay hidden from planners until our team approves them.
+										</div>
+
+										<div class="mb-4">
+											<label class="form-label">Payment instructions</label>
+											<textarea th:field="*{paymentInstructions}" rows="3" class="form-control" placeholder="e.g., GCash and Maya are preferred for the down payment. Bank transfer is available for larger balances."></textarea>
+											<div class="fs-sm text-muted mt-1">Shown to planners alongside your QR codes on your storefront.</div>
+										</div>
+
+										<h6 class="fw-semibold border-bottom pb-2 mb-3 d-flex align-items-center">
+											QR Codes
+											<button type="button" class="btn btn-primary btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#addPaymentMethodModal">
+												<i class="ph-plus me-1"></i>
+												Add Payment Method
+											</button>
+										</h6>
+
+										<div class="row" th:if="${not #lists.isEmpty(paymentMethods)}">
+											<div class="col-lg-4 col-md-6" th:each="method : ${paymentMethods}">
+												<div class="card">
+													<div class="card-body text-center">
+														<div class="d-flex align-items-center justify-content-center bg-light rounded mb-3 mx-auto" style="width:120px;height:120px;">
+															<i class="ph-qr-code ph-2x text-muted"></i>
+														</div>
+														<h6 class="mb-2" th:text="${method.label()}">Payment method</h6>
+														<span class="badge"
+															th:classappend="${method.status().name() == 'APPROVED'} ? 'bg-success' : (${method.status().name() == 'REJECTED'} ? 'bg-danger' : 'bg-warning')"
+															th:text="${method.status()}">STATUS</span>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<p class="text-muted mb-0" th:if="${#lists.isEmpty(paymentMethods)}">No payment methods yet. Add a QR code so planners can pay you directly once it's approved.</p>
+
+									</div>
+								</div>
+							</div>
+							<!-- /payment methods -->
+
+						</div>
+
+						<div class="d-flex justify-content-end mt-3">
+							<button type="submit" class="btn btn-primary">
+								<i class="ph-check-circle me-2"></i>
+								Save Changes
+							</button>
+						</div>
+
+					</form>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+
+	<!-- Add payment method modal -->
+	<div class="modal fade" id="addPaymentMethodModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+
+				<form th:action="@{/vendor/settings/payment-methods}" th:object="${vendorPaymentMethodForm}" method="post" enctype="multipart/form-data">
+					<div class="modal-header">
+						<h5 class="modal-title">Add Payment Method</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label">Label</label>
+							<input type="text" th:field="*{label}" class="form-control" placeholder="e.g., GCash, Maya, BDO - Savings Account" required>
+						</div>
+
+						<div class="mb-0">
+							<label class="form-label">QR code image</label>
+							<input type="file" name="qrImage" class="form-control" accept="image/png,image/jpeg" required>
+							<div class="fs-sm text-muted mt-1">PNG or JPEG only. Held for review before it appears on your storefront.</div>
+						</div>
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-primary">
+							<i class="ph-check-circle me-2"></i>
+							Add Payment Method
+						</button>
+					</div>
+				</form>
+
+			</div>
+		</div>
+	</div>
+	<!-- /add payment method modal -->
+
+
+	<!-- Add legal document modal -->
+	<div class="modal fade" id="addLegalDocumentModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+
+				<form th:action="@{/vendor/settings/legal-documents}" th:object="${vendorLegalDocumentForm}" method="post" enctype="multipart/form-data">
+					<div class="modal-header">
+						<h5 class="modal-title">Add Legal Document</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+
+					<div class="modal-body">
+						<div class="mb-3">
+							<label class="form-label">Document type</label>
+							<select th:field="*{documentType}" class="form-select">
+								<option th:each="type : ${documentTypes}" th:value="${type}" th:text="${type.getLabel()}"></option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">Label <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+							<input type="text" th:field="*{label}" class="form-control" placeholder="e.g., Fire Safety Certificate">
+						</div>
+						<div class="mb-0">
+							<label class="form-label">Document file</label>
+							<input type="file" name="file" class="form-control" accept="image/*,application/pdf" required>
+							<div class="fs-sm text-muted mt-1">Image or PDF. Shown to planners on your storefront - this is business paperwork, not a personal document.</div>
+						</div>
+					</div>
+
+					<div class="modal-footer">
+						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+						<button type="submit" class="btn btn-primary">
+							<i class="ph-check-circle me-2"></i>
+							Add Document
+						</button>
+					</div>
+				</form>
+
+			</div>
+		</div>
+	</div>
+	<!-- /add legal document modal -->
+
+
+	<!-- Operating area multiselect -->
+	<link th:href="@{/assets/css/multiselect.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/forms/selects/bootstrap_multiselect.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+				jQuery('.multiselect-operating-areas').multiselect();
+				jQuery('.multiselect-event-types').multiselect();
+			}
+		});
+	</script>
+	<!-- /operating area multiselect -->
+
+</body>
+</html>

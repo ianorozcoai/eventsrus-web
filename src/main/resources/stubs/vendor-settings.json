@@ -1,0 +1,23 @@
+{
+  "businessName": "Ian's Premium Events",
+  "description": "Premium event styling and decor for weddings, corporate galas, and milestone celebrations.",
+  "ownerName": "Ian Orozco",
+  "businessType": "DECORATION_PRODUCTION",
+  "contactEmail": "ianorozco22@gmail.com",
+  "phoneNumber": "+63 917 123 4567",
+  "addressLine1": "123 Kalayaan Avenue",
+  "addressLine2": "Diliman",
+  "city": "Quezon City",
+  "state": "Metro Manila (NCR)",
+  "postalCode": "1101",
+  "country": "Philippines",
+  "primaryCategory": "DECORATION_PRODUCTION",
+  "maxGuestCapacity": 300,
+  "basePrice": 35000.00,
+  "leadTimeDays": 14,
+  "storefrontOverview": "Full-service event styling and coordination for weddings, corporate events, and celebrations across Metro Manila. From intimate garden ceremonies to 300-guest galas, we handle decor, staging, and on-site coordination from start to finish.",
+  "maxCustomersPerDay": 3,
+  "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Laguna", "Rizal"],
+  "cateredEventTypes": ["WEDDING", "ANNIVERSARY", "BIRTHDAY", "PARTY"],
+  "paymentInstructions": "GCash and Maya are preferred for the down payment; bank transfer is available for balances over PHP 20,000. Please send proof of payment via the messages tab."
+}

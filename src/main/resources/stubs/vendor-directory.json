@@ -1,0 +1,98 @@
+[
+  {
+    "businessName": "Ian's Premium Events",
+    "businessType": "DECORATION_PRODUCTION",
+    "city": "Quezon City",
+    "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Laguna", "Rizal"],
+    "description": "Full-service event styling and coordination for weddings, corporate events, and celebrations.",
+    "slug": "ians-premium-events"
+  },
+  {
+    "businessName": "Manila Grand Ballroom",
+    "businessType": "VENUE",
+    "city": "Pasay",
+    "operatingAreas": ["Metro Manila (NCR)"],
+    "description": "A 500-guest ballroom with in-house lighting rigs and a bridal suite.",
+    "slug": "manila-grand-ballroom"
+  },
+  {
+    "businessName": "Fiesta Feast Catering",
+    "businessType": "CATERING",
+    "city": "Makati",
+    "operatingAreas": ["Metro Manila (NCR)", "Cavite", "Rizal"],
+    "description": "Buffet and plated Filipino-fusion catering, from intimate dinners to 300-guest galas.",
+    "slug": "fiesta-feast-catering"
+  },
+  {
+    "businessName": "Lens & Light Studio",
+    "businessType": "PHOTO_AND_VIDEO",
+    "city": "Quezon City",
+    "operatingAreas": ["Entire Philippines"],
+    "description": "Destination and same-day-edit wedding photography and videography.",
+    "slug": "lens-light-studio"
+  },
+  {
+    "businessName": "SoundWave Entertainment",
+    "businessType": "ENTERTAINMENT",
+    "city": "Taguig",
+    "operatingAreas": ["Entire Philippines"],
+    "description": "DJs, live bands, and full sound/lighting rigs for weddings, parties, and corporate events.",
+    "slug": "soundwave-entertainment"
+  },
+  {
+    "businessName": "Cebu Garden Pavilion",
+    "businessType": "VENUE",
+    "city": "Cebu City",
+    "operatingAreas": ["Cebu", "Bohol"],
+    "description": "An open-air garden venue with a covered pavilion for up to 250 guests.",
+    "slug": "cebu-garden-pavilion"
+  },
+  {
+    "businessName": "Sugbo Lechon & Catering",
+    "businessType": "CATERING",
+    "city": "Cebu City",
+    "operatingAreas": ["Cebu"],
+    "description": "Whole-roast lechon and Visayan specialties, plated or buffet style.",
+    "slug": "sugbo-lechon-catering"
+  },
+  {
+    "businessName": "Davao Bloom Florals",
+    "businessType": "DECORATION_PRODUCTION",
+    "city": "Davao City",
+    "operatingAreas": ["Davao del Sur", "Davao del Norte"],
+    "description": "Floral styling and centerpieces for weddings, debuts, and corporate launches.",
+    "slug": "davao-bloom-florals"
+  },
+  {
+    "businessName": "Iloilo Riverside Events Place",
+    "businessType": "VENUE",
+    "city": "Iloilo City",
+    "operatingAreas": ["Iloilo"],
+    "description": "A riverside function hall with catering kitchen access, seats up to 180 guests.",
+    "slug": "iloilo-riverside-events-place"
+  },
+  {
+    "businessName": "Laguna Lakeview Catering Co.",
+    "businessType": "CATERING",
+    "city": "Santa Rosa",
+    "operatingAreas": ["Laguna", "Cavite", "Batangas"],
+    "description": "Farm-to-table Filipino and continental menus for garden and lakeside weddings.",
+    "slug": "laguna-lakeview-catering-co"
+  },
+  {
+    "businessName": "Pampanga Fireworks & Effects",
+    "businessType": "ENTERTAINMENT",
+    "city": "San Fernando",
+    "operatingAreas": ["Pampanga", "Bulacan", "Tarlac"],
+    "description": "Pyrotechnics, cold sparklers, and stage effects for receptions and grand celebrations.",
+    "slug": "pampanga-fireworks-effects"
+  },
+  {
+    "businessName": "Batangas Beachfront Villas",
+    "businessType": "VENUE",
+    "city": "Nasugbu",
+    "operatingAreas": ["Batangas", "Cavite"],
+    "description": "A beachfront villa complex for intimate weddings and milestone celebrations, up to 100 guests.",
+    "slug": "batangas-beachfront-villas"
+  }
+]

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Messages - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('messages')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Messages</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Messages</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${messagesError}" class="alert alert-warning alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${messagesError}">Error</span>
+						<a th:href="@{/vendor/subscription}" class="alert-link">Renew now</a>
+					</div>
+
+					<div class="card mb-0" th:if="${not #lists.isEmpty(conversations)}">
+						<div class="d-flex messenger-shell">
+
+							<!-- Chat list -->
+							<div class="border-end d-flex flex-column flex-shrink-0 messenger-list-pane">
+								<div class="p-3 border-bottom">
+									<h5 class="fw-bold mb-3">Chats</h5>
+									<div class="form-control-feedback form-control-feedback-start">
+										<input type="text" class="form-control rounded-pill bg-light border-0" placeholder="Search Messenger" disabled>
+										<div class="form-control-feedback-icon">
+											<i class="ph-magnifying-glass text-muted"></i>
+										</div>
+									</div>
+								</div>
+
+								<div class="flex-grow-1 overflow-auto">
+									<a th:each="conversation : ${conversations}"
+										th:href="@{/vendor/messages(conversationId=${conversation.id()})}"
+										class="d-flex align-items-center text-decoration-none text-body p-3 border-bottom"
+										th:classappend="${selectedConversation != null and selectedConversation.id() == conversation.id()} ? 'bg-light'">
+
+										<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:48px;height:48px;"
+											th:classappend="${conversation.id() % 3 == 0} ? 'bg-indigo' : (${conversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
+											th:text="${#strings.substring(conversation.otherPartyName(), 0, 1)}">P</div>
+
+										<div class="ms-3 flex-grow-1 overflow-hidden">
+											<div class="d-flex align-items-center">
+												<span class="fw-semibold text-truncate" th:text="${conversation.otherPartyName()}">Planner</span>
+												<span class="text-muted fs-sm ms-auto flex-shrink-0" th:text="${#temporals.format(conversation.lastMessageAt(), 'h:mm a')}">-</span>
+											</div>
+											<div class="text-truncate" th:classappend="${conversation.unreadCount() > 0} ? 'fw-semibold' : 'text-muted'" th:text="${conversation.lastMessagePreview()}">Last message preview</div>
+										</div>
+
+										<span class="bg-primary rounded-circle ms-2 flex-shrink-0" style="width:10px;height:10px;" th:if="${conversation.unreadCount() > 0}"></span>
+									</a>
+								</div>
+							</div>
+							<!-- /chat list -->
+
+
+							<!-- Thread -->
+							<div class="d-flex flex-column flex-grow-1" th:if="${selectedConversation != null}">
+
+								<div class="d-flex align-items-center p-3 border-bottom">
+									<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:40px;height:40px;"
+										th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
+										th:text="${#strings.substring(selectedConversation.otherPartyName(), 0, 1)}">P</div>
+									<div class="ms-3">
+										<div class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Planner name</div>
+										<div class="text-muted fs-sm" th:text="${selectedConversation.eventName()}">Event</div>
+									</div>
+								</div>
+
+								<div class="flex-grow-1 overflow-auto p-3">
+
+									<div th:if="${replySent}" class="alert alert-success alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										Your reply has been sent. <span class="text-muted">(stub only for now - won't appear in the thread below)</span>
+									</div>
+
+									<th:block th:each="message, iter : ${thread}">
+
+										<div class="text-center my-3"
+											th:if="${iter.index == 0 or not #temporals.format(message.createdAt(), 'yyyy-MM-dd').equals(#temporals.format(thread[iter.index - 1].createdAt(), 'yyyy-MM-dd'))}">
+											<span class="text-muted fs-sm" th:text="${#temporals.format(message.createdAt(), 'EEE h:mm a')}">Date</span>
+										</div>
+
+										<div class="d-flex mb-2" th:classappend="${message.senderUserId() == vendorUserId} ? 'justify-content-end' : 'justify-content-start'">
+
+											<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0 me-2 align-self-end"
+												style="width:28px;height:28px;font-size:.75rem;"
+												th:if="${message.senderUserId() != vendorUserId}"
+												th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
+												th:text="${#strings.substring(message.senderName(), 0, 1)}">P</div>
+
+											<div class="rounded-pill px-3 py-2" style="max-width:60%;"
+												th:classappend="${message.senderUserId() == vendorUserId} ? 'bg-purple text-white' : 'bg-light'"
+												th:text="${message.body()}">Message body</div>
+										</div>
+
+									</th:block>
+
+									<div class="text-center text-muted fs-sm py-4" th:if="${#lists.isEmpty(thread)}">
+										No messages yet in this conversation.
+									</div>
+
+								</div>
+
+								<div class="border-top p-3">
+									<form th:action="@{/vendor/messages/{id}/reply(id=${selectedConversation.id()})}" method="post" class="d-flex align-items-center gap-2">
+										<input type="text" name="body" class="form-control rounded-pill" placeholder="Type a message..." required>
+										<button type="submit" class="btn btn-purple btn-icon rounded-circle flex-shrink-0">
+											<i class="ph-paper-plane-tilt"></i>
+										</button>
+									</form>
+								</div>
+
+							</div>
+							<!-- /thread -->
+
+						</div>
+					</div>
+
+					<div class="card" th:if="${#lists.isEmpty(conversations)}">
+						<div class="card-body text-center py-5">
+							<i class="ph-chat-circle-text ph-3x text-muted mb-3 d-block"></i>
+							<p class="text-muted mb-0">No conversations yet. Messages with planners will show up here.</p>
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

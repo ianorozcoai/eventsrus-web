@@ -1,0 +1,85 @@
+{
+  "vendorUserId": 9002,
+  "businessName": "Manila Grand Ballroom",
+  "ownerName": "Carmela Villanueva",
+  "description": "A 500-guest ballroom in the heart of Pasay with in-house lighting rigs, a bridal suite, and a dedicated event coordination team.",
+  "logoImageUrl": null,
+  "businessType": "VENUE",
+  "city": "Pasay",
+  "state": "Metro Manila (NCR)",
+  "country": "Philippines",
+  "contactEmail": "events@manilagrandballroom.example",
+  "phoneNumber": "+63 917 555 2201",
+  "tierLabel": "Top Tier Vendor",
+  "primaryRegion": "Metro Manila",
+  "rating": 4.8,
+  "bookingsCount": 65,
+  "responseTime": "Within 2 hours",
+  "legalDocuments": [
+    {
+      "id": 6,
+      "documentType": "SEC_REGISTRATION",
+      "label": null,
+      "url": "https://eventsrus-private.s3.amazonaws.com/vendors/9003/legal-document-sec-sample.jpg?X-Amz-Signature=stub",
+      "createdAt": "2026-01-10T09:00:00Z"
+    }
+  ],
+  "identityVerified": false,
+  "galleryCaptions": [
+    "Grand Ballroom Reception Setup",
+    "Bridal Suite",
+    "Stage & Lighting Rig",
+    "Cocktail Hour Foyer"
+  ],
+  "packages": [
+    {
+      "id": 101,
+      "name": "Full Ballroom Rental",
+      "description": "Exclusive use of the grand ballroom for up to 500 guests, includes in-house lighting and sound.",
+      "packageType": "SERVICE",
+      "pricingType": "RANGE",
+      "price": null,
+      "minPrice": 150000.00,
+      "maxPrice": 220000.00,
+      "active": true,
+      "imageCaptions": ["Ballroom Setup", "Stage & Lighting"]
+    },
+    {
+      "id": 102,
+      "name": "Half-Day Reception Package",
+      "description": "4-hour reception rental for up to 250 guests, includes basic staging.",
+      "packageType": "SERVICE",
+      "pricingType": "FIXED",
+      "price": 85000.00,
+      "minPrice": null,
+      "maxPrice": null,
+      "active": true,
+      "imageCaptions": ["Reception Layout"]
+    }
+  ],
+  "reviews": [
+    {
+      "reviewerName": "Ivs Phil",
+      "reviewerInitials": "IP",
+      "reviewerRole": "Wedding Planner",
+      "rating": 5,
+      "quote": "The ballroom looked stunning and the in-house lighting saved us from renting our own rig."
+    },
+    {
+      "reviewerName": "Marga S.",
+      "reviewerInitials": "MS",
+      "reviewerRole": "Corporate Event Organizer",
+      "rating": 5,
+      "quote": "Spacious, professional staff, and the bridal suite was a nice touch even for our corporate event."
+    }
+  ],
+  "paymentInstructions": "GCash preferred for the reservation deposit; bank transfer for the balance.",
+  "paymentMethods": [
+    {
+      "id": 201,
+      "label": "GCash",
+      "qrImageUrl": "https://eventsrus-public.s3.amazonaws.com/vendors/9002/payment-method-gcash-sample.png",
+      "status": "APPROVED"
+    }
+  ]
+}

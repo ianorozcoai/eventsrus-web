@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Vendors - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('vendors')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Vendors</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+					<div class="card">
+						<div class="card-header d-flex align-items-center">
+							<h6 class="mb-0">All Vendors</h6>
+							<span class="badge bg-primary ms-auto" th:text="${#lists.size(vendors)} + ' total'">0 total</span>
+						</div>
+
+						<div class="table-responsive">
+							<table class="table table-hover">
+								<thead>
+									<tr>
+										<th>Business Name</th>
+										<th>Business Type</th>
+										<th>City</th>
+										<th>Operating Areas</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="vendor : ${vendors}">
+										<td th:text="${vendor.businessName()}">Business Name</td>
+										<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
+										<td th:text="${vendor.city()}">City</td>
+										<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
+										<td class="text-end">
+											<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="btn btn-light btn-sm">
+												<i class="ph-storefront me-1"></i> View Storefront
+												<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
+											</a>
+											<span th:unless="${vendor.slug() != null}" class="text-muted fs-sm">No storefront yet</span>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

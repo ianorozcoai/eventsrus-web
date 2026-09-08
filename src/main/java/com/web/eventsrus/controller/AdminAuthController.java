@@ -2,6 +2,7 @@ package com.web.eventsrus.controller;
 
 import com.web.eventsrus.admin.AdminAccountService;
 import com.web.eventsrus.admin.AdminSession;
+import com.web.eventsrus.backend.BackendClient;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class AdminAuthController {
 
     private final AdminAccountService adminAccountService;
+    private final BackendClient backendClient;
 
     // "/admin" and "/admin/" ARE the login page, not just a redirect to one -
     // that's the one URL this module was asked to expose.
@@ -39,6 +41,11 @@ public class AdminAuthController {
             return "admin/login";
         }
         AdminSession.login(session, username);
+        // Best-effort - null (backend unreachable, or the shared key isn't
+        // configured) just means the real-backend admin pages (vendor
+        // verification) show a "backend unavailable" notice instead of
+        // blocking this login. See BackendClient#adminLogin.
+        AdminSession.storeToken(session, backendClient.adminLogin());
         return "redirect:/admin/dashboard";
     }
 

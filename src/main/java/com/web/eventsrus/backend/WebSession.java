@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpSession;
 public final class WebSession {
 
     public static final String TOKEN = "auth.token";
+    public static final String USER_ID = "auth.userId";
     public static final String EMAIL = "auth.email";
     public static final String FIRST_NAME = "auth.firstName";
     public static final String ROLE = "auth.role";
@@ -19,6 +20,14 @@ public final class WebSession {
     public static final String SUBSCRIPTION_EXPIRED = "auth.subscriptionExpired";
     // Shows the paywall modal once per login, not on every page navigation.
     public static final String PAYWALL_SHOWN = "auth.paywallShown";
+    // Shows the "add your first package" nudge modal once per login too -
+    // otherwise it would pop up on every single dashboard visit for as long
+    // as the vendor has zero packages, which gets old fast.
+    public static final String FIRST_PACKAGE_NUDGE_SHOWN = "auth.firstPackageNudgeShown";
+    // Stashed from /vendor/?ref=CODE at login time, carried through Google
+    // sign-in, and attached to the onboarding form if this visitor becomes a
+    // vendor - see AuthWebController#vendorLogin and vendor/onboarding.html.
+    public static final String REFERRAL_CODE = "auth.referralCode";
 
     private WebSession() {
     }
@@ -29,6 +38,10 @@ public final class WebSession {
 
     public static String token(HttpSession session) {
         return (String) session.getAttribute(TOKEN);
+    }
+
+    public static Long userId(HttpSession session) {
+        return session == null ? null : (Long) session.getAttribute(USER_ID);
     }
 
     public static String role(HttpSession session) {
@@ -43,8 +56,20 @@ public final class WebSession {
         return session == null ? null : (String) session.getAttribute(EMAIL);
     }
 
+    public static String referralCode(HttpSession session) {
+        return session == null ? null : (String) session.getAttribute(REFERRAL_CODE);
+    }
+
+    /** Only sets it if not already stashed - a reload of /vendor/ without ?ref= shouldn't wipe an earlier one. */
+    public static void stashReferralCodeIfAbsent(HttpSession session, String code) {
+        if (session.getAttribute(REFERRAL_CODE) == null && code != null && !code.isBlank()) {
+            session.setAttribute(REFERRAL_CODE, code);
+        }
+    }
+
     public static void store(HttpSession session, BackendAuthResponse auth) {
         session.setAttribute(TOKEN, auth.token());
+        session.setAttribute(USER_ID, auth.id());
         session.setAttribute(EMAIL, auth.email());
         session.setAttribute(FIRST_NAME, auth.firstName());
         session.setAttribute(ROLE, auth.role());

@@ -13,4 +13,5 @@ public record SupportTicketMessage(
         String senderName,
         String senderRole,
         String body,
+        String attachmentUrl,
         Instant createdAt) {}

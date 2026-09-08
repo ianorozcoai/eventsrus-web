@@ -40,7 +40,12 @@ public class AuthWebController {
     }
 
     @GetMapping({"/vendor", "/vendor/"})
-    public String vendorLogin(HttpSession session, Model model) {
+    public String vendorLogin(
+            @RequestParam(required = false) String ref, HttpSession session, Model model) {
+        // A referral link (see VendorReferralService) looks like
+        // /vendor/?ref=CODE - stash it now so it survives the Google
+        // sign-in redirect and reaches the onboarding form afterward.
+        WebSession.stashReferralCodeIfAbsent(session, ref);
         if (WebSession.isLoggedIn(session)) {
             return "redirect:" + ("VENDOR".equals(WebSession.role(session)) ? "/vendor/dashboard" : "/vendor/onboarding");
         }

@@ -40,10 +40,13 @@
 										<span class="badge bg-warning text-dark fw-bold px-3 py-2 text-uppercase" style="letter-spacing:.5px;" th:if="${profile.tierLabel() != null}">
 											<i class="ph-trophy me-1"></i> <span th:text="${profile.tierLabel()}">Top Tier Vendor</span>
 										</span>
-										<span class="badge bg-success text-white fw-bold px-3 py-2" th:if="${not #lists.isEmpty(profile.legalDocuments())}">
+										<!--/* Real, admin-reviewed verification (VendorDirectoryService#getPublicProfile
+										     -> profile.isVerified()) - NOT just "has this vendor uploaded an ID card
+										     and selfie". See AdminVendorController for the actual review workflow. */-->
+										<span class="badge bg-success text-white fw-bold px-3 py-2" th:if="${profile.identityVerified()}">
 											<i class="ph-shield-check me-1"></i> Verified Vendor
 										</span>
-										<span class="badge bg-purple text-white fw-bold px-3 py-2" th:if="${#lists.isEmpty(profile.legalDocuments())}">
+										<span class="badge bg-purple text-white fw-bold px-3 py-2" th:unless="${profile.identityVerified()}">
 											<i class="ph-clock me-1"></i> Verification Pending
 										</span>
 									</div>
@@ -51,19 +54,19 @@
 									<h1 class="fw-bold mb-2" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
 									<p class="mb-4 opacity-75" style="max-width:640px;" th:text="${profile.description()}">Description</p>
 
-									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10">
-										<div>
+									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10" th:if="${profile.primaryRegion() != null or (profile.rating() != null and profile.rating() > 0) or profile.responseTime() != null}">
+										<div th:if="${profile.primaryRegion() != null}">
 											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-map-pin me-1"></i> Primary Region</div>
 											<div class="fw-bold" th:text="${profile.primaryRegion()}">Nationwide Coverage</div>
 										</div>
-										<div>
+										<div th:if="${profile.rating() != null and profile.rating() > 0}">
 											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-star me-1"></i> Rating</div>
 											<div class="fw-bold">
 												<span th:text="${profile.rating()}">4.9</span>
 												<span class="opacity-75 fw-normal">(<span th:text="${profile.bookingsCount()}">100</span>+ bookings)</span>
 											</div>
 										</div>
-										<div>
+										<div th:if="${profile.responseTime() != null}">
 											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-lightning me-1"></i> Response</div>
 											<div class="fw-bold" th:text="${profile.responseTime()}">Instantly within 1 hour</div>
 										</div>
@@ -71,8 +74,11 @@
 								</div>
 
 								<div class="col-md-4 text-center">
-									<div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mx-auto" style="width:150px;height:150px;">
-										<span class="fw-bold text-primary" style="font-size:3rem;" th:text="${#strings.substring(profile.businessName(), 0, 1)}">B</span>
+									<div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mx-auto overflow-hidden" style="width:150px;height:150px;">
+										<img th:if="${profile.logoImageUrl() != null}" th:src="${profile.logoImageUrl()}" alt="Logo"
+											class="w-100 h-100" style="object-fit:cover;">
+										<span th:unless="${profile.logoImageUrl() != null}" class="fw-bold text-primary" style="font-size:3rem;"
+											th:text="${#strings.substring(profile.businessName(), 0, 1)}">B</span>
 									</div>
 								</div>
 
@@ -87,19 +93,27 @@
 						<!-- Main column: gallery + packages -->
 						<div class="col-lg-8">
 
-							<!-- Gallery -->
+							<!-- Gallery - every photo across every package this vendor has,
+							     combined (see VendorPackageImageService#listAllForStorefront).
+							     Each thumbnail is a .lightbox-trigger (see the shared lightbox
+							     script at the bottom of this page), same as the per-package
+							     thumbnails further down - clicking any photo on this whole
+							     page opens one continuous left/right browsing session across
+							     all of them, not scoped to just this section. -->
 							<div class="card mb-3">
 								<div class="card-header">
 									<h6 class="mb-0">Gallery</h6>
 								</div>
-								<div class="card-body">
+								<div class="card-body text-center py-5" th:if="${#lists.isEmpty(profile.galleryImages())}">
+									<i class="ph-image ph-3x text-muted mb-3 d-block"></i>
+									<p class="text-muted mb-0">No photos yet.</p>
+								</div>
+								<div class="card-body" th:if="${not #lists.isEmpty(profile.galleryImages())}">
 									<div class="row g-3">
-										<div class="col-6 col-md-4" th:each="caption, iter : ${profile.galleryCaptions()}">
-											<div class="rounded d-flex flex-column align-items-center justify-content-center text-white text-center p-3" style="height:130px;"
-												th:classappend="${iter.index % 3 == 0} ? 'bg-indigo' : (${iter.index % 3 == 1} ? 'bg-teal' : 'bg-pink')">
-												<i class="ph-image ph-2x mb-2 opacity-75"></i>
-												<span class="fs-sm" th:text="${caption}">Caption</span>
-											</div>
+										<div class="col-6 col-md-4" th:each="img : ${profile.galleryImages()}">
+											<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${img.caption()}">
+												<img th:src="${img.imageUrl()}" alt="Gallery photo" class="rounded w-100" style="height:130px;object-fit:cover;">
+											</a>
 										</div>
 									</div>
 								</div>
@@ -112,44 +126,73 @@
 								<div class="card-header">
 									<h6 class="mb-0">Packages</h6>
 								</div>
-								<div class="card-body">
+								<div class="card-body text-center py-5" th:if="${#lists.isEmpty(profile.packages())}">
+									<i class="ph-package ph-3x text-muted mb-3 d-block"></i>
+									<p class="text-muted mb-0">
+										No packages listed yet. Use the form below to ask
+										<span th:text="${profile.businessName()}">this vendor</span> about pricing directly.
+									</p>
+								</div>
+								<div class="card-body" th:if="${not #lists.isEmpty(profile.packages())}">
 									<div class="row g-3">
 										<div class="col-md-6" th:each="pkg : ${profile.packages()}">
-											<div class="border rounded p-3 h-100">
+											<!--/* The whole card opens this package's detail modal (full
+											     description + every photo) - a real Bootstrap data-api
+											     trigger, not a JS click handler, EXCEPT the photo
+											     thumbnails inside stay their own .lightbox-trigger; the
+											     lightbox script (fragments/common.html) stops those clicks
+											     from bubbling up and ALSO opening this modal underneath. */-->
+											<div class="border rounded p-3 h-100" style="cursor:pointer;" data-bs-toggle="modal" th:attr="data-bs-target='#packageDetailModal-' + ${pkg.id()}">
 												<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
 												<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
 												<p class="text-muted fs-sm mb-2" th:text="${pkg.description()}">Description</p>
 												<div class="fw-semibold mb-2" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</div>
 
-												<button type="button" class="btn btn-outline-secondary btn-sm" th:if="${not #lists.isEmpty(pkg.imageCaptions())}" data-bs-toggle="modal" th:attr="data-bs-target='#packageImagesModal-' + ${pkg.id()}">
-													<i class="ph-image me-1"></i>
-													Browse Photos (<span th:text="${#lists.size(pkg.imageCaptions())}">0</span>)
-												</button>
+												<!-- Real photos for this package - each a .lightbox-trigger
+												     (same shared lightbox as the Gallery section above), so
+												     clicking one browses left/right across every photo on
+												     the page, not just this package's own. -->
+												<div class="d-flex flex-wrap gap-2 mt-2" th:if="${not #lists.isEmpty(pkg.images())}">
+													<a href="#" class="lightbox-trigger" th:each="img : ${pkg.images()}"
+														th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
+														<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded border" style="width:56px;height:56px;object-fit:cover;">
+													</a>
+												</div>
+
+												<div class="fs-sm mt-2" style="color:#ff6b35;"><i class="ph-eye me-1"></i> View details</div>
 											</div>
 
-											<!-- Per-package photo browser -->
-											<div class="modal fade" th:id="'packageImagesModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
+											<!-- Package detail - full description + every photo, own
+											     lightbox session (still shares the one page-wide lightbox
+											     via the same .lightbox-trigger class). -->
+											<div class="modal fade" th:id="'packageDetailModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
 												<div class="modal-dialog modal-dialog-centered modal-lg">
 													<div class="modal-content">
 														<div class="modal-header">
-															<h5 class="modal-title" th:text="${pkg.name()} + ' - Photos'">Package Photos</h5>
+															<h5 class="modal-title" th:text="${pkg.name()}">Package name</h5>
 															<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 														</div>
 														<div class="modal-body">
-															<div class="row g-3">
-																<div class="col-6 col-md-4" th:each="caption, iter : ${pkg.imageCaptions()}">
-																	<div class="rounded d-flex flex-column align-items-center justify-content-center text-white text-center p-3" style="height:120px;"
-																		th:classappend="${iter.index % 3 == 0} ? 'bg-indigo' : (${iter.index % 3 == 1} ? 'bg-teal' : 'bg-pink')">
-																		<i class="ph-image ph-2x mb-2 opacity-75"></i>
-																		<span class="fs-sm" th:text="${caption}">Caption</span>
+															<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
+															<h5 class="mb-3" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</h5>
+															<p class="text-muted" th:text="${pkg.description()}">Description</p>
+
+															<div th:if="${not #lists.isEmpty(pkg.images())}">
+																<h6 class="fw-semibold mt-4 mb-3">Photos</h6>
+																<div class="row g-3">
+																	<div class="col-6 col-md-4" th:each="img : ${pkg.images()}">
+																		<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
+																			<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded w-100" style="height:110px;object-fit:cover;">
+																		</a>
 																	</div>
 																</div>
 															</div>
+															<p class="text-muted fs-sm mb-0 mt-3" th:if="${#lists.isEmpty(pkg.images())}">No photos for this package yet.</p>
 														</div>
 													</div>
 												</div>
 											</div>
-											<!-- /photo browser -->
+											<!-- /package detail -->
 										</div>
 									</div>
 								</div>
@@ -162,12 +205,17 @@
 								<div class="card-body p-4">
 									<div class="d-flex align-items-center mb-3">
 										<h6 class="text-uppercase fw-bold text-muted mb-0" style="letter-spacing:.5px;">Client Reviews &amp; Testimonials</h6>
-										<a href="#" class="text-decoration-none fw-semibold ms-auto" style="color:#ff6b35;">
+										<a href="#" class="text-decoration-none fw-semibold ms-auto" style="color:#ff6b35;" th:if="${not #lists.isEmpty(profile.reviews())}">
 											View More <i class="ph-caret-right"></i>
 										</a>
 									</div>
 
-									<div class="row g-3">
+									<div class="text-center py-4" th:if="${#lists.isEmpty(profile.reviews())}">
+										<i class="ph-star ph-3x text-muted mb-3 d-block"></i>
+										<p class="text-muted mb-0">No reviews yet.</p>
+									</div>
+
+									<div class="row g-3" th:if="${not #lists.isEmpty(profile.reviews())}">
 										<div class="col-md-6" th:each="review, iter : ${profile.reviews()}" th:if="${iter.index < 2}">
 											<div class="border rounded p-3 h-100">
 												<div class="d-flex align-items-start justify-content-between mb-2">
@@ -213,7 +261,15 @@
 													<i class="ph-check-circle me-1"></i>
 													<span th:text="${doc.label() != null} ? ${doc.label()} : ${doc.documentType().getLabel()}">Document type</span>
 												</div>
-												<a th:href="${doc.url()}" target="_blank" class="d-block text-decoration-none">
+												<!--/* lightbox-trigger: opens in the shared in-page viewer (see
+												     fragments/common.html) instead of a new tab - it tries this as
+												     an image first and falls back to a PDF viewer automatically if
+												     it isn't one. The onerror here only swaps this small THUMBNAIL
+												     to a generic file icon when it isn't an image - a separate,
+												     purely cosmetic concern from what the lightbox does when
+												     clicked. */-->
+												<a href="#" class="d-block text-decoration-none lightbox-trigger"
+													th:attr="data-lightbox-src=${doc.url()},data-lightbox-caption=${doc.label() != null ? doc.label() : doc.documentType().getLabel()}">
 													<img th:src="${doc.url()}" alt="Legal document" class="img-fluid rounded border mb-2"
 														style="max-height:160px;width:100%;object-fit:cover;"
 														onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
@@ -301,12 +357,20 @@
 
 									<div th:if="${quotationRequestSubmitted}" class="alert alert-success alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-										Your quotation request has been sent. <span class="text-muted">(stub only for now)</span>
+										Your quotation request has been sent.
+									</div>
+									<div th:if="${storefrontFormError}" class="alert alert-danger alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										<span th:text="${storefrontFormError}"></span>
+									</div>
+									<div th:if="${isOwnStorefront}" class="alert alert-info">
+										<i class="ph-info me-2"></i> This is a preview of your own storefront - you can't send yourself a quotation request.
 									</div>
 
 									<form th:action="@{/vendor/storefront/quotation-request}" th:object="${quotationRequestForm}" method="post">
 										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
 										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
+										<input type="hidden" name="vendorUserId" th:value="${profile.vendorUserId()}">
 										<div class="mb-3">
 											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Your Full Name</label>
 											<input type="text" th:field="*{plannerName}" class="form-control bg-light border-0 px-3 py-2" style="border-radius:50px;" placeholder="e.g., Jane Smith" required>
@@ -329,7 +393,7 @@
 											<textarea th:field="*{message}" rows="3" class="form-control bg-light border-0 px-3 py-2" style="border-radius:16px;" placeholder="Tell us about your event, guest count, and any special requests..." required></textarea>
 										</div>
 										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
-										<button type="submit" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;">
+										<button type="submit" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;" th:disabled="${isOwnStorefront}">
 											Submit Quotation Request
 										</button>
 									</form>
@@ -346,12 +410,20 @@
 
 									<div th:if="${inquirySubmitted}" class="alert alert-success alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-										Your message has been sent. <span class="text-muted">(stub only for now)</span>
+										Your message has been sent.
+									</div>
+									<div th:if="${storefrontFormError}" class="alert alert-danger alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										<span th:text="${storefrontFormError}"></span>
+									</div>
+									<div th:if="${isOwnStorefront}" class="alert alert-info">
+										<i class="ph-info me-2"></i> This is a preview of your own storefront - you can't send yourself an inquiry.
 									</div>
 
 									<form th:action="@{/vendor/storefront/inquiry}" th:object="${inquiryForm}" method="post">
 										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
 										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
+										<input type="hidden" name="vendorUserId" th:value="${profile.vendorUserId()}">
 										<div class="mb-3">
 											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Your Full Name</label>
 											<input type="text" th:field="*{plannerName}" class="form-control px-3 py-2" style="border-radius:50px;" placeholder="e.g., Jane Smith" required>
@@ -365,7 +437,7 @@
 											<textarea th:field="*{message}" rows="3" class="form-control px-3 py-2" style="border-radius:16px;" placeholder="Ask a quick question..." required></textarea>
 										</div>
 										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
-										<button type="submit" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;">
+										<button type="submit" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;" th:disabled="${isOwnStorefront}">
 											Submit Availability Inquiry
 										</button>
 									</form>
@@ -410,6 +482,8 @@
 			}
 		});
 	</script>
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
 
 </body>
 </html>

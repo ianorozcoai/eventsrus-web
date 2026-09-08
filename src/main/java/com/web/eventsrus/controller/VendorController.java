@@ -7,7 +7,6 @@ import com.web.eventsrus.model.InquiryForm;
 import com.web.eventsrus.model.LegalDocumentType;
 import com.web.eventsrus.model.PackageType;
 import com.web.eventsrus.model.PhilippineProvinces;
-import com.web.eventsrus.model.PlannerVendorSuggestion;
 import com.web.eventsrus.model.QuotationRequestForm;
 import com.web.eventsrus.model.SupportTicket;
 import com.web.eventsrus.model.SupportTicketMessage;
@@ -22,9 +21,7 @@ import com.web.eventsrus.model.VendorOnboardingForm;
 import com.web.eventsrus.model.VendorPackageForm;
 import com.web.eventsrus.model.VendorPackageItem;
 import com.web.eventsrus.model.VendorLegalDocumentForm;
-import com.web.eventsrus.model.VendorLegalDocumentItem;
 import com.web.eventsrus.model.VendorPaymentMethodForm;
-import com.web.eventsrus.model.VendorPaymentMethodItem;
 import com.web.eventsrus.model.VendorPublicProfile;
 import com.web.eventsrus.model.VendorQuotation;
 import com.web.eventsrus.model.VendorSettingsDocuments;
@@ -32,15 +29,16 @@ import com.web.eventsrus.model.VendorSettingsForm;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
+import com.web.eventsrus.backend.BackendVendorSettingsResponse;
 import com.web.eventsrus.backend.WebSession;
-import com.web.eventsrus.stub.StubDataService;
 import jakarta.servlet.http.HttpSession;
-import java.io.UncheckedIOException;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,53 +47,82 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import tools.jackson.databind.ObjectMapper;
 
+/**
+ * Every vendor business page - all wired to real eventsrus-backend data via
+ * BackendClient now (no more StubDataService here). WebMvcConfig gates every
+ * route below except /onboarding and /storefront/{slug} to a logged-in
+ * VENDOR, so WebSession.token(session) is always present in those handlers.
+ */
 @Controller
 @RequestMapping("/vendor")
 public class VendorController {
 
-    private final StubDataService stubDataService;
     private final ObjectMapper objectMapper;
     private final BackendClient backendClient;
 
-    public VendorController(StubDataService stubDataService, ObjectMapper objectMapper, BackendClient backendClient) {
-        this.stubDataService = stubDataService;
+    @Value("${recaptcha.site-key}")
+    private String recaptchaSiteKey;
+
+    public VendorController(ObjectMapper objectMapper, BackendClient backendClient) {
         this.objectMapper = objectMapper;
         this.backendClient = backendClient;
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        VendorDashboard dashboard = stubDataService.load("vendor-dashboard.json", VendorDashboard.class);
+    public String dashboard(HttpSession session, Model model) {
+        VendorDashboard dashboard = backendClient.getDashboard(WebSession.token(session));
         model.addAttribute("dashboard", dashboard);
         model.addAttribute("activePage", "dashboard");
+
+        // Fun first-package nudge - shown once per login (mirrors the
+        // paywall modal's own "not on every page navigation" pattern), and
+        // only for as long as the vendor genuinely has zero packages.
+        boolean nudgeAlreadyShown = Boolean.TRUE.equals(session.getAttribute(WebSession.FIRST_PACKAGE_NUDGE_SHOWN));
+        boolean showFirstPackageNudge = !dashboard.hasPackages() && !nudgeAlreadyShown;
+        if (showFirstPackageNudge) {
+            session.setAttribute(WebSession.FIRST_PACKAGE_NUDGE_SHOWN, true);
+        }
+        model.addAttribute("showFirstPackageNudge", showFirstPackageNudge);
         return "vendor/dashboard";
     }
 
     @GetMapping("/onboarding")
-    public String onboardingForm(Model model) {
+    public String onboardingForm(HttpSession session, Model model) {
         if (!model.containsAttribute("vendorOnboardingForm")) {
             VendorOnboardingForm form = new VendorOnboardingForm();
             form.setCountry("Philippines");
+            form.setReferralCode(WebSession.referralCode(session));
             model.addAttribute("vendorOnboardingForm", form);
         }
         model.addAttribute("businessTypes", BusinessType.values());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
         model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);
         model.addAttribute("documentTypes", LegalDocumentType.values());
+        model.addAttribute("recaptchaSiteKey", recaptchaSiteKey);
         return "vendor/onboarding";
     }
 
-    // Real submission now - PATCH /api/v1/users/me/vendor on eventsrus-backend
+    // Real submission - PATCH /api/v1/users/me/vendor on eventsrus-backend
     // (BackendClient#becomeVendor). Reachable by any logged-in user (see
     // WebMvcConfig), including a brand-new PLANNER - that's exactly who this
     // is for. On success the backend returns a freshly-issued token with
     // role=VENDOR, which replaces the session's current one.
+    //
+    // AJAX (JSON in/out), not a classic redirect - a <input type="file">
+    // can never be repopulated by the browser after a page navigation, so
+    // a redirect-on-failure flow would silently throw away every file the
+    // vendor had already picked (logo/ID/selfie/legal documents) the moment
+    // any validation failed. Submitting via fetch() and staying on the same
+    // page (see onboarding.html's script) means a failure never navigates
+    // away at all, so nothing the vendor already filled in or picked is lost.
     @PostMapping("/onboarding")
-    public String submitOnboarding(
+    @ResponseBody
+    public OnboardingResult submitOnboarding(
             @ModelAttribute VendorOnboardingForm vendorOnboardingForm,
             @RequestParam(required = false) MultipartFile logo,
             @RequestParam(required = false) MultipartFile idCard,
@@ -103,24 +130,25 @@ public class VendorController {
             @RequestParam(required = false) List<MultipartFile> legalDocumentFiles,
             @RequestParam(required = false) List<String> legalDocumentTypes,
             @RequestParam(required = false) List<String> legalDocumentLabels,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
+            HttpSession session) {
         try {
             BackendAuthResponse response = backendClient.becomeVendor(
                     WebSession.token(session), vendorOnboardingForm, logo, idCard, selfie,
                     legalDocumentFiles, legalDocumentTypes, legalDocumentLabels);
             WebSession.store(session, response);
-            return "redirect:/vendor/dashboard";
+            return new OnboardingResult(true, null, "/vendor/dashboard");
         } catch (BackendApiException e) {
-            redirectAttributes.addFlashAttribute("onboardingError", e.getMessage());
-            redirectAttributes.addFlashAttribute("vendorOnboardingForm", vendorOnboardingForm);
-            return "redirect:/vendor/onboarding";
+            return new OnboardingResult(false, e.getMessage(), null);
         }
     }
 
+    public record OnboardingResult(boolean success, String error, String redirectTo) {
+    }
+
     @GetMapping("/leads")
-    public String leads(Model model) {
-        List<VendorLead> leads = stubDataService.loadList("leads.json", VendorLead.class).stream()
+    public String leads(HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        List<VendorLead> leads = backendClient.getLeads(jwt).stream()
                 .sorted(Comparator.comparing(VendorLead::lastVisitedAt).reversed())
                 .toList();
         model.addAttribute("leads", leads);
@@ -128,8 +156,7 @@ public class VendorController {
         // into; one who's only browsed the storefront doesn't - the
         // template uses this to decide between "Send Message" linking
         // straight to that conversation vs. opening a compose modal.
-        Map<Long, Long> conversationIdByEventId = stubDataService.loadList("messages.json", VendorConversation.class)
-                .stream()
+        Map<Long, Long> conversationIdByEventId = backendClient.getConversations(jwt).stream()
                 .collect(Collectors.toMap(VendorConversation::eventId, VendorConversation::id, (a, b) -> a));
         model.addAttribute("conversationIdByEventId", conversationIdByEventId);
         model.addAttribute("activePage", "leads");
@@ -141,25 +168,26 @@ public class VendorController {
     public String sendLeadMessage(
             @PathVariable Long eventId, @RequestParam String message, HttpSession session,
             RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/events/{eventId}/vendor-messages on eventsrus-backend
-        // later (ConversationService#sendVendorMessage already does this
-        // for real - finds or creates the conversation and posts the
-        // opening message). Doesn't actually create a conversation here.
-        // Gating check is real (mirrors ConversationService#sendVendorMessage's
-        // subscription requirement) even though the send itself is still a stub.
+        // Mirrors ConversationService#sendVendorMessage's subscription
+        // requirement client-side too, so an expired vendor gets a clear
+        // message instead of a raw 402/403 from the real call below.
         if (WebSession.isSubscriptionExpired(session)) {
             redirectAttributes.addFlashAttribute(
                     "leadsError", "Your subscription has ended. Renew your plan to message leads.");
             return "redirect:/vendor/leads";
         }
-        redirectAttributes.addFlashAttribute("leadMessageSent", true);
+        try {
+            backendClient.sendVendorMessage(WebSession.token(session), eventId, message);
+            redirectAttributes.addFlashAttribute("leadMessageSent", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("leadsError", e.getMessage());
+        }
         return "redirect:/vendor/leads";
     }
 
     @GetMapping("/bookings")
-    public String bookings(Model model) {
-        List<VendorBooking> bookings = stubDataService.loadList("bookings.json", VendorBooking.class).stream()
+    public String bookings(HttpSession session, Model model) {
+        List<VendorBooking> bookings = backendClient.getBookings(WebSession.token(session)).stream()
                 .sorted(Comparator.comparing(VendorBooking::eventDatetime))
                 .toList();
         model.addAttribute("bookings", bookings);
@@ -172,15 +200,8 @@ public class VendorController {
     public String acknowledgeBookingPayment(
             @PathVariable Long bookingId, @RequestParam(required = false) MultipartFile invoice,
             HttpSession session, RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/bookings/{bookingId}/acknowledge-payment on
-        // eventsrus-backend later (BookingService#acknowledgePayment already
-        // requires this same invoice/receipt upload for real - see its
-        // Javadoc). Doesn't actually flip the booking's status or persist
-        // the file anywhere (StubDataService re-reads the static JSON every
-        // request, same limitation as every other stub POST here).
-        // Gating check is real (mirrors BookingService#acknowledgePayment's
-        // subscription requirement) even though the acknowledgement itself is stub.
+        // Mirrors BookingService#acknowledgePayment's subscription
+        // requirement and invoice-required validation client-side too.
         if (WebSession.isSubscriptionExpired(session)) {
             redirectAttributes.addFlashAttribute(
                     "bookingsError", "Your subscription has ended. Renew your plan to acknowledge payments.");
@@ -191,51 +212,59 @@ public class VendorController {
                     "An invoice or receipt document is required to acknowledge this payment.");
             return "redirect:/vendor/bookings";
         }
-        redirectAttributes.addFlashAttribute("paymentAcknowledged", true);
+        try {
+            backendClient.acknowledgeBookingPayment(WebSession.token(session), bookingId, invoice);
+            redirectAttributes.addFlashAttribute("paymentAcknowledged", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+        }
         return "redirect:/vendor/bookings";
     }
 
     @PostMapping("/bookings/{bookingId}/reject-payment")
     public String rejectBookingPayment(
-            @PathVariable Long bookingId, @RequestParam String reason, RedirectAttributes redirectAttributes) {
-        // Stub only for now - wires up to
-        // PUT /api/v1/bookings/{bookingId}/reject-payment on eventsrus-backend later.
+            @PathVariable Long bookingId, @RequestParam String reason, HttpSession session,
+            RedirectAttributes redirectAttributes) {
         if (reason == null || reason.isBlank()) {
             redirectAttributes.addFlashAttribute("bookingsError", "A rejection reason is required.");
             return "redirect:/vendor/bookings";
         }
-        redirectAttributes.addFlashAttribute("paymentRejected", true);
+        try {
+            backendClient.rejectBookingPayment(WebSession.token(session), bookingId, reason);
+            redirectAttributes.addFlashAttribute("paymentRejected", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+        }
         return "redirect:/vendor/bookings";
     }
 
     @PostMapping("/bookings/{bookingId}/cancel")
     public String cancelBooking(
-            @PathVariable Long bookingId, @RequestParam String reason, RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // PUT /api/v1/bookings/{bookingId}/cancel on eventsrus-backend later
-        // (BookingService#cancel already does this for real - fixes
-        // BookingStatus.CANCELLED having existed with no code path that
-        // ever set it). Doesn't actually flip the booking's status here.
+            @PathVariable Long bookingId, @RequestParam String reason, HttpSession session,
+            RedirectAttributes redirectAttributes) {
         if (reason == null || reason.isBlank()) {
             redirectAttributes.addFlashAttribute("bookingsError", "A cancellation reason is required.");
             return "redirect:/vendor/bookings";
         }
-        redirectAttributes.addFlashAttribute("bookingCancelled", true);
+        try {
+            backendClient.cancelBooking(WebSession.token(session), bookingId, reason);
+            redirectAttributes.addFlashAttribute("bookingCancelled", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+        }
         return "redirect:/vendor/bookings";
     }
-
-    // The stub vendor's own user id (matches vendorUserId across the other
-    // stub JSON files) - used to tell "sent" bubbles from "received" ones.
-    private static final long VENDOR_USER_ID = 9001L;
 
     // Support tickets - symmetric with PlannerSupportController's /planner/support.
     // Two-pane messenger-style layout (ticket list + selected thread), same
     // shape as /vendor/messages.
 
     @GetMapping("/support")
-    public String support(@RequestParam(required = false) Long ticketId, Model model) {
-        List<SupportTicket> tickets = stubDataService.loadList("support-tickets.json", SupportTicket.class).stream()
-                .filter(t -> t.raisedByUserId() == VENDOR_USER_ID)
+    public String support(@RequestParam(required = false) Long ticketId, HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        // GET /api/v1/support-tickets/me is already scoped to the caller -
+        // no client-side filtering by user id needed, unlike the old stub.
+        List<SupportTicket> tickets = backendClient.getSupportTickets(jwt).stream()
                 .sorted(Comparator.comparing(SupportTicket::createdAt).reversed())
                 .toList();
 
@@ -244,11 +273,9 @@ public class VendorController {
                 .findFirst()
                 .orElseGet(() -> tickets.isEmpty() ? null : tickets.get(0));
 
-        Map<String, List<SupportTicketMessage>> threads =
-                stubDataService.loadMapOfLists("support-ticket-messages.json", SupportTicketMessage.class);
         List<SupportTicketMessage> thread = selectedTicket == null
                 ? List.of()
-                : threads.getOrDefault(String.valueOf(selectedTicket.id()), List.of());
+                : backendClient.getSupportTicketMessages(jwt, selectedTicket.id());
 
         if (!model.containsAttribute("createTicketForm")) {
             model.addAttribute("createTicketForm", new CreateTicketForm());
@@ -257,43 +284,52 @@ public class VendorController {
         model.addAttribute("selectedTicket", selectedTicket);
         model.addAttribute("thread", thread);
         model.addAttribute("ticketCategories", TicketCategory.values());
-        model.addAttribute("currentUserId", VENDOR_USER_ID);
+        model.addAttribute("currentUserId", WebSession.userId(session));
         model.addAttribute("activePage", "support");
         model.addAttribute("pageTitle", "Support");
         return "vendor/support";
     }
 
     @PostMapping("/support")
-    public String createTicket(@ModelAttribute CreateTicketForm createTicketForm, RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/support-tickets on eventsrus-backend later
-        // (SupportTicketService#createTicket already does this for real).
-        redirectAttributes.addFlashAttribute("ticketCreated", true);
+    public String createTicket(
+            @ModelAttribute CreateTicketForm createTicketForm,
+            @RequestParam(required = false) MultipartFile attachment,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        try {
+            backendClient.createSupportTicket(
+                    WebSession.token(session), createTicketForm.getSubject(),
+                    createTicketForm.getCategory() != null ? createTicketForm.getCategory().name() : null,
+                    createTicketForm.getMessage(), createTicketForm.getRelatedEventId(), attachment);
+            redirectAttributes.addFlashAttribute("ticketCreated", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("supportError", e.getMessage());
+        }
         return "redirect:/vendor/support";
     }
 
     @PostMapping("/support/{ticketId}/reply")
     public String replyToTicket(
-            @PathVariable Long ticketId, @RequestParam String message, RedirectAttributes redirectAttributes) {
-        // Stub only for now - wires up to
-        // POST /api/v1/support-tickets/{id}/messages on eventsrus-backend
-        // later (SupportTicketService#reply already does this for real).
-        // Doesn't actually append to the thread (StubDataService re-reads
-        // the static JSON every request), same limitation as every other
-        // stub reply in this app.
+            @PathVariable Long ticketId, @RequestParam String message,
+            @RequestParam(required = false) MultipartFile attachment,
+            HttpSession session, RedirectAttributes redirectAttributes) {
         if (message == null || message.isBlank()) {
             redirectAttributes.addFlashAttribute("supportError", "A message is required.");
         } else {
-            redirectAttributes.addFlashAttribute("replySent", true);
+            try {
+                backendClient.replyToSupportTicket(WebSession.token(session), ticketId, message, attachment);
+                redirectAttributes.addFlashAttribute("replySent", true);
+            } catch (BackendApiException e) {
+                redirectAttributes.addFlashAttribute("supportError", e.getMessage());
+            }
         }
         redirectAttributes.addAttribute("ticketId", ticketId);
         return "redirect:/vendor/support";
     }
 
     @GetMapping("/messages")
-    public String messages(@RequestParam(required = false) Long conversationId, Model model) {
-        List<VendorConversation> conversations = stubDataService
-                .loadList("messages.json", VendorConversation.class).stream()
+    public String messages(@RequestParam(required = false) Long conversationId, HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        List<VendorConversation> conversations = backendClient.getConversations(jwt).stream()
                 .sorted(Comparator.comparing(VendorConversation::lastMessageAt).reversed())
                 .toList();
 
@@ -302,18 +338,16 @@ public class VendorController {
                 .findFirst()
                 .orElseGet(() -> conversations.isEmpty() ? null : conversations.get(0));
 
-        Map<String, List<VendorConversationMessage>> threads =
-                stubDataService.loadMapOfLists("conversation-messages.json", VendorConversationMessage.class);
         List<VendorConversationMessage> thread = selected == null
                 ? List.of()
-                : threads.getOrDefault(String.valueOf(selected.id()), List.of()).stream()
+                : backendClient.getConversationMessages(jwt, selected.id()).stream()
                         .sorted(Comparator.comparing(VendorConversationMessage::createdAt))
                         .toList();
 
         model.addAttribute("conversations", conversations);
         model.addAttribute("selectedConversation", selected);
         model.addAttribute("thread", thread);
-        model.addAttribute("vendorUserId", VENDOR_USER_ID);
+        model.addAttribute("vendorUserId", WebSession.userId(session));
         model.addAttribute("activePage", "messages");
         model.addAttribute("pageTitle", "Messages");
         return "vendor/messages";
@@ -323,25 +357,25 @@ public class VendorController {
     public String replyToConversation(
             @PathVariable Long conversationId, @RequestParam String body, HttpSession session,
             RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/conversations/{id}/messages on eventsrus-backend later.
-        // Doesn't actually append to the thread (StubDataService re-reads the
-        // static JSON every request), so the reply won't appear after redirect.
-        // Gating check is real (mirrors ConversationService#sendMessage's
-        // vendor-side subscription requirement) even though the reply itself is stub.
+        // Mirrors ConversationService#sendMessage's vendor-side
+        // subscription requirement client-side too.
         if (WebSession.isSubscriptionExpired(session)) {
             redirectAttributes.addFlashAttribute(
                     "messagesError", "Your subscription has ended. Renew your plan to reply to messages.");
             return "redirect:/vendor/messages?conversationId=" + conversationId;
         }
-        redirectAttributes.addFlashAttribute("replySent", true);
+        try {
+            backendClient.replyToConversation(WebSession.token(session), conversationId, body);
+            redirectAttributes.addFlashAttribute("replySent", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("messagesError", e.getMessage());
+        }
         return "redirect:/vendor/messages?conversationId=" + conversationId;
     }
 
     @GetMapping("/quotations")
-    public String quotations(Model model) {
-        List<VendorQuotation> quotations = stubDataService
-                .loadList("quotations.json", VendorQuotation.class).stream()
+    public String quotations(HttpSession session, Model model) {
+        List<VendorQuotation> quotations = backendClient.getQuotations(WebSession.token(session)).stream()
                 .sorted(Comparator.comparing(VendorQuotation::createdAt).reversed())
                 .toList();
         model.addAttribute("quotations", quotations);
@@ -351,9 +385,8 @@ public class VendorController {
     }
 
     @GetMapping("/calendar")
-    public String calendar(Model model) {
-        List<VendorCalendarEntry> entries = stubDataService
-                .loadList("calendar.json", VendorCalendarEntry.class).stream()
+    public String calendar(HttpSession session, Model model) {
+        List<VendorCalendarEntry> entries = backendClient.getCalendar(WebSession.token(session)).stream()
                 .sorted(Comparator.comparing(VendorCalendarEntry::eventDatetime))
                 .toList();
         model.addAttribute("entries", entries);
@@ -370,9 +403,6 @@ public class VendorController {
                     Map<String, Object> event = new LinkedHashMap<>();
                     event.put("title", entry.eventName());
                     event.put("start", entry.eventDatetime().toString());
-                    if (entry.endDatetime() != null) {
-                        event.put("end", entry.endDatetime().toString());
-                    }
                     event.put("display", "block");
                     event.put("color", switch (entry.status()) {
                         case "BOOKED" -> "#198754";
@@ -387,8 +417,8 @@ public class VendorController {
     }
 
     @GetMapping("/packages")
-    public String packages(Model model) {
-        List<VendorPackageItem> packages = stubDataService.loadList("packages.json", VendorPackageItem.class);
+    public String packages(HttpSession session, Model model) {
+        List<VendorPackageItem> packages = backendClient.getPackages(WebSession.token(session));
         model.addAttribute("packages", packages);
         model.addAttribute("activePage", "packages");
         model.addAttribute("pageTitle", "Packages");
@@ -399,96 +429,123 @@ public class VendorController {
         return "vendor/packages";
     }
 
+    // AJAX (JSON in/out) rather than a redirect - the Add Package modal's
+    // photo dropzone lets a vendor drop several photos in right alongside
+    // creating the package (see packages.html), and those photos need a
+    // real packageId to upload against, which doesn't exist until this
+    // call returns. The page's own JS creates the package first via this
+    // endpoint, then immediately kicks off the queued photo uploads
+    // against the returned packageId, all in one continuous flow.
     @PostMapping("/packages")
-    public String addPackage(
-            @ModelAttribute VendorPackageForm vendorPackageForm, RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/vendors/me/packages on eventsrus-backend later.
-        redirectAttributes.addFlashAttribute("packageAdded", true);
-        redirectAttributes.addFlashAttribute("addedPackageName", vendorPackageForm.getName());
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addPackage(
+            @ModelAttribute VendorPackageForm vendorPackageForm, HttpSession session) {
+        try {
+            VendorPackageItem added = backendClient.addPackage(WebSession.token(session), vendorPackageForm);
+            return ResponseEntity.ok(Map.of("success", true, "packageId", added.id(), "name", added.name()));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/packages/{packageId}")
+    public String updatePackage(
+            @PathVariable Long packageId, @ModelAttribute VendorPackageForm vendorPackageForm, HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        try {
+            backendClient.updatePackage(WebSession.token(session), packageId, vendorPackageForm);
+            redirectAttributes.addFlashAttribute("packageUpdated", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("packagesError", e.getMessage());
+        }
         return "redirect:/vendor/packages";
     }
 
+    // AJAX (JSON in/out via Dropzone), not a redirect - the Edit modal's
+    // photo area is a real drag-and-drop dropzone (see packages.html) that
+    // lets a vendor drop or select several photos at once, each uploading
+    // independently with its own progress bar; a classic redirect-per-file
+    // would either force one file at a time or bounce the page mid-drop.
+    // The dropzone reloads the page itself (?editPackage={packageId}) once
+    // every dropped file has finished, so the grid below always ends up
+    // showing the real, saved state.
+    @PostMapping("/packages/{packageId}/images")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addPackageImage(
+            @PathVariable Long packageId, @RequestParam(required = false) MultipartFile image,
+            @RequestParam(required = false) String caption, HttpSession session) {
+        if (image == null || image.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Choose a photo to upload."));
+        }
+        try {
+            backendClient.addPackageImage(WebSession.token(session), packageId, image, caption);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // AJAX (JSON), not a redirect - called via fetch() after the vendor
+    // confirms in the shared confirmation modal (see packages.html), which
+    // then does its own navigate-back-into-this-package's-edit-modal
+    // afterward. A redirect response here would just get silently followed
+    // and discarded by fetch().
+    @PostMapping("/packages/{packageId}/images/{imageId}/delete")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deletePackageImage(
+            @PathVariable Long packageId, @PathVariable Long imageId, HttpSession session) {
+        try {
+            backendClient.deletePackageImage(WebSession.token(session), packageId, imageId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // Public storefront - what a planner sees when they open "View My Page"
-    // (the vendor's own page, unchanged) or click "View Storefront" from a
-    // planner event's Overview tab (a specific slugged vendor - see
+    // (the vendor's own page) or click "View Storefront" from a planner
+    // event's Overview tab (a specific slugged vendor - see
     // PlannerEvent/PlannerVendorSuggestion). Opens in its own tab, so it's a
     // standalone page (no vendor sidebar), same pattern as the onboarding page.
+    // GET /api/v1/vendors/{slug} is publicly reachable (see SecurityConfig),
+    // so /storefront/{slug} is excluded from WebMvcConfig's VENDOR gate -
+    // jwt may be null there (a genuinely anonymous visitor).
 
     @GetMapping("/storefront")
-    public String storefront(Model model) {
-        loadStorefront(model, "vendor-public-profile.json", null, null);
+    public String storefront(HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        // There's no authenticated "my own public profile" endpoint - the
+        // vendor's slug only comes back on their own settings response.
+        String slug = backendClient.getSettings(jwt).slug();
+        loadStorefront(model, slug, null, jwt, session);
         return "vendor/storefront";
     }
 
     @GetMapping("/storefront/{slug}")
     public String storefrontBySlug(
-            @PathVariable String slug, @RequestParam(required = false) Long eventId, Model model) {
-        if (!model.containsAttribute("quotationRequestForm")) {
-            model.addAttribute("quotationRequestForm", new QuotationRequestForm());
-        }
-        if (!model.containsAttribute("inquiryForm")) {
-            model.addAttribute("inquiryForm", new InquiryForm());
-        }
-        model.addAttribute("profile", loadOrSynthesizeProfile(slug));
-        model.addAttribute("redirectSlug", slug);
-        model.addAttribute("eventId", eventId);
+            @PathVariable String slug, @RequestParam(required = false) Long eventId, HttpSession session, Model model) {
+        String jwt = WebSession.isLoggedIn(session) ? WebSession.token(session) : null;
+        loadStorefront(model, slug, eventId, jwt, session);
         return "vendor/storefront";
     }
 
-    private void loadStorefront(Model model, String stubFileName, String slug, Long eventId) {
+    private void loadStorefront(Model model, String slug, Long eventId, String jwt, HttpSession session) {
         if (!model.containsAttribute("quotationRequestForm")) {
             model.addAttribute("quotationRequestForm", new QuotationRequestForm());
         }
         if (!model.containsAttribute("inquiryForm")) {
             model.addAttribute("inquiryForm", new InquiryForm());
         }
-        VendorPublicProfile profile = stubDataService.load(stubFileName, VendorPublicProfile.class);
+        VendorPublicProfile profile = backendClient.getVendorProfile(jwt, slug, eventId);
         model.addAttribute("profile", profile);
         model.addAttribute("redirectSlug", slug);
         model.addAttribute("eventId", eventId);
-    }
-
-    // Only 3 vendors in stubs/vendor-directory.json have a hand-authored
-    // stubs/storefronts/{slug}.json (full packages/reviews/gallery). Every
-    // other vendor still needs a real, correctly-labeled storefront rather
-    // than a dead link, so this synthesizes one on the fly from the
-    // matching directory entry when no bespoke file exists - real fields
-    // from the directory, honest generic defaults for what it doesn't carry.
-    private VendorPublicProfile loadOrSynthesizeProfile(String slug) {
-        try {
-            return stubDataService.load("storefronts/" + slug + ".json", VendorPublicProfile.class);
-        } catch (UncheckedIOException notFound) {
-            PlannerVendorSuggestion match = stubDataService
-                    .loadList("vendor-directory.json", PlannerVendorSuggestion.class).stream()
-                    .filter(v -> slug.equals(v.slug()))
-                    .findFirst()
-                    .orElseThrow(() -> notFound);
-            return new VendorPublicProfile(
-                    9100L + Math.abs(slug.hashCode() % 900),
-                    match.businessName(),
-                    null,
-                    match.description(),
-                    null,
-                    match.businessType(),
-                    match.city(),
-                    match.operatingAreas().isEmpty() ? null : match.operatingAreas().get(0),
-                    "Philippines",
-                    null,
-                    null,
-                    null,
-                    String.join(", ", match.operatingAreas()),
-                    4.5,
-                    0,
-                    "Usually within a day",
-                    List.of(),
-                    false,
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    null,
-                    List.of());
-        }
+        // A vendor previewing their OWN storefront ("View My Page") has no
+        // business requesting a quotation or inquiry from themselves - the
+        // form fields stay visible (so they can see what a planner would
+        // see) but the submit buttons are disabled, see the template.
+        Long viewerUserId = WebSession.userId(session);
+        model.addAttribute("isOwnStorefront", viewerUserId != null && viewerUserId.equals(profile.vendorUserId()));
     }
 
     @PostMapping("/storefront/quotation-request")
@@ -496,13 +553,26 @@ public class VendorController {
             @ModelAttribute QuotationRequestForm quotationRequestForm,
             @RequestParam(required = false) String redirectSlug,
             @RequestParam(required = false) Long eventId,
+            @RequestParam Long vendorUserId,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/vendors/{slug}/quotations on eventsrus-backend later.
+        String loginError = requirePlannerLogin(session, eventId);
+        if (loginError != null) {
+            redirectAttributes.addFlashAttribute("storefrontFormError", loginError);
+            return redirectAfterStorefrontFailure(redirectSlug, eventId);
+        }
+        try {
+            backendClient.submitQuotationRequest(
+                    WebSession.token(session), eventId, vendorUserId, quotationRequestForm.getPlannerName(),
+                    quotationRequestForm.getTargetDate(), quotationRequestForm.getMessage(),
+                    quotationRequestForm.getPackageIds());
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("storefrontFormError", e.getMessage());
+            return redirectAfterStorefrontFailure(redirectSlug, eventId);
+        }
         return redirectAfterStorefrontSubmit(
                 redirectSlug, eventId, "quotationRequestSubmitted",
-                "Your quotation request has been sent. (stub only for now - won't appear in the thread below)",
-                redirectAttributes);
+                "Your quotation request has been sent.", redirectAttributes);
     }
 
     @PostMapping("/storefront/inquiry")
@@ -510,21 +580,56 @@ public class VendorController {
             @ModelAttribute InquiryForm inquiryForm,
             @RequestParam(required = false) String redirectSlug,
             @RequestParam(required = false) Long eventId,
+            @RequestParam Long vendorUserId,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
-        // Stub only for now - wires up to a real conversation-start endpoint
-        // later (ConversationService#sendInquiry already does this for real
-        // on eventsrus-backend, finding or creating the (event, vendor)
-        // conversation and posting the opening message).
+        String loginError = requirePlannerLogin(session, eventId);
+        if (loginError != null) {
+            redirectAttributes.addFlashAttribute("storefrontFormError", loginError);
+            return redirectAfterStorefrontFailure(redirectSlug, eventId);
+        }
+        try {
+            backendClient.submitInquiry(
+                    WebSession.token(session), eventId, vendorUserId, inquiryForm.getPlannerName(),
+                    inquiryForm.getTargetDate(), inquiryForm.getMessage());
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("storefrontFormError", e.getMessage());
+            return redirectAfterStorefrontFailure(redirectSlug, eventId);
+        }
         return redirectAfterStorefrontSubmit(
                 redirectSlug, eventId, "inquirySubmitted",
-                "Your inquiry has been sent. (stub only for now - won't appear in the thread below)",
-                redirectAttributes);
+                "Your message has been sent.", redirectAttributes);
+    }
+
+    // Both real endpoints behind these two forms are
+    // /api/v1/events/{eventId}/vendors/{vendorUserId}/... - eventId is a
+    // required path variable on the real backend, and the call needs the
+    // visiting PLANNER's own jwt (not the vendor's, even on their own
+    // storefront). A storefront is publicly browsable, so a genuinely
+    // anonymous visitor - or one who arrived without an eventId (browsing
+    // directly rather than from one of their events) - can't submit either
+    // form; this returns a human-readable reason why, or null when both
+    // checks pass.
+    private String requirePlannerLogin(HttpSession session, Long eventId) {
+        if (!WebSession.isLoggedIn(session)) {
+            return "Please log in as a planner to send this.";
+        }
+        if (eventId == null) {
+            return "Please reach this vendor from one of your events (Overview tab -> Suggested Vendors) so this can be linked to the right event.";
+        }
+        return null;
+    }
+
+    // storefrontFormError is already flashed by the caller before this runs -
+    // this just picks where to land (same page either way; there's no
+    // "chats tab" to send a failure back to, unlike a successful submit).
+    private String redirectAfterStorefrontFailure(String redirectSlug, Long eventId) {
+        return redirectSlug != null ? "redirect:/vendor/storefront/" + redirectSlug : "redirect:/vendor/storefront";
     }
 
     // When reached from a planner event's Overview tab (eventId present),
     // send the planner back into that event's Chats tab instead of just
-    // back to the storefront - that's the "inquiry lands in the chat"
-    // moment, even though nothing is actually persisted yet.
+    // back to the storefront - that's where the new conversation now lives.
     private String redirectAfterStorefrontSubmit(
             String redirectSlug, Long eventId, String plainFlashKey, String eventFlashMessage, RedirectAttributes redirectAttributes) {
         if (eventId != null) {
@@ -536,28 +641,24 @@ public class VendorController {
     }
 
     @GetMapping("/settings")
-    public String settings(Model model) {
+    public String settings(HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        BackendVendorSettingsResponse settings = backendClient.getSettings(jwt);
         if (!model.containsAttribute("vendorSettingsForm")) {
-            VendorSettingsForm form = stubDataService.load("vendor-settings.json", VendorSettingsForm.class);
-            model.addAttribute("vendorSettingsForm", form);
+            model.addAttribute("vendorSettingsForm", toSettingsForm(settings));
         }
-        if (!model.containsAttribute("settingsDocuments")) {
-            model.addAttribute(
-                    "settingsDocuments",
-                    stubDataService.load("vendor-settings-documents.json", VendorSettingsDocuments.class));
-        }
+        model.addAttribute("settingsDocuments", new VendorSettingsDocuments(
+                settings.logoImageUrl(), settings.idCardUrl(), settings.selfieUrl(),
+                settings.cancellationPolicyUrl(), settings.refundTermsUrl(),
+                settings.verified(), settings.verifiedAt()));
         if (!model.containsAttribute("vendorPaymentMethodForm")) {
             model.addAttribute("vendorPaymentMethodForm", new VendorPaymentMethodForm());
         }
-        List<VendorPaymentMethodItem> paymentMethods =
-                stubDataService.loadList("vendor-payment-methods.json", VendorPaymentMethodItem.class);
-        model.addAttribute("paymentMethods", paymentMethods);
+        model.addAttribute("paymentMethods", backendClient.getPaymentMethods(jwt));
         if (!model.containsAttribute("vendorLegalDocumentForm")) {
             model.addAttribute("vendorLegalDocumentForm", new VendorLegalDocumentForm());
         }
-        List<VendorLegalDocumentItem> legalDocuments =
-                stubDataService.loadList("vendor-legal-documents.json", VendorLegalDocumentItem.class);
-        model.addAttribute("legalDocuments", legalDocuments);
+        model.addAttribute("legalDocuments", backendClient.getLegalDocuments(jwt));
         model.addAttribute("documentTypes", LegalDocumentType.values());
         model.addAttribute("businessTypes", BusinessType.values());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
@@ -568,10 +669,35 @@ public class VendorController {
         return "vendor/settings";
     }
 
+    private VendorSettingsForm toSettingsForm(BackendVendorSettingsResponse settings) {
+        VendorSettingsForm form = new VendorSettingsForm();
+        form.setBusinessName(settings.businessName());
+        form.setOwnerName(settings.ownerName());
+        form.setBusinessType(settings.businessType());
+        form.setContactEmail(settings.contactEmail());
+        form.setPhoneNumber(settings.phoneNumber());
+        form.setAddressLine1(settings.addressLine1());
+        form.setAddressLine2(settings.addressLine2());
+        form.setCity(settings.city());
+        form.setState(settings.state());
+        form.setPostalCode(settings.postalCode());
+        form.setCountry(settings.country());
+        form.setPrimaryCategory(settings.primaryCategory());
+        form.setMaxGuestCapacity(settings.maxGuestCapacity());
+        form.setMaxCustomersPerDay(settings.maxCustomersPerDay());
+        form.setBasePrice(settings.basePrice());
+        form.setLeadTimeDays(settings.leadTimeDays());
+        form.setStorefrontOverview(settings.storefrontOverview());
+        form.setOperatingAreas(settings.operatingAreas());
+        form.setCateredEventTypes(settings.cateredEventTypes());
+        form.setPaymentInstructions(settings.paymentInstructions());
+        return form;
+    }
+
     // businessPermit is gone from this form - legal documents (any number of
-    // them) are now added/removed one at a time via the endpoints below,
-    // same pattern as payment methods, instead of being folded into this
-    // big Save Changes submit.
+    // them) are added/removed one at a time via the endpoints below, same
+    // pattern as payment methods, instead of being folded into this big
+    // Save Changes submit.
     @PostMapping("/settings")
     public String updateSettings(
             @ModelAttribute VendorSettingsForm vendorSettingsForm,
@@ -580,75 +706,106 @@ public class VendorController {
             @RequestParam(required = false) MultipartFile selfie,
             @RequestParam(required = false) MultipartFile cancellationPolicyFile,
             @RequestParam(required = false) MultipartFile refundTermsFile,
+            HttpSession session,
             RedirectAttributes redirectAttributes) {
         // Mirrors eventsrus-backend's own PDF-only validation on this
-        // endpoint (VendorSettingsController/UserService#requirePdf) - stub
-        // only for now otherwise, doesn't actually store any of these files.
+        // endpoint (VendorSettingsController/UserService#requirePdf) as a
+        // fast client-side check before even calling the real endpoint.
         if (!isPdfOrEmpty(cancellationPolicyFile) || !isPdfOrEmpty(refundTermsFile)) {
             redirectAttributes.addFlashAttribute("settingsError", "Only PDF files are accepted for cancellation policy and refund terms.");
             return "redirect:/vendor/settings";
         }
-        redirectAttributes.addFlashAttribute("settingsSaved", true);
+        try {
+            backendClient.updateSettings(
+                    WebSession.token(session), vendorSettingsForm, logo, idCard, selfie,
+                    cancellationPolicyFile, refundTermsFile);
+            redirectAttributes.addFlashAttribute("settingsSaved", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("settingsError", e.getMessage());
+        }
         return "redirect:/vendor/settings";
     }
 
+    // AJAX (JSON), not a redirect - called via fetch() from the Add Document
+    // modal's queue-then-save script (see settings.html), which only fires
+    // this once the vendor actually clicks the page's real Save Changes
+    // button, not when the modal's own "Add Document" button is clicked.
     @PostMapping("/settings/legal-documents")
-    public String addLegalDocument(
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addLegalDocument(
             @ModelAttribute VendorLegalDocumentForm vendorLegalDocumentForm,
             @RequestParam(required = false) MultipartFile file,
-            RedirectAttributes redirectAttributes) {
-        // Stub only for now - proves the round trip; wires up to
-        // POST /api/v1/vendors/me/legal-documents on eventsrus-backend later
-        // (VendorLegalDocumentService#create already does this for real -
-        // replacing the old single business-permit upload, since a vendor
-        // can have several of these: DTI, SEC, Mayor's Permit, Barangay
-        // Clearance, BIR, ...). Doesn't actually store the file or add it
-        // to the list (StubDataService re-reads the static JSON every
-        // request, same limitation as every other stub POST here).
+            HttpSession session) {
         if (file == null || file.isEmpty()) {
-            redirectAttributes.addFlashAttribute("settingsError", "A document file is required.");
-            return "redirect:/vendor/settings";
+            return ResponseEntity.badRequest().body(Map.of("error", "A document file is required."));
         }
-        redirectAttributes.addFlashAttribute("legalDocumentAdded", true);
-        return "redirect:/vendor/settings";
+        try {
+            backendClient.addLegalDocument(WebSession.token(session), vendorLegalDocumentForm, file);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
+    // AJAX (JSON), not a redirect - called via fetch() from a plain button
+    // (see settings.html's .settings-delete-btn script), which then does
+    // its own navigate-back-to-settings afterward. A redirect response
+    // here would just get silently followed and discarded by fetch(),
+    // consuming the one-shot flash attribute before the vendor's own
+    // browser ever saw it.
     @PostMapping("/settings/legal-documents/{documentId}/delete")
-    public String deleteLegalDocument(@PathVariable Long documentId, RedirectAttributes redirectAttributes) {
-        // Stub only for now - wires up to
-        // DELETE /api/v1/vendors/me/legal-documents/{id} on eventsrus-backend later.
-        redirectAttributes.addFlashAttribute("legalDocumentRemoved", true);
-        return "redirect:/vendor/settings";
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteLegalDocument(@PathVariable Long documentId, HttpSession session) {
+        try {
+            backendClient.deleteLegalDocument(WebSession.token(session), documentId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     private boolean isPdfOrEmpty(MultipartFile file) {
         return file == null || file.isEmpty() || "application/pdf".equals(file.getContentType());
     }
 
+    // AJAX (JSON) - same reasoning as addLegalDocument above.
     @PostMapping("/settings/payment-methods")
-    public String addPaymentMethod(
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addPaymentMethod(
             @ModelAttribute VendorPaymentMethodForm vendorPaymentMethodForm,
             @RequestParam(required = false) MultipartFile qrImage,
-            RedirectAttributes redirectAttributes) {
+            HttpSession session) {
         // Mirrors eventsrus-backend's own image-type validation on this
-        // endpoint (VendorPaymentMethodController/Service#requireImage) -
-        // stub only for now otherwise, doesn't actually store the QR image
-        // or add it to the list (StubDataService re-reads the static JSON
-        // every request, same limitation as every other stub POST here).
+        // endpoint (VendorPaymentMethodController/Service#requireImage) as a
+        // fast client-side check before even calling the real endpoint.
         if (qrImage == null || qrImage.isEmpty()) {
-            redirectAttributes.addFlashAttribute("settingsError", "A QR code image is required.");
-            return "redirect:/vendor/settings";
+            return ResponseEntity.badRequest().body(Map.of("error", "A QR code image is required."));
         }
         if (!isPngOrJpeg(qrImage)) {
-            redirectAttributes.addFlashAttribute("settingsError", "Only PNG or JPEG images are accepted for payment method QR codes.");
-            return "redirect:/vendor/settings";
+            return ResponseEntity.badRequest().body(Map.of("error", "Only PNG or JPEG images are accepted for payment method QR codes."));
         }
-        redirectAttributes.addFlashAttribute("paymentMethodAdded", true);
-        return "redirect:/vendor/settings";
+        try {
+            backendClient.addPaymentMethod(WebSession.token(session), vendorPaymentMethodForm, qrImage);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     private boolean isPngOrJpeg(MultipartFile file) {
         String contentType = file.getContentType();
         return "image/png".equals(contentType) || "image/jpeg".equals(contentType);
+    }
+
+    @PostMapping("/settings/payment-methods/{paymentMethodId}/delete")
+    // AJAX (JSON) for the same reason as deleteLegalDocument above.
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deletePaymentMethod(@PathVariable Long paymentMethodId, HttpSession session) {
+        try {
+            backendClient.deletePaymentMethod(WebSession.token(session), paymentMethodId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

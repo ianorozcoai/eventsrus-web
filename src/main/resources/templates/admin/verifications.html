@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Verifications - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('verifications')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Vendor Verifications</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<div class="card" th:unless="${backendUnavailable}">
+						<div class="card-header d-flex align-items-center">
+							<h6 class="mb-0">Submitted Documents</h6>
+							<span class="badge bg-warning ms-auto"
+								th:text="${#lists.size(vendors.?[#this.verified() == false])} + ' pending review'">0 pending review</span>
+						</div>
+
+						<div class="table-responsive">
+							<table class="table table-hover">
+								<thead>
+									<tr>
+										<th>Business</th>
+										<th>Owner</th>
+										<th>Contact</th>
+										<th>Documents Submitted</th>
+										<th>Status</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="vendor : ${vendors}">
+										<td th:text="${vendor.businessName()}">Business Name</td>
+										<td th:text="${vendor.ownerName()}">Owner</td>
+										<td th:text="${vendor.contactEmail()}">email@example.com</td>
+										<td>
+											<span class="badge me-1" th:classappend="${vendor.hasIdCard()} ? 'bg-teal' : 'bg-light text-muted'">ID</span>
+											<span class="badge me-1" th:classappend="${vendor.hasSelfie()} ? 'bg-teal' : 'bg-light text-muted'">Selfie</span>
+											<span class="badge" th:classappend="${vendor.legalDocumentCount() > 0} ? 'bg-teal' : 'bg-light text-muted'"
+												th:text="${vendor.legalDocumentCount()} + ' legal doc(s)'">0 legal doc(s)</span>
+										</td>
+										<td>
+											<span class="badge bg-success" th:if="${vendor.verified()}">
+												<i class="ph-shield-check me-1"></i> Verified
+											</span>
+											<span class="badge bg-warning text-dark" th:unless="${vendor.verified()}">
+												<i class="ph-clock me-1"></i> Pending Review
+											</span>
+										</td>
+										<td class="text-end">
+											<a th:href="@{'/admin/verifications/' + ${vendor.vendorUserId()}}" class="btn btn-primary btn-sm">
+												<i class="ph-magnifying-glass me-1"></i> Review
+											</a>
+										</td>
+									</tr>
+									<tr th:if="${#lists.isEmpty(vendors)}">
+										<td colspan="6" class="text-center text-muted py-4">No vendors have onboarded yet.</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

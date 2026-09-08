@@ -29,7 +29,13 @@
 
 				<!-- Content area -->
 				<div class="content">
-					<div class="card">
+
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<div class="card" th:unless="${backendUnavailable}">
 						<div class="card-header d-flex align-items-center">
 							<h6 class="mb-0">All Vendors</h6>
 							<span class="badge bg-primary ms-auto" th:text="${#lists.size(vendors)} + ' total'">0 total</span>

@@ -138,8 +138,11 @@
 												<td th:text="${#temporals.format(entry.occurredAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
 												<td th:text="${entry.plan()}">PRO</td>
 												<td>
-													<span th:if="${entry.billingSource().name() == 'FREE_GRANT'}" class="badge bg-info">Free Trial</span>
-													<span th:if="${entry.billingSource().name() == 'PAYPAL'}" class="badge bg-primary">PayPal</span>
+													<!--/* billingSource() is a plain String (matches BackendBillingHistoryEntry -
+													     Jackson already serializes the real enum down to its name), not an
+													     enum with its own .name() to call. */-->
+													<span th:if="${entry.billingSource() == 'FREE_GRANT'}" class="badge bg-info">Free Trial</span>
+													<span th:if="${entry.billingSource() == 'PAYPAL'}" class="badge bg-primary">PayPal</span>
 												</td>
 												<td>
 													<span th:if="${entry.amount() != null}">&#8369;<span th:text="${#numbers.formatDecimal(entry.amount(), 1, 'COMMA', 2, 'POINT')}">0.00</span></span>

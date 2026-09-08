@@ -9,12 +9,16 @@ import lombok.Setter;
 /**
  * Mirrors eventsrus-backend's dto.VendorSettingsRequest field-for-field,
  * including its own tab grouping (the backend's own comments already split
- * it into these 3 tabs - this class just keeps the same shape), plus a few
- * stub-only additions the real DTO doesn't have yet: description
- * (VendorProfile has a description column - set at onboarding, shown on the
- * public storefront - but VendorSettingsRequest/Response never expose it
- * for editing after that), and maxCustomersPerDay. operatingAreas (the
- * provinces the vendor serves, or "Entire Philippines") and
+ * it into these 3 tabs - this class just keeps the same shape). One
+ * stub-only field that used to live here - description (set at onboarding,
+ * shown on the public storefront, but never exposed for editing again by
+ * the real VendorSettingsRequest/Response) - was dropped once this form
+ * started binding to the real endpoint; editing it here would have
+ * silently done nothing. maxCustomersPerDay is real now too (V28) -
+ * distinct from maxGuestCapacity (headcount per event): how many separate
+ * client bookings the vendor can take on in one day.
+ * operatingAreas (the provinces the vendor serves, or "Entire
+ * Philippines") and
  * cateredEventTypes (which event types the vendor caters to) are both real
  * on the backend DTO now, bound the same way - repeated form fields from a
  * native multi-select, not a delimited string.
@@ -40,7 +44,6 @@ public class VendorSettingsForm {
 
     // Tab 1 - Business Info & Credentials
     private String businessName;
-    private String description;
     private String ownerName;
     private BusinessType businessType;
     private String contactEmail;
@@ -55,10 +58,10 @@ public class VendorSettingsForm {
     // Tab 2 - Service Scope & Metrics
     private BusinessType primaryCategory;
     private Integer maxGuestCapacity;
+    private Integer maxCustomersPerDay;
     private BigDecimal basePrice;
     private Integer leadTimeDays;
     private String storefrontOverview;
-    private Integer maxCustomersPerDay;
     private List<String> operatingAreas;
     private List<EventType> cateredEventTypes;
 

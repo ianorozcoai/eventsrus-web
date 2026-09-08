@@ -43,17 +43,16 @@
 
 					<div th:if="${paymentAcknowledged}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Payment acknowledged and invoice sent to the planner - booking confirmed. <span class="text-muted">(stub only for now)</span>
-					</div>
+						Payment acknowledged and invoice sent to the planner - booking confirmed.					</div>
 
 					<div th:if="${paymentRejected}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Payment screenshot rejected. The planner has been notified to re-upload. <span class="text-muted">(stub only for now)</span>
+						Payment screenshot rejected. The planner has been notified to re-upload.
 					</div>
 
 					<div th:if="${bookingCancelled}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Booking cancelled. The planner has been notified. <span class="text-muted">(stub only for now)</span>
+						Booking cancelled. The planner has been notified.
 					</div>
 
 					<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">

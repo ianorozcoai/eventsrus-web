@@ -25,28 +25,45 @@
 
 	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3">
 
-		<a th:href="@{/}" class="d-inline-flex align-items-center text-decoration-none mb-4">
-			<span class="d-flex align-items-center justify-content-center bg-primary text-white rounded-pill fw-bold" style="width:36px;height:36px;">E</span>
-			<span class="fw-bold fs-lg ms-2">EventsRUs</span>
-		</a>
-
 		<div class="card" style="max-width:380px;width:100%;">
 			<div class="card-body text-center p-4">
+				<!-- One card for the whole login moment - logo.svg already carries
+				     its own white backdrop, so it blends seamlessly on this
+				     card's own white surface without any extra wrapper. -->
+				<a th:href="@{/}" class="d-inline-block mb-3">
+					<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:150px;height:auto;">
+				</a>
 				<h5 class="mb-1" th:text="${intent == 'vendor'} ? 'Vendor Login' : 'Planner Login'">Login</h5>
 				<p class="text-muted fs-sm mb-4"
 					th:text="${intent == 'vendor'} ? 'Sign in to manage your storefront, bookings, and subscription.' : 'Sign in to start planning your event.'">
 					Sign in to continue.
 				</p>
 
+				<!-- Server-rendered (a redirect back here after a stale/expired
+				     session - see GlobalExceptionHandler), separate from the
+				     one below which the Google Sign-In JS callback fills in
+				     and shows entirely client-side. -->
+				<div th:if="${loginError}" class="alert alert-danger text-start mb-3" th:text="${loginError}">Error</div>
+
 				<div id="login-error" class="alert alert-danger d-none text-start mb-3"></div>
 
-				<div class="d-flex justify-content-center">
+				<div id="google-signin-container" class="d-flex justify-content-center">
 					<div id="g_id_onload"
 						th:attr="data-client_id=${googleClientId}"
 						data-callback="handleGoogleCredential"
 						data-auto_prompt="false">
 					</div>
 					<div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with" data-shape="pill"></div>
+				</div>
+
+				<!-- Shown from the moment Google hands back a credential
+				     until the server round-trip finishes - covers the real
+				     gap users noticed between picking their Google account
+				     and actually landing on the dashboard, where the button
+				     alone gave no sign anything was happening. -->
+				<div id="signin-progress" class="d-none align-items-center justify-content-center gap-2 text-muted">
+					<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+					<span>Signing you in&hellip;</span>
 				</div>
 
 				<p class="text-muted fs-xs mt-4 mb-0">The same Google account used across the EventsRUs app.</p>
@@ -60,7 +77,27 @@
 
 		function handleGoogleCredential(response) {
 			var errorBox = document.getElementById('login-error');
+			var googleContainer = document.getElementById('google-signin-container');
+			var progress = document.getElementById('signin-progress');
+
 			errorBox.classList.add('d-none');
+			// Swap the button out for a spinner right away - Google's own
+			// account picker has already closed by this point, so without
+			// this the page just sits there looking unresponsive during the
+			// server round-trip (verify token, find-or-create user, issue
+			// JWT), and it's easy to mistake that for nothing having
+			// happened and click "Sign in with Google" again.
+			googleContainer.classList.add('d-none');
+			progress.classList.remove('d-none');
+			progress.classList.add('d-flex');
+
+			function showError(message) {
+				errorBox.textContent = message;
+				errorBox.classList.remove('d-none');
+				progress.classList.add('d-none');
+				progress.classList.remove('d-flex');
+				googleContainer.classList.remove('d-none');
+			}
 
 			var body = new URLSearchParams();
 			body.set('idToken', response.credential);
@@ -74,15 +111,16 @@
 				.then(function (res) { return res.json(); })
 				.then(function (result) {
 					if (result.success) {
+						// Left showing - the page is navigating away anyway,
+						// and flipping back to the button first would just
+						// flash confusingly right before the redirect.
 						window.location.href = result.redirectTo;
 					} else {
-						errorBox.textContent = result.error || 'Sign-in failed. Please try again.';
-						errorBox.classList.remove('d-none');
+						showError(result.error || 'Sign-in failed. Please try again.');
 					}
 				})
 				.catch(function () {
-					errorBox.textContent = 'Could not reach the server. Please try again.';
-					errorBox.classList.remove('d-none');
+					showError('Could not reach the server. Please try again.');
 				});
 		}
 	</script>

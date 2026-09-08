@@ -10,6 +10,8 @@ public record SupportTicket(
         TicketStatus status,
         long raisedByUserId,
         String raisedByName,
+        String raisedByEmail,
+        String raisedByRole,
         Long relatedEventId,
         String relatedEventName,
         Long relatedBookingId,

@@ -1,10 +1,10 @@
 package com.web.eventsrus.controller;
 
 import com.web.eventsrus.admin.AdminAccountService;
-import com.web.eventsrus.model.AdminPlannerSummary;
-import com.web.eventsrus.model.PlannerVendorSuggestion;
-import com.web.eventsrus.stub.StubDataService;
-import java.util.Comparator;
+import com.web.eventsrus.admin.AdminSession;
+import com.web.eventsrus.backend.BackendApiException;
+import com.web.eventsrus.backend.BackendClient;
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -18,58 +18,93 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * The admin module - dashboard totals, a read-only Planner directory and
- * Vendor directory, and admin-account management. Stub-data-backed, same as
- * every other non-subscription feature in this app: there's no real admin
- * directory/stats endpoint on eventsrus-backend yet for this to call.
+ * Vendor directory, and admin-account management. Real eventsrus-backend
+ * data now, same pattern as AdminVerificationController/AdminSupportTicketController
+ * (an admin session's real ADMIN-role JWT via the internal bridge - see
+ * AdminSession/AdminAuthController) - falls back to a friendly "backend
+ * unavailable" notice rather than a stack trace if that bridge didn't
+ * produce a token.
  */
 @Controller
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
-    private final StubDataService stubDataService;
+    private final BackendClient backendClient;
     private final AdminAccountService adminAccountService;
 
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
-        model.addAttribute(
-                "plannerCount", stubDataService.loadList("admin-planners.json", AdminPlannerSummary.class).size());
-        model.addAttribute(
-                "vendorCount", stubDataService.loadList("vendor-directory.json", PlannerVendorSuggestion.class).size());
+    public String dashboard(HttpSession session, Model model) {
         model.addAttribute("activePage", "dashboard");
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            model.addAttribute("backendUnavailable", true);
+            return "admin/dashboard";
+        }
+        try {
+            var stats = backendClient.getAdminDashboardStats(jwt);
+            model.addAttribute("backendUnavailable", false);
+            model.addAttribute("plannerCount", stats.plannerCount());
+            model.addAttribute("vendorCount", stats.vendorCount());
+            model.addAttribute("vendorTicketCount", stats.vendorTicketCount());
+            model.addAttribute("newVendorTicketCount", stats.newVendorTicketCount());
+            model.addAttribute("newPlannerTicketCount", stats.newPlannerTicketCount());
+        } catch (BackendApiException e) {
+            model.addAttribute("backendUnavailable", true);
+        }
         return "admin/dashboard";
     }
 
     @GetMapping("/planners")
-    public String planners(Model model) {
-        List<AdminPlannerSummary> planners = stubDataService
-                .loadList("admin-planners.json", AdminPlannerSummary.class).stream()
-                .sorted(Comparator.comparing(AdminPlannerSummary::joinedAt).reversed())
-                .toList();
-        model.addAttribute("planners", planners);
+    public String planners(HttpSession session, Model model) {
         model.addAttribute("activePage", "planners");
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("planners", List.of());
+            return "admin/planners";
+        }
+        try {
+            model.addAttribute("backendUnavailable", false);
+            model.addAttribute("planners", backendClient.listPlannersForAdmin(jwt));
+        } catch (BackendApiException e) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("planners", List.of());
+        }
         return "admin/planners";
     }
 
     @GetMapping("/planners/{id}")
-    public String plannerProfile(@PathVariable long id, Model model) {
-        AdminPlannerSummary planner = stubDataService
-                .loadList("admin-planners.json", AdminPlannerSummary.class).stream()
-                .filter(p -> p.id() == id)
-                .findFirst()
-                .orElse(null);
-        if (planner == null) {
+    public String plannerProfile(@PathVariable long id, HttpSession session, Model model) {
+        model.addAttribute("activePage", "planners");
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
             return "redirect:/admin/planners";
         }
-        model.addAttribute("planner", planner);
-        model.addAttribute("activePage", "planners");
+        try {
+            model.addAttribute("planner", backendClient.getPlannerForAdmin(jwt, id));
+        } catch (BackendApiException e) {
+            return "redirect:/admin/planners";
+        }
         return "admin/planner-profile";
     }
 
     @GetMapping("/vendors")
-    public String vendors(Model model) {
-        model.addAttribute("vendors", stubDataService.loadList("vendor-directory.json", PlannerVendorSuggestion.class));
+    public String vendors(HttpSession session, Model model) {
         model.addAttribute("activePage", "vendors");
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("vendors", List.of());
+            return "admin/vendors";
+        }
+        try {
+            model.addAttribute("backendUnavailable", false);
+            model.addAttribute("vendors", backendClient.listVendorsForAdmin(jwt));
+        } catch (BackendApiException e) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("vendors", List.of());
+        }
         return "admin/vendors";
     }
 

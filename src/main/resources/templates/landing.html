@@ -11,43 +11,106 @@
 	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
 
 	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+
+	<!-- The two role choices, shared by the static page below and the pop-up
+	     modal - big icon-first "pick a card" cards instead of plain buttons,
+	     colored to match the brand (blue = planner, the logo's own orange =
+	     vendor) so the choice itself feels like part of the brand, not a
+	     generic form control. -->
+	<style>
+		.role-cards {
+			display: flex;
+			gap: 1.25rem;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+		.role-card {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			width: 240px;
+			padding: 2rem 1.5rem;
+			border: 2px solid #e9ecef;
+			border-radius: 20px;
+			text-decoration: none;
+			background: #fff;
+			transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+		}
+		.role-card:hover, .role-card:focus-visible {
+			transform: translateY(-6px);
+			box-shadow: 0 16px 32px rgba(20, 20, 43, .12);
+			text-decoration: none;
+		}
+		.role-card--planner:hover { border-color: #0c83ff; }
+		.role-card--vendor:hover { border-color: #f8512d; }
+		.role-card__icon {
+			width: 84px;
+			height: 84px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 40px;
+			margin-bottom: 1.1rem;
+			transition: transform .25s ease;
+		}
+		.role-card:hover .role-card__icon { transform: scale(1.1) rotate(-6deg); }
+		.role-card--planner .role-card__icon { background: rgba(12, 131, 255, .12); color: #0c83ff; }
+		.role-card--vendor .role-card__icon { background: rgba(248, 81, 45, .12); color: #f8512d; }
+		.role-card__title { font-weight: 700; font-size: 1.05rem; color: #1a1a1a; margin-bottom: .35rem; }
+		.role-card__subtitle { font-size: .8rem; color: #6c757d; line-height: 1.4; }
+	</style>
 </head>
 
 <body class="bg-body">
 
 	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3 text-center">
 
-		<span class="d-flex align-items-center justify-content-center bg-primary text-white rounded-pill fw-bold mb-3" style="width:56px;height:56px;font-size:24px;">E</span>
-		<h3 class="fw-bold mb-1">Welcome to EventsRUs</h3>
+		<!-- logo.svg carries its own solid white backdrop, so it needs a
+		     deliberate rounded/shadowed card here on this gray page - the
+		     copy inside the modal below doesn't need this, it's already on
+		     the modal's own white surface. -->
+		<span class="d-inline-block bg-white rounded-4 shadow-sm p-3 mb-3">
+			<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:200px;height:auto;display:block;">
+		</span>
 		<p class="text-muted mb-4">Plan an event, or grow your business as a vendor.</p>
 
-		<div class="d-flex flex-column flex-sm-row gap-3">
-			<a th:href="@{/planner/}" class="btn btn-primary btn-lg px-4">
-				<i class="ph-confetti me-2"></i> I'm a Planner
+		<div class="role-cards">
+			<a th:href="@{/planner/}" class="role-card role-card--planner">
+				<span class="role-card__icon"><i class="ph-confetti"></i></span>
+				<span class="role-card__title">I'm Planning an Event</span>
+				<span class="role-card__subtitle">Find and book trusted vendors for your celebration</span>
 			</a>
-			<a th:href="@{/vendor/}" class="btn btn-outline-primary btn-lg px-4">
-				<i class="ph-storefront me-2"></i> I'm a Vendor
+			<a th:href="@{/vendor/}" class="role-card role-card--vendor">
+				<span class="role-card__icon"><i class="ph-storefront"></i></span>
+				<span class="role-card__title">I'm a Vendor</span>
+				<span class="role-card__subtitle">Grow your business and get more bookings</span>
 			</a>
 		</div>
 
 	</div>
 
 	<!-- Same choice, as a pop-up shown on arrival - dismissible, since the
-	     two buttons above are always there behind it either way. -->
+	     cards above are always there behind it either way. -->
 	<div class="modal fade" id="rolePickerModal" tabindex="-1">
-		<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-dialog modal-dialog-centered modal-lg">
 			<div class="modal-content">
-				<div class="modal-body text-center p-4">
-					<button type="button" class="btn-close float-end" data-bs-dismiss="modal"></button>
-					<span class="d-flex align-items-center justify-content-center bg-primary text-white rounded-pill fw-bold mx-auto mb-3" style="width:48px;height:48px;font-size:20px;">E</span>
+				<div class="modal-body text-center p-4 p-md-5">
+					<button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+					<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:150px;height:auto;" class="mb-3">
 					<h5 class="mb-1">What brings you here today?</h5>
 					<p class="text-muted fs-sm mb-4">Choose how you'd like to use EventsRUs.</p>
-					<div class="d-flex flex-column gap-2">
-						<a th:href="@{/planner/}" class="btn btn-primary">
-							<i class="ph-confetti me-2"></i> I'm planning an event
+					<div class="role-cards">
+						<a th:href="@{/planner/}" class="role-card role-card--planner">
+							<span class="role-card__icon"><i class="ph-confetti"></i></span>
+							<span class="role-card__title">I'm Planning an Event</span>
+							<span class="role-card__subtitle">Find and book trusted vendors for your celebration</span>
 						</a>
-						<a th:href="@{/vendor/}" class="btn btn-outline-primary">
-							<i class="ph-storefront me-2"></i> I'm a vendor
+						<a th:href="@{/vendor/}" class="role-card role-card--vendor">
+							<span class="role-card__icon"><i class="ph-storefront"></i></span>
+							<span class="role-card__title">I'm a Vendor</span>
+							<span class="role-card__subtitle">Grow your business and get more bookings</span>
 						</a>
 					</div>
 				</div>

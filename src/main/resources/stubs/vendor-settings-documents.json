@@ -1,7 +1,0 @@
-{
-  "logoImageUrl": null,
-  "idCardUrl": "https://eventsrus-private.s3.amazonaws.com/vendors/9001/id-card-sample.jpg?X-Amz-Signature=stub",
-  "selfieUrl": "https://eventsrus-private.s3.amazonaws.com/vendors/9001/selfie-sample.jpg?X-Amz-Signature=stub",
-  "cancellationPolicyUrl": "https://eventsrus-public.s3.amazonaws.com/vendors/9001/cancellation-policy-sample.pdf",
-  "refundTermsUrl": null
-}

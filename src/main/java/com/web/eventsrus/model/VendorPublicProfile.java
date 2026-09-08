@@ -6,16 +6,21 @@ import java.util.List;
  * The public vendor storefront - what a planner sees when they open
  * "View My Page". Mirrors eventsrus-backend's VendorPublicProfileResponse
  * field-for-field, plus a few stub-only additions the backend doesn't have
- * yet: galleryCaptions (no gallery concept exists yet - only a single
- * logoImageUrl), the tierLabel/primaryRegion/rating/bookingsCount/
- * responseTime hero-banner fields (no vendor tiering, ratings, or
- * response-time tracking exists yet), and reviews (no reviews/testimonials
- * concept exists yet). All of these stand in until the real backend fields
- * exist. paymentInstructions/paymentMethods are real on the backend
- * response now - note paymentMethods only ever holds APPROVED entries there
+ * yet: the tierLabel/primaryRegion/rating/bookingsCount/responseTime
+ * hero-banner fields (no vendor tiering, ratings, or response-time tracking
+ * exists yet), and reviews (no reviews/testimonials concept exists yet).
+ * All of these stand in until the real backend fields exist.
+ * galleryImages is real now (VendorPackageImageService#listAllForStorefront) -
+ * every photo across every package this vendor has, combined.
+ * paymentInstructions/paymentMethods are real on the backend response now -
+ * note paymentMethods only ever holds APPROVED entries there
  * (VendorDirectoryService filters via
  * VendorPaymentMethodService#listApprovedForStorefront), so this stub JSON
  * is curated the same way rather than filtering client-side.
+ * rating/bookingsCount are boxed (not primitive) specifically because
+ * they're stub-only - Jackson 3's record deserialization rejects a missing
+ * JSON field for a primitive component (FAIL_ON_NULL_FOR_PRIMITIVES), which
+ * the real backend response always triggers for these two.
  * legalDocuments/identityVerified are also real now. legalDocuments is a
  * list, not a single flag/URL - a business can have several registration
  * documents on file (DTI, SEC, Mayor's Permit, Barangay Clearance, BIR,
@@ -41,13 +46,13 @@ public record VendorPublicProfile(
         String phoneNumber,
         String tierLabel,
         String primaryRegion,
-        double rating,
-        int bookingsCount,
+        Double rating,
+        Integer bookingsCount,
         String responseTime,
         List<VendorLegalDocumentItem> legalDocuments,
         boolean identityVerified,
-        List<String> galleryCaptions,
         List<VendorPackageItem> packages,
         List<VendorReview> reviews,
         String paymentInstructions,
-        List<VendorPaymentMethodItem> paymentMethods) {}
+        List<VendorPaymentMethodItem> paymentMethods,
+        List<VendorPackageImageItem> galleryImages) {}

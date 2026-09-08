@@ -2,8 +2,11 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <!--/* Shared <head> for every admin page - separate from fragments/common.html's
-     head since the admin module doesn't need the messenger two-pane CSS or
-     dropzone JS the vendor/planner side pulls in. */-->
+     head since the admin module doesn't need the dropzone JS the
+     vendor/planner side pulls in. The messenger two-pane CSS IS shared
+     (admin/support.html uses the same chat-list + thread layout as
+     vendor/support.html) - same rules, copied rather than sourced from
+     fragments/common.html since that fragment isn't included here. */-->
 <head th:fragment="head(pageTitle)">
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -13,6 +16,15 @@
 	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
 	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
 	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+
+	<style>
+		.messenger-shell { flex-direction: column; }
+		.messenger-list-pane { width: 100%; max-height: 35vh; }
+		@media (min-width: 768px) {
+			.messenger-shell { flex-direction: row; height: 70vh; }
+			.messenger-list-pane { width: 320px; max-height: none; }
+		}
+	</style>
 
 	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
 	<script th:src="@{/assets/js/app.js}"></script>
@@ -108,6 +120,24 @@
 						<a th:href="@{/admin/vendors}" class="nav-link" th:classappend="${activePage == 'vendors'} ? 'active'">
 							<i class="ph-storefront"></i>
 							<span>Vendors</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/verifications}" class="nav-link" th:classappend="${activePage == 'verifications'} ? 'active'">
+							<i class="ph-identification-badge"></i>
+							<span>Verifications</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/support/vendors}" class="nav-link" th:classappend="${activePage == 'support-vendors'} ? 'active'">
+							<i class="ph-lifebuoy"></i>
+							<span>Vendor Complaints</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/support/planners}" class="nav-link" th:classappend="${activePage == 'support-planners'} ? 'active'">
+							<i class="ph-lifebuoy"></i>
+							<span>Planner Complaints</span>
 						</a>
 					</li>
 					<li class="nav-item">

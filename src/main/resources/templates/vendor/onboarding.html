@@ -21,6 +21,12 @@
 	<script th:src="@{/assets/js/app.js}"></script>
 	<!-- /theme JS files -->
 
+	<!-- reCAPTCHA v3 - invisible, score-based bot check on submit (see the
+	     "Legal documents repeater" script block below for how the token
+	     gets attached before the real submit). No async/defer - grecaptcha
+	     needs to exist by the time the form can be interacted with. -->
+	<script th:src="@{https://www.google.com/recaptcha/api.js(render=${recaptchaSiteKey})}"></script>
+
 </head>
 
 <body>
@@ -66,19 +72,34 @@
 
 					<!-- Onboarding form -->
 					<form id="onboardingForm" th:action="@{/vendor/onboarding}" th:object="${vendorOnboardingForm}" method="post" enctype="multipart/form-data" class="flex-fill">
+						<input type="hidden" id="recaptchaToken" th:field="*{recaptchaToken}">
+						<!-- Pre-filled server-side from the session if this visitor arrived via a referral link (/vendor/?ref=CODE) - see VendorController#onboardingForm. -->
+						<input type="hidden" th:field="*{referralCode}">
 						<div class="row">
 							<div class="col-lg-8 offset-lg-2">
 								<div class="card mb-0">
 									<div class="card-body">
 										<div class="text-center mb-3">
-											<div class="d-inline-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold text-white mb-4 mt-2" style="width:48px;height:48px;font-size:20px;">E</div>
+											<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:140px;height:auto;" class="mb-3 mt-2">
 											<h5 class="mb-0">Become a Vendor</h5>
 											<span class="d-block text-muted">Tell us about your business — most fields can be edited later</span>
+											<!-- Dev/testing convenience only, not a real product feature - fills
+											     the plain text inputs with plausible sample data so the form can
+											     be exercised quickly. Deliberately leaves every dropdown, file
+											     picker, and the terms checkbox untouched. -->
+											<button type="button" id="fillSampleDataButton" class="btn btn-outline-secondary btn-sm mt-3">
+												<i class="ph-magic-wand me-1"></i> Fill Sample Data (Testing)
+											</button>
 										</div>
 
-										<div th:if="${onboardingError}" class="alert alert-danger alert-dismissible">
+										<!-- Populated/shown by JS on a failed submit (see the consolidated
+										     submit-handler script below) - starts hidden. The form is
+										     submitted via fetch(), never a real page navigation, so a
+										     failure here never loses any field or file the vendor already
+										     filled in/picked. -->
+										<div id="onboardingError" class="alert alert-danger alert-dismissible d-none">
 											<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-											<span th:text="${onboardingError}">Something went wrong submitting your application.</span>
+											<span id="onboardingErrorText">Something went wrong submitting your application.</span>
 										</div>
 
 										<!-- Business info -->
@@ -283,7 +304,7 @@
 									</div>
 
 									<div class="card-body text-end border-top">
-										<button type="submit" class="btn btn-primary">
+										<button type="submit" id="onboardingSubmitButton" class="btn btn-primary">
 											<i class="ph-check-circle me-2"></i>
 											Submit Application
 										</button>
@@ -316,36 +337,188 @@
 	<!-- /page content -->
 
 
-	<!-- Operating area multiselect -->
+	<!-- Dev/testing convenience - fills only the plain text inputs (and the
+	     description textarea) with plausible sample data. Deliberately never
+	     touches any <select>, the operating-area multiselect, any
+	     <input type="file">, or the terms checkbox - those stay for the
+	     tester to fill in themselves. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var fillButton = document.getElementById('fillSampleDataButton');
+			if (!fillButton) {
+				return;
+			}
+
+			var businessNames = [
+				'Fiesta Feast Catering', 'Manila Grand Events', 'SoundWave Entertainment PH',
+				'Blossom & Bloom Florals', 'Golden Hour Photography', 'Sweet Treats Dessert Bar',
+				'Lens & Light Studio', "Ian's Premium Events"
+			];
+			var ownerNames = [
+				'Maria Santos', 'Juan Dela Cruz', 'Anna Reyes', 'Carlo Villanueva',
+				'Bea Fernandez', 'Miguel Torres', 'Kristine Aquino', 'Paolo Ramirez'
+			];
+			var descriptions = [
+				'Full-service event styling and coordination for weddings, corporate events, and celebrations.',
+				'Buffet and plated Filipino-fusion catering, from intimate dinners to 300-guest galas.',
+				'DJs, live bands, and full sound/lighting rigs for weddings, parties, and corporate events.',
+				'Destination and same-day-edit wedding photography and videography.',
+				'Custom floral arrangements and event styling for every occasion.'
+			];
+			var streets = ['123 Kamias Road', '45 Tomas Morato Ave', '78 Maginhawa St', '12 Katipunan Ave', '56 Timog Ave'];
+			var barangays = ['Barangay Pinyahan', 'Barangay Sacred Heart', 'Barangay Teachers Village', 'Barangay Central'];
+			var cities = ['Quezon City', 'Makati', 'Pasig', 'Taguig', 'Mandaluyong', 'Cebu City'];
+
+			function pick(list) {
+				return list[Math.floor(Math.random() * list.length)];
+			}
+
+			function randomDigits(count) {
+				var digits = '';
+				for (var i = 0; i < count; i++) {
+					digits += Math.floor(Math.random() * 10);
+				}
+				return digits;
+			}
+
+			function setValue(id, value) {
+				var field = document.getElementById(id);
+				if (field) {
+					field.value = value;
+				}
+			}
+
+			fillButton.addEventListener('click', function () {
+				var businessName = pick(businessNames);
+				var emailHandle = businessName.toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+				setValue('businessName', businessName);
+				setValue('ownerName', pick(ownerNames));
+				setValue('description', pick(descriptions));
+				setValue('contactEmail', 'info@' + emailHandle + '.ph');
+				setValue('phoneNumber', '+63 9' + randomDigits(2) + ' ' + randomDigits(3) + ' ' + randomDigits(4));
+				setValue('addressLine1', pick(streets));
+				setValue('addressLine2', pick(barangays));
+				setValue('city', pick(cities));
+				setValue('postalCode', randomDigits(4));
+			});
+		});
+	</script>
+	<!-- /dev sample-data fill -->
+
+
+	<!-- Operating area multiselect + reCAPTCHA + the real submission - one
+	     consolidated handler so all three compose correctly (an invalid
+	     operating-area selection must block before reCAPTCHA ever runs; the
+	     actual submit only happens once a token is in hand). Submitted via
+	     fetch() rather than a native form post/redirect - see
+	     VendorController#submitOnboarding's Javadoc for why: a page
+	     navigation can never restore a <input type="file">'s picked file,
+	     so a failure here has to keep the vendor on this exact page with
+	     every field and file exactly as they left it. -->
 	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/forms/selects/bootstrap_multiselect.js}"></script>
-	<script>
+	<script th:inline="javascript">
 		document.addEventListener('DOMContentLoaded', function () {
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
 				jQuery('.multiselect-operating-areas').multiselect();
 			}
 
-			// Native "required" on a <select> the plugin hides doesn't
-			// reliably show browser validation UI, so enforce it explicitly.
 			var form = document.getElementById('onboardingForm');
 			var operatingAreas = document.getElementById('operatingAreas');
 			var feedback = document.getElementById('operatingAreasFeedback');
-			if (form && operatingAreas) {
-				form.addEventListener('submit', function (event) {
-					if (operatingAreas.selectedOptions.length === 0) {
-						event.preventDefault();
-						if (feedback) {
-							feedback.classList.remove('d-none');
-						}
-						document.getElementById('operatingAreas').closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
-					} else if (feedback) {
-						feedback.classList.add('d-none');
-					}
-				});
+			var tokenField = document.getElementById('recaptchaToken');
+			var siteKey = /*[[${recaptchaSiteKey}]]*/ '';
+			var submitButton = document.getElementById('onboardingSubmitButton');
+			var overlay = document.getElementById('submitOverlay');
+			var errorBox = document.getElementById('onboardingError');
+			var errorText = document.getElementById('onboardingErrorText');
+
+			if (!form) {
+				return;
 			}
+
+			function showError(message) {
+				if (!errorBox) {
+					return;
+				}
+				errorText.textContent = message;
+				errorBox.classList.remove('d-none');
+				errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+			}
+
+			function setSubmitting(submitting) {
+				if (overlay) {
+					overlay.classList.toggle('d-none', !submitting);
+				}
+				if (submitButton) {
+					submitButton.disabled = submitting;
+				}
+			}
+
+			function doSubmit(token) {
+				if (tokenField) {
+					tokenField.value = token || '';
+				}
+				var formData = new FormData(form);
+				fetch(form.action, { method: 'POST', body: formData })
+					.then(function (res) { return res.json(); })
+					.then(function (result) {
+						if (result.success) {
+							// A real navigation here is fine - the vendor is
+							// done and moving on, nothing left to preserve.
+							window.location.href = result.redirectTo;
+						} else {
+							setSubmitting(false);
+							showError(result.error || 'Something went wrong submitting your application.');
+						}
+					})
+					.catch(function () {
+						setSubmitting(false);
+						showError('Could not reach the server. Please check your connection and try again.');
+					});
+			}
+
+			form.addEventListener('submit', function (event) {
+				// Always intercepted now - the real submit always goes through
+				// fetch() in doSubmit(), never a native form post.
+				event.preventDefault();
+
+				if (errorBox) {
+					errorBox.classList.add('d-none');
+				}
+
+				// Native "required" on a <select> the multiselect plugin hides
+				// doesn't reliably show browser validation UI, so enforce it explicitly.
+				if (operatingAreas && operatingAreas.selectedOptions.length === 0) {
+					if (feedback) {
+						feedback.classList.remove('d-none');
+					}
+					operatingAreas.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+					return;
+				}
+				if (feedback) {
+					feedback.classList.add('d-none');
+				}
+
+				setSubmitting(true);
+
+				if (siteKey && typeof grecaptcha !== 'undefined') {
+					grecaptcha.ready(function () {
+						grecaptcha.execute(siteKey, { action: 'vendor_onboarding' })
+							.then(doSubmit)
+							// Never let a reCAPTCHA-side hiccup block a real
+							// submission attempt - same fail-open reasoning as
+							// the backend's own verification call.
+							.catch(function () { doSubmit(null); });
+					});
+				} else {
+					doSubmit(null);
+				}
+			});
 		});
 	</script>
-	<!-- /operating area multiselect -->
+	<!-- /operating area multiselect + reCAPTCHA + submission -->
 
 
 	<!-- Legal documents repeater - a business can have several of these
@@ -373,6 +546,15 @@
 		});
 	</script>
 	<!-- /legal documents repeater -->
+
+	<!-- Full-page overlay shown while the submission is in flight (see the
+	     consolidated submit-handler script above) - blocks interaction with
+	     the rest of the page so the vendor can't double-submit or navigate
+	     away mid-request. -->
+	<div id="submitOverlay" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center" style="background:rgba(255,255,255,.85);z-index:2000;">
+		<div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status"></div>
+		<div class="fw-semibold">Submitting your application&hellip;</div>
+	</div>
 
 </body>
 </html>

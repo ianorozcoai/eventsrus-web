@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Referrals - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('referrals')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Referrals</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Referrals</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div class="row">
+						<div class="col-lg-5">
+
+							<!-- Referral link -->
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Your Referral Link</h6>
+								</div>
+								<div class="card-body">
+									<p class="text-muted fs-sm">
+										Share this with other vendors. When someone signs up through it and
+										subscribes to PRO, you earn a fixed commission.
+									</p>
+									<label class="form-label">Referral code</label>
+									<div class="input-group mb-3">
+										<input type="text" id="referralCode" class="form-control fw-bold" th:value="${overview.referralCode()}" readonly>
+										<button type="button" class="btn btn-outline-secondary" onclick="copyReferral('referralCode')">
+											<i class="ph-copy"></i>
+										</button>
+									</div>
+									<label class="form-label">Referral link</label>
+									<div class="input-group">
+										<input type="text" id="referralLink" class="form-control" th:value="${overview.referralLink()}" readonly>
+										<button type="button" class="btn btn-outline-secondary" onclick="copyReferral('referralLink')">
+											<i class="ph-copy"></i>
+										</button>
+									</div>
+								</div>
+							</div>
+							<!-- /referral link -->
+
+							<!-- Commission summary -->
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Commission Summary</h6>
+								</div>
+								<div class="card-body">
+									<div class="d-flex justify-content-between align-items-center mb-3">
+										<div>
+											<div class="text-muted fs-sm">Pending payout</div>
+											<h4 class="mb-0">&#8369;<span th:text="${#numbers.formatDecimal(overview.totalPendingCommission(), 1, 'COMMA', 2, 'POINT')}">0.00</span></h4>
+										</div>
+										<span class="badge bg-warning text-dark">Converted, not yet paid</span>
+									</div>
+									<div class="d-flex justify-content-between align-items-center">
+										<div>
+											<div class="text-muted fs-sm">Already paid out</div>
+											<h4 class="mb-0">&#8369;<span th:text="${#numbers.formatDecimal(overview.totalPaidCommission(), 1, 'COMMA', 2, 'POINT')}">0.00</span></h4>
+										</div>
+										<span class="badge bg-success">Paid</span>
+									</div>
+								</div>
+							</div>
+							<!-- /commission summary -->
+
+						</div>
+
+						<div class="col-lg-7">
+
+							<!-- Referral history -->
+							<div class="card">
+								<div class="card-header d-flex align-items-center">
+									<h6 class="mb-0">Vendors You've Referred</h6>
+									<span class="badge bg-primary ms-auto" th:text="${#lists.size(overview.referrals())} + ' total'">0 total</span>
+								</div>
+
+								<div class="table-responsive" th:if="${not #lists.isEmpty(overview.referrals())}">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Vendor</th>
+												<th>Status</th>
+												<th>Commission</th>
+												<th>Referred on</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="referral : ${overview.referrals()}">
+												<td th:text="${referral.referredBusinessName()}">Business Name</td>
+												<td>
+													<span th:if="${referral.status() == 'PENDING'}" class="badge bg-secondary">Pending</span>
+													<span th:if="${referral.status() == 'CONVERTED'}" class="badge bg-warning text-dark">Converted</span>
+													<span th:if="${referral.status() == 'COMMISSION_PAID'}" class="badge bg-success">Paid</span>
+												</td>
+												<td>
+													<span th:if="${referral.commissionAmount() != null}">&#8369;<span th:text="${#numbers.formatDecimal(referral.commissionAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span></span>
+													<span th:unless="${referral.commissionAmount() != null}" class="text-muted">&mdash;</span>
+												</td>
+												<td class="text-muted fs-sm" th:text="${#temporals.format(referral.createdAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+
+								<div class="card-body text-center text-muted" th:if="${#lists.isEmpty(overview.referrals())}">
+									No referrals yet - share your link above to start earning.
+								</div>
+							</div>
+							<!-- /referral history -->
+
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+	<script>
+		function copyReferral(inputId) {
+			var input = document.getElementById(inputId);
+			input.select();
+			input.setSelectionRange(0, 99999);
+			navigator.clipboard.writeText(input.value).catch(function () {
+				document.execCommand('copy');
+			});
+		}
+	</script>
+
+</body>
+</html>

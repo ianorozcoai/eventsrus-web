@@ -21,13 +21,17 @@
 
 	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3">
 
-		<a th:href="@{/}" class="d-inline-flex align-items-center text-decoration-none mb-4">
-			<span class="d-flex align-items-center justify-content-center bg-dark text-white rounded-pill fw-bold" style="width:36px;height:36px;">E</span>
-			<span class="fw-bold fs-lg ms-2">EventsRUs <span class="text-muted fw-normal">Admin</span></span>
-		</a>
-
 		<div class="card" style="max-width:380px;width:100%;">
 			<div class="card-body p-4">
+				<!-- One card for the whole login moment - logo.svg already carries
+				     its own white backdrop, so it blends seamlessly on this
+				     card's own white surface without any extra wrapper. -->
+				<div class="text-center mb-3">
+					<a th:href="@{/}" class="d-inline-block mb-2">
+						<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:150px;height:auto;">
+					</a>
+					<div class="text-muted fs-sm fw-semibold text-uppercase" style="letter-spacing:.06em;">Admin</div>
+				</div>
 				<h5 class="mb-1 text-center">Admin Login</h5>
 				<p class="text-muted fs-sm mb-4 text-center">Internal access only.</p>
 

@@ -46,9 +46,13 @@
 				<!-- Content area -->
 				<div class="content">
 
-					<div th:if="${packageAdded}" class="alert alert-success alert-dismissible">
+					<div th:if="${packageUpdated}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						<strong th:text="${addedPackageName}">Package</strong> has been added. <span class="text-muted">(stub only for now)</span>
+						Package updated.
+					</div>
+					<div th:if="${packagesError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${packagesError}"></span>
 					</div>
 
 					<div class="row" th:if="${not #lists.isEmpty(packages)}">
@@ -58,41 +62,151 @@
 									<div class="d-flex align-items-center mb-2">
 										<span class="badge" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
 										<span class="badge bg-secondary ms-2" th:unless="${pkg.active()}">Inactive</span>
+										<button type="button" class="btn btn-flat-secondary btn-icon btn-sm rounded-pill ms-auto" data-bs-toggle="modal" th:attr="data-bs-target='#editPackageModal-' + ${pkg.id()}" title="Edit package">
+											<i class="ph-pencil-simple"></i>
+										</button>
 									</div>
 									<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
 									<p class="text-muted fs-sm mb-3" th:text="${pkg.description()}">Description</p>
 									<h5 class="mb-3" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</h5>
 
-									<button type="button" class="btn btn-outline-secondary btn-sm" th:if="${not #lists.isEmpty(pkg.imageCaptions())}" data-bs-toggle="modal" th:attr="data-bs-target='#packageImagesModal-' + ${pkg.id()}">
+									<button type="button" class="btn btn-outline-secondary btn-sm" th:if="${not #lists.isEmpty(pkg.images())}" data-bs-toggle="modal" th:attr="data-bs-target='#editPackageModal-' + ${pkg.id()}">
 										<i class="ph-image me-1"></i>
-										Browse Photos (<span th:text="${#lists.size(pkg.imageCaptions())}">0</span>)
+										<span th:text="${#lists.size(pkg.images())}">0</span> photo(s)
 									</button>
 								</div>
 							</div>
 
-							<!-- Per-package photo browser -->
-							<div class="modal fade" th:id="'packageImagesModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
+							<!-- Edit package - details + real photo management (upload/remove),
+							     opened either from the pencil icon above or via ?editPackage={id}
+							     (see the redirect-back-here script at the bottom of this page). -->
+							<div class="modal fade" th:id="'editPackageModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
 								<div class="modal-dialog modal-dialog-centered modal-lg">
 									<div class="modal-content">
 										<div class="modal-header">
-											<h5 class="modal-title" th:text="${pkg.name()} + ' - Photos'">Package Photos</h5>
+											<h5 class="modal-title" th:text="'Edit ' + ${pkg.name()}">Edit Package</h5>
 											<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 										</div>
-										<div class="modal-body">
-											<div class="row g-3">
-												<div class="col-6 col-md-4" th:each="caption, iter : ${pkg.imageCaptions()}">
-													<div class="rounded d-flex flex-column align-items-center justify-content-center text-white text-center p-3" style="height:120px;"
-														th:classappend="${iter.index % 3 == 0} ? 'bg-indigo' : (${iter.index % 3 == 1} ? 'bg-teal' : 'bg-pink')">
-														<i class="ph-image ph-2x mb-2 opacity-75"></i>
-														<span class="fs-sm" th:text="${caption}">Caption</span>
+
+										<form th:id="'editPackageForm-' + ${pkg.id()}" th:action="@{'/vendor/packages/' + ${pkg.id()}}" th:attr="data-package-id=${pkg.id()}" method="post" class="package-form">
+											<div class="modal-body">
+												<div class="mb-3">
+													<label class="form-label">Package name</label>
+													<input type="text" name="name" th:value="${pkg.name()}" class="form-control" required>
+												</div>
+
+												<div class="mb-3">
+													<label class="form-label">Package type</label>
+													<select name="packageType" class="form-select" required>
+														<option th:each="type : ${packageTypes}" th:value="${type}" th:text="${type}" th:selected="${type == pkg.packageType()}"></option>
+													</select>
+												</div>
+
+												<div class="mb-3">
+													<label class="form-label">Pricing</label>
+													<div class="form-check">
+														<label class="form-check-label d-block">
+															<input type="radio" name="pricingType" value="FIXED" class="form-check-input pricing-type-radio" th:checked="${pkg.pricingType().name() == 'FIXED'}">
+															Fixed Price
+														</label>
+													</div>
+													<div class="form-check">
+														<label class="form-check-label d-block">
+															<input type="radio" name="pricingType" value="RANGE" class="form-check-input pricing-type-radio" th:checked="${pkg.pricingType().name() == 'RANGE'}">
+															Price Range
+														</label>
+													</div>
+													<div class="form-check">
+														<label class="form-check-label d-block">
+															<input type="radio" name="pricingType" value="QUOTE" class="form-check-input pricing-type-radio" th:checked="${pkg.pricingType().name() == 'QUOTE'}">
+															Request for Quotation
+														</label>
+													</div>
+												</div>
+
+												<div class="mb-3 pricing-section" data-pricing-type="FIXED">
+													<label class="form-label">Price</label>
+													<div class="form-control-feedback form-control-feedback-start">
+														<input type="number" step="0.01" min="0" name="price" th:value="${pkg.price()}" class="form-control" placeholder="0.00">
+														<div class="form-control-feedback-icon">
+															<span class="text-muted">&#8369;</span>
+														</div>
+													</div>
+												</div>
+
+												<div class="row pricing-section" data-pricing-type="RANGE">
+													<div class="col-6">
+														<div class="mb-3">
+															<label class="form-label">Min price</label>
+															<input type="number" step="0.01" min="0" name="minPrice" th:value="${pkg.minPrice()}" class="form-control" placeholder="0.00">
+														</div>
+													</div>
+													<div class="col-6">
+														<div class="mb-3">
+															<label class="form-label">Max price</label>
+															<input type="number" step="0.01" min="0" name="maxPrice" th:value="${pkg.maxPrice()}" class="form-control" placeholder="0.00">
+														</div>
+													</div>
+												</div>
+
+												<p class="text-muted fs-sm pricing-section mb-3" data-pricing-type="QUOTE">Planners will see "Request for Quotation" instead of a price - they'll need to message you directly to ask.</p>
+
+												<div class="mb-0">
+													<label class="form-label">Description <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<textarea name="description" rows="3" class="form-control" placeholder="What does this package include?" th:text="${pkg.description()}"></textarea>
+												</div>
+											</div>
+										</form>
+
+										<!-- Photos - deliberately its own area rather than nested inside
+										     the details <form> above (forms can't nest). Every photo here
+										     also shows up on this vendor's public storefront Gallery,
+										     combined across all their packages.
+										     Newly-dropped photos are queued client-side in this package's
+										     own dropzone (same drag-and-drop, several-at-once experience as
+										     the Add Package modal) and only actually uploaded when Save
+										     Changes is clicked - see the pending-uploads script at the
+										     bottom of this page. Removing an ALREADY-SAVED photo (the
+										     delete button below) is unaffected by any of this - that's
+										     still immediate, with its own confirmation, since it's
+										     destroying something real right now rather than queuing
+										     something new. -->
+										<div class="px-4 pb-2">
+											<hr>
+											<label class="form-label">Photos</label>
+											<p class="text-muted fs-sm mb-3" th:id="'packageImagesEmpty-' + ${pkg.id()}" th:classappend="${not #lists.isEmpty(pkg.images())} ? 'd-none'">No photos yet.</p>
+											<div class="row g-2 mb-3" th:id="'packageImagesGrid-' + ${pkg.id()}" th:classappend="${#lists.isEmpty(pkg.images())} ? 'd-none'">
+												<div class="col-4 col-md-3" th:each="img : ${pkg.images()}">
+													<div class="position-relative">
+														<img th:src="${img.imageUrl()}" alt="Package photo" class="img-fluid rounded border" style="height:90px;width:100%;object-fit:cover;">
+														<!--/* Plain button + confirm-then-AJAX, not a form submit
+														     (see the settings.html Legal Documents delete button's
+														     own comment for the nested-form hazard this avoids). */-->
+														<button type="button" class="btn btn-danger btn-icon btn-sm rounded-circle position-absolute top-0 end-0 m-1 package-image-delete-btn"
+															style="width:24px;height:24px;padding:0;" title="Remove photo"
+															th:attr="data-delete-url=@{'/vendor/packages/' + ${pkg.id()} + '/images/' + ${img.id()} + '/delete'},data-package-id=${pkg.id()}">
+															<i class="ph-x fs-xs"></i>
+														</button>
 													</div>
 												</div>
 											</div>
+
+											<label class="form-label">Add more files</label>
+											<div class="dropzone package-photos-dropzone" th:id="'packagePhotosDropzone-' + ${pkg.id()}" th:attr="data-package-id=${pkg.id()}"></div>
+											<div class="fs-sm text-muted mt-1">Not saved until you click Save Changes.</div>
+										</div>
+
+										<div class="modal-footer">
+											<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+											<button type="submit" th:attr="form='editPackageForm-' + ${pkg.id()}" class="btn btn-primary package-submit-btn">
+												<i class="ph-check-circle me-2"></i>
+												<span class="btn-label">Save Changes</span>
+											</button>
 										</div>
 									</div>
 								</div>
 							</div>
-							<!-- /photo browser -->
+							<!-- /edit package -->
 						</div>
 					</div>
 
@@ -130,7 +244,7 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 
-				<form th:action="@{/vendor/packages}" th:object="${vendorPackageForm}" method="post" enctype="multipart/form-data">
+				<form id="addPackageForm" th:action="@{/vendor/packages}" th:object="${vendorPackageForm}" method="post" class="package-form">
 					<div class="modal-header">
 						<h5 class="modal-title">Add Package</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -153,16 +267,22 @@
 						<div class="mb-3">
 							<label class="form-label">Pricing</label>
 							<div class="form-check">
-								<input type="radio" th:field="*{pricingType}" th:value="FIXED" class="form-check-input pricing-type-radio">
-								<label class="form-check-label">Fixed Price</label>
+								<label class="form-check-label d-block">
+									<input type="radio" th:field="*{pricingType}" th:value="FIXED" class="form-check-input pricing-type-radio">
+									Fixed Price
+								</label>
 							</div>
 							<div class="form-check">
-								<input type="radio" th:field="*{pricingType}" th:value="RANGE" class="form-check-input pricing-type-radio">
-								<label class="form-check-label">Price Range</label>
+								<label class="form-check-label d-block">
+									<input type="radio" th:field="*{pricingType}" th:value="RANGE" class="form-check-input pricing-type-radio">
+									Price Range
+								</label>
 							</div>
 							<div class="form-check">
-								<input type="radio" th:field="*{pricingType}" th:value="QUOTE" class="form-check-input pricing-type-radio">
-								<label class="form-check-label">Request for Quotation</label>
+								<label class="form-check-label d-block">
+									<input type="radio" th:field="*{pricingType}" th:value="QUOTE" class="form-check-input pricing-type-radio">
+									Request for Quotation
+								</label>
 							</div>
 						</div>
 
@@ -198,18 +318,25 @@
 							<textarea th:field="*{description}" rows="3" class="form-control" placeholder="What does this package include?"></textarea>
 						</div>
 
+						<!-- Drag-and-drop, several photos at once - queued here
+						     (autoQueue/autoProcessQueue off) rather than uploaded
+						     immediately, since there's no packageId to upload
+						     against until the package itself is created. The
+						     submit handler below creates the package first, then
+						     points this dropzone at the new package's real
+						     upload URL and lets the queue go. -->
 						<div class="mb-0">
 							<label class="form-label">Photos <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-							<div class="dropzone" id="packagePhotosDropzone"></div>
-							<div class="fs-sm text-muted mt-1">JPEG or PNG only. Let planners browse what this package looks like - you can add more later.</div>
+							<div class="dropzone" id="addPackagePhotosDropzone"></div>
 						</div>
+						<div id="addPackageError" class="text-danger fs-sm mt-2 d-none"></div>
 					</div>
 
 					<div class="modal-footer">
 						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-						<button type="submit" class="btn btn-primary">
+						<button type="submit" class="btn btn-primary package-submit-btn">
 							<i class="ph-check-circle me-2"></i>
-							Add Package
+							<span class="btn-label">Add Package</span>
 						</button>
 					</div>
 				</form>
@@ -220,48 +347,301 @@
 	<!-- /add package modal -->
 
 
-	<!-- Package photos dropzone -->
-	<script>
+	<!-- Auto-opens Add Package (?openAddPackage=1, from the dashboard's
+	     first-package nudge) or a specific package's Edit modal
+	     (?editPackage={id}, from the photo add/remove redirects above) so
+	     the vendor lands back where they were instead of a closed modal. -->
+	<script th:inline="javascript">
 		document.addEventListener('DOMContentLoaded', function () {
-			var target = document.getElementById('packagePhotosDropzone');
-			if (target && typeof Dropzone !== 'undefined') {
-				new Dropzone(target, {
-					url: '#',
-					paramName: 'images',
-					autoProcessQueue: false, // stub only for now - no upload endpoint yet, this just previews what's picked
-					acceptedFiles: '.jpg,.jpeg,.png,image/jpeg,image/png',
-					addRemoveLinks: true,
-					dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
-					dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
-				});
+			var params = new URLSearchParams(window.location.search);
+			if (params.get('openAddPackage') === '1') {
+				new bootstrap.Modal(document.getElementById('addPackageModal')).show();
+			}
+			var editPackageId = params.get('editPackage');
+			if (editPackageId) {
+				var modalEl = document.getElementById('editPackageModal-' + editPackageId);
+				if (modalEl) {
+					new bootstrap.Modal(modalEl).show();
+				}
 			}
 		});
 	</script>
-	<!-- /package photos dropzone -->
+	<!-- /auto-open -->
 
 
 	<!-- Pricing type toggle - shows only the fields that apply to whichever
-	     of Fixed Price/Price Range/Request for Quotation is selected. -->
+	     of Fixed Price/Price Range/Request for Quotation is selected, scoped
+	     per-form since the page can have several (Add + one Edit per package). -->
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-			var radios = document.querySelectorAll('.pricing-type-radio');
-			var sections = document.querySelectorAll('.pricing-section');
+			document.querySelectorAll('.package-form').forEach(function (form) {
+				var radios = form.querySelectorAll('.pricing-type-radio');
+				var sections = form.querySelectorAll('.pricing-section');
 
-			function updateSections() {
-				var checked = document.querySelector('.pricing-type-radio:checked');
-				var selectedType = checked ? checked.value : 'FIXED';
-				sections.forEach(function (section) {
-					section.classList.toggle('d-none', section.getAttribute('data-pricing-type') !== selectedType);
+				function updateSections() {
+					var checked = form.querySelector('.pricing-type-radio:checked');
+					var selectedType = checked ? checked.value : 'FIXED';
+					sections.forEach(function (section) {
+						section.classList.toggle('d-none', section.getAttribute('data-pricing-type') !== selectedType);
+					});
+				}
+
+				radios.forEach(function (radio) {
+					radio.addEventListener('change', updateSections);
 				});
-			}
-
-			radios.forEach(function (radio) {
-				radio.addEventListener('change', updateSections);
+				updateSections();
 			});
-			updateSections();
 		});
 	</script>
 	<!-- /pricing type toggle -->
+
+
+	<!-- Submit spinners - a full-page overlay (see fragments/common.html's
+	     fullPageSpinner) rather than just the one button, so nothing else on
+	     the page is clickable mid-save either. The Add Package modal (below)
+	     and the Edit modal (further below, alongside its pending-photo
+	     queue) each arm their own spinner as part of their own AJAX flow. -->
+
+
+	<!-- Add Package - creates the package first (AJAX), then points the
+	     dropzone below at that new package's real upload URL and lets its
+	     queued photos (if any were dropped) go, so the whole "fill in
+	     details + drop several photos" moment stays one continuous action
+	     instead of forcing a second trip through Edit afterward. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var addForm = document.getElementById('addPackageForm');
+			var addDropzone = new Dropzone('#addPackagePhotosDropzone', {
+				url: '#', // replaced with the real per-package URL once it exists
+				paramName: 'image',
+				acceptedFiles: '.jpg,.jpeg,.png,image/jpeg,image/png',
+				addRemoveLinks: true,
+				autoQueue: false,
+				autoProcessQueue: false,
+				parallelUploads: 3,
+				dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
+				dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
+			});
+			addDropzone.on('error', function (file, response) {
+				var message = response && response.error ? response.error : 'Upload failed. Please try again.';
+				var errorEl = file.previewElement && file.previewElement.querySelector('.dz-error-message span');
+				if (errorEl) {
+					errorEl.textContent = message;
+				}
+			});
+
+			var errorBox = document.getElementById('addPackageError');
+
+			addForm.addEventListener('submit', function (e) {
+				e.preventDefault();
+				if (addForm.dataset.armed === '1') {
+					return;
+				}
+				// A photo Dropzone already rejected client-side (wrong type -
+				// most often a phone's HEIC photo, since only JPEG/PNG are
+				// accepted) sits in .files but was never queued. If that's
+				// the ONLY thing dropped, block the submit with a clear
+				// message instead of silently creating the package with none
+				// of the photos the vendor thought they were adding.
+				var rejected = addDropzone.getRejectedFiles();
+				if (rejected.length > 0 && addDropzone.getAcceptedFiles().length === 0) {
+					errorBox.textContent = 'One or more photos were rejected (only JPEG/PNG are accepted). Remove the rejected photo(s) or add a valid one, then try again.';
+					errorBox.classList.remove('d-none');
+					return;
+				}
+				addForm.dataset.armed = '1';
+				errorBox.classList.add('d-none');
+				window.showPageSpinner('Adding package…');
+
+				fetch(addForm.action, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams(new FormData(addForm))
+				})
+					.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+					.then(function (result) {
+						if (!result.ok) {
+							throw new Error(result.body.error || 'Could not add this package. Please try again.');
+						}
+						var packageId = result.body.packageId;
+						var accepted = addDropzone.getAcceptedFiles();
+						if (accepted.length === 0) {
+							window.location.href = '/vendor/packages';
+							return;
+						}
+						// Photos were dropped before the package existed -
+						// now that it does, point the queue at its real
+						// upload endpoint and let it go.
+						window.showPageSpinner('Uploading photos…');
+						addDropzone.options.url = '/vendor/packages/' + packageId + '/images';
+						addDropzone.on('queuecomplete', function () {
+							window.location.href = '/vendor/packages';
+						});
+						// autoQueue is off (files must NOT auto-upload the
+						// moment they're dropped, since there's no packageId
+						// yet at that point) - which also means Dropzone
+						// never gave these files QUEUED status on its own.
+						// processQueue() only processes files that ARE
+						// QUEUED, so without this call it silently has
+						// nothing to do: no photo ever uploads, queuecomplete
+						// never fires, and the spinner spins forever. This is
+						// what was actually causing both symptoms at once.
+						addDropzone.enqueueFiles(accepted);
+						addDropzone.processQueue();
+					})
+					.catch(function (err) {
+						errorBox.textContent = err.message || 'Could not reach the server. Please try again.';
+						errorBox.classList.remove('d-none');
+						delete addForm.dataset.armed;
+						window.hidePageSpinner();
+					});
+			});
+		});
+	</script>
+	<!-- /add package -->
+
+
+	<!-- Edit modal - each package gets its own drag-and-drop dropzone (same
+	     experience as the Add Package modal above), so dropping several
+	     photos at once works here too. Dropped files are NOT uploaded right
+	     away: autoQueue/autoProcessQueue are off, same reasoning as the Add
+	     Package dropzone, so nothing actually reaches the server until Save
+	     Changes is clicked - Dropzone's own preview thumbnails (with their
+	     built-in remove link) ARE the "pending" state here, on top of the
+	     grid of already-saved photos above. Save Changes enqueues and
+	     uploads that package's dropped photos first, then does the real
+	     save of the package's other fields as a normal browser submit.
+	     Removing an ALREADY-SAVED photo (the delete button in the grid
+	     above) is unaffected by any of this - that's still immediate, with
+	     its own confirmation, since it's destroying something real right
+	     now rather than queuing something new. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var dropzoneByPackage = {};
+
+			document.querySelectorAll('.package-photos-dropzone').forEach(function (el) {
+				var packageId = el.getAttribute('data-package-id');
+				var dz = new Dropzone('#' + el.id, {
+					url: '/vendor/packages/' + packageId + '/images',
+					paramName: 'image',
+					acceptedFiles: '.jpg,.jpeg,.png,image/jpeg,image/png',
+					addRemoveLinks: true,
+					autoQueue: false,
+					autoProcessQueue: false,
+					parallelUploads: 3,
+					dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
+					dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
+				});
+				dz.on('error', function (file, response) {
+					var message = (response && response.error) ? response.error
+						: (typeof response === 'string' ? response : 'Upload failed. Please try again.');
+					var errorEl = file.previewElement && file.previewElement.querySelector('.dz-error-message span');
+					if (errorEl) {
+						errorEl.textContent = message;
+					}
+				});
+				dropzoneByPackage[packageId] = dz;
+			});
+
+			// Enqueues and uploads one package's dropped photos - see the Add
+			// Package script above for why enqueueFiles() has to be called
+			// manually before processQueue() (autoQueue is off).
+			function processDropzoneQueue(dz) {
+				var accepted = dz.getAcceptedFiles();
+				if (!accepted.length) {
+					return Promise.resolve();
+				}
+				return new Promise(function (resolve, reject) {
+					var hadError = false;
+					var errorMessage = 'One or more photos failed to upload. Please try again.';
+					dz.on('error', function (file, response) {
+						hadError = true;
+						if (response && response.error) {
+							errorMessage = response.error;
+						}
+					});
+					dz.on('queuecomplete', function () {
+						if (hadError) {
+							reject(new Error(errorMessage));
+						} else {
+							resolve();
+						}
+					});
+					dz.enqueueFiles(accepted);
+					dz.processQueue();
+				});
+			}
+
+			document.querySelectorAll('.package-form').forEach(function (form) {
+				if (form.id === 'addPackageForm') {
+					return; // has its own AJAX handler above
+				}
+				var packageId = form.getAttribute('data-package-id');
+				form.addEventListener('submit', function (e) {
+					e.preventDefault();
+					if (form.dataset.armed === '1') {
+						return;
+					}
+					form.dataset.armed = '1';
+					window.showPageSpinner('Saving…');
+					processDropzoneQueue(dropzoneByPackage[packageId])
+						.then(function () {
+							// Every dropped photo made it (or there were none) -
+							// now do the real save of the package's other
+							// fields, as a normal browser submit so the
+							// resulting redirect shows the usual "package
+							// updated" flash message.
+							HTMLFormElement.prototype.submit.call(form);
+						})
+						.catch(function (err) {
+							delete form.dataset.armed;
+							window.hidePageSpinner();
+							alert(err.message || 'Could not save your changes. Please try again.');
+						});
+				});
+			});
+		});
+	</script>
+	<!-- /edit package photo dropzones + save -->
+
+
+	<!-- Package photo delete - confirm first (see fragments/common.html's
+	     confirmActionModal), then AJAX. Same reasoning as settings.html's
+	     legal document / payment method delete buttons. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.package-image-delete-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') {
+						return;
+					}
+					var packageId = btn.getAttribute('data-package-id');
+					window.confirmAction('Remove this photo permanently? This cannot be undone.', function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner('Removing…');
+						fetch(btn.getAttribute('data-delete-url'), { method: 'POST' })
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) {
+									throw new Error(result.body.error || 'Could not remove this photo. Please try again.');
+								}
+								window.location.href = '/vendor/packages?editPackage=' + packageId;
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+		});
+	</script>
+	<!-- /package photo delete -->
+
+
+	<div th:replace="~{fragments/common :: confirmActionModal}"></div>
+	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
 
 </body>
 </html>

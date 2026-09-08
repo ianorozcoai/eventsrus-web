@@ -21,3 +21,13 @@
 .input-group .multiselect-native-select:not(:last-child) .multiselect{border-top-right-radius:0;border-bottom-right-radius:0}
 .input-group .multiselect:focus,.input-group .show>.multiselect{z-index:3}
 .swal2-popup .btn-group,.swal2-popup .multiselect-native-select,.swal2-popup .select2-container{margin-top:var(--spacer)}
+
+/* Project fix (not part of the vendored theme): bootstrap_multiselect.js's
+   own filter-search template hardcodes the legacy "form-control-feedback-left"
+   class, but this theme's bundled CSS only styles "-start"/"-end" - so the
+   search icon was never absolutely positioned and just overlapped the typed
+   text instead of sitting to the left of it. Fixed directly here since every
+   multiselect on the site (vendor onboarding, account settings) shares this
+   one stylesheet. */
+.multiselect-filter .form-control-feedback-icon{position:absolute;top:0;left:0;width:2.5rem;height:100%;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.multiselect-filter .multiselect-search{padding-left:2.5rem}

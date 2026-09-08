@@ -43,7 +43,7 @@
 
 					<div th:if="${settingsSaved}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Your account settings have been saved. <span class="text-muted">(stub only for now)</span>
+						Your account settings have been saved.
 					</div>
 
 					<div th:if="${settingsError}" class="alert alert-danger alert-dismissible">
@@ -51,19 +51,19 @@
 						<span th:text="${settingsError}">Error</span>
 					</div>
 
-					<div th:if="${paymentMethodAdded}" class="alert alert-success alert-dismissible">
-						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Your payment method has been submitted for review. <span class="text-muted">(stub only for now)</span>
-					</div>
-
-					<div th:if="${legalDocumentAdded}" class="alert alert-success alert-dismissible">
-						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Document added. <span class="text-muted">(stub only for now - won't appear in the list below)</span>
-					</div>
-
-					<div th:if="${legalDocumentRemoved}" class="alert alert-success alert-dismissible">
-						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Document removed. <span class="text-muted">(stub only for now)</span>
+					<!-- Verification status - submitting ID/selfie/legal documents below
+					     doesn't verify this account by itself; an EventsRUs admin has to
+					     review them first. See settingsDocuments.verified. -->
+					<div class="alert d-flex align-items-center" th:classappend="${settingsDocuments.verified()} ? 'alert-success' : 'alert-info'">
+						<i class="me-3" th:classappend="${settingsDocuments.verified()} ? 'ph-shield-check' : 'ph-clock'"></i>
+						<span th:if="${settingsDocuments.verified()}">
+							<strong>Verified vendor.</strong> Your storefront shows the Verified badge.
+						</span>
+						<span th:unless="${settingsDocuments.verified()}">
+							<strong>Verification pending.</strong> An EventsRUs admin reviews your submitted ID,
+							selfie, and business documents before your storefront shows the Verified badge -
+							this usually doesn't affect your ability to receive bookings in the meantime.
+						</span>
 					</div>
 
 					<!-- Tabs -->
@@ -83,7 +83,7 @@
 						<li class="nav-item">
 							<a href="#tab-policies" class="nav-link" data-bs-toggle="tab">
 								<i class="ph-shield-check me-2"></i>
-								Marketplace Escrow &amp; Policies
+								Vendor Policies
 							</a>
 						</li>
 						<li class="nav-item">
@@ -95,7 +95,12 @@
 					</ul>
 					<!-- /tabs -->
 
-					<form th:action="@{/vendor/settings}" th:object="${vendorSettingsForm}" method="post" enctype="multipart/form-data">
+					<!--/* One form wraps every tab (business info through payment
+					     instructions) - Bootstrap tabs only toggle a CSS class, they
+					     don't remove or disable the hidden panes' inputs, so clicking
+					     Save Changes from any tab submits every field on every tab,
+					     not just whichever one happens to be visible. */-->
+					<form id="settingsForm" th:action="@{/vendor/settings}" th:object="${vendorSettingsForm}" method="post" enctype="multipart/form-data" class="settings-form">
 
 						<div class="tab-content">
 
@@ -117,11 +122,6 @@
 											</div>
 										</div>
 
-										<div class="mb-3">
-											<label class="form-label">Business description</label>
-											<textarea th:field="*{description}" rows="2" class="form-control" placeholder="A short tagline describing what your business offers."></textarea>
-										</div>
-
 										<div class="row">
 											<div class="col-lg-6">
 												<div class="mb-3">
@@ -141,16 +141,7 @@
 														<option value="">Select a type</option>
 														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
 													</select>
-												</div>
-											</div>
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">Primary category</label>
-													<select th:field="*{primaryCategory}" class="form-select">
-														<option value="">Select a category</option>
-														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
-													</select>
-													<div class="fs-sm text-muted mt-1">The main category shown on your storefront - can differ from your business type above.</div>
+													<div class="fs-sm text-muted mt-1">Also shown as your storefront's main category.</div>
 												</div>
 											</div>
 										</div>
@@ -235,7 +226,8 @@
 												<div class="mb-3">
 													<label class="form-label">Logo</label>
 													<div class="mb-2" th:if="${settingsDocuments.logoImageUrl() != null}">
-														<a th:href="${settingsDocuments.logoImageUrl()}" target="_blank" class="btn btn-light btn-sm">
+														<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${settingsDocuments.logoImageUrl()},data-lightbox-caption='Logo'">
 															<i class="ph-image me-1"></i>
 															View current logo
 														</a>
@@ -248,7 +240,8 @@
 												<div class="mb-3">
 													<label class="form-label">ID card</label>
 													<div class="mb-2" th:if="${settingsDocuments.idCardUrl() != null}">
-														<a th:href="${settingsDocuments.idCardUrl()}" target="_blank" class="btn btn-light btn-sm">
+														<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${settingsDocuments.idCardUrl()},data-lightbox-caption='ID card'">
 															<i class="ph-identification-card me-1"></i>
 															View current file
 														</a>
@@ -264,7 +257,8 @@
 												<div class="mb-0">
 													<label class="form-label">Selfie</label>
 													<div class="mb-2" th:if="${settingsDocuments.selfieUrl() != null}">
-														<a th:href="${settingsDocuments.selfieUrl()}" target="_blank" class="btn btn-light btn-sm">
+														<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${settingsDocuments.selfieUrl()},data-lightbox-caption='Selfie'">
 															<i class="ph-user-focus me-1"></i>
 															View current file
 														</a>
@@ -289,25 +283,51 @@
 											</button>
 										</h6>
 
-										<div class="row g-3" th:if="${not #lists.isEmpty(legalDocuments)}">
+										<div class="row g-3" id="legalDocumentsGrid" th:classappend="${#lists.isEmpty(legalDocuments)} ? 'd-none'">
 											<div class="col-lg-4 col-md-6" th:each="doc : ${legalDocuments}">
 												<div class="border rounded p-3">
 													<div class="d-flex align-items-center justify-content-between gap-2 mb-2">
 														<span class="fw-semibold fs-sm text-truncate" style="min-width:0;" th:text="${doc.label() != null} ? ${doc.label()} : ${doc.documentType().getLabel()}">Document type</span>
-														<form th:action="@{'/vendor/settings/legal-documents/' + ${doc.id()} + '/delete'}" method="post" class="flex-shrink-0">
-															<button type="submit" class="btn btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0" style="width:28px;height:28px;" title="Remove">
-																<i class="ph-x fs-sm"></i>
-															</button>
-														</form>
+														<!--/* A plain button + AJAX, NOT a nested <form> - this whole
+														     card sits inside #settingsForm, and HTML silently drops a
+														     <form> start tag nested inside another one (the browser
+														     just closes the OUTER form at this inner one's </form>
+														     instead), which used to break Save Changes and everything
+														     after Legal Documents in the DOM entirely. See the
+														     settings-delete-btn script at the bottom of this
+														     page. */-->
+														<button type="button" class="btn btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0 settings-delete-btn"
+															style="width:28px;height:28px;" title="Remove"
+															th:attr="data-delete-url=@{'/vendor/settings/legal-documents/' + ${doc.id()} + '/delete'}">
+															<i class="ph-x fs-sm"></i>
+														</button>
 													</div>
-													<a th:href="${doc.url()}" target="_blank" class="btn btn-light btn-sm">
+													<!--/* A document can be an image or a PDF - the shared lightbox
+													     (fragments/common.html) tries it as an image first and falls
+													     back to a PDF viewer automatically, so both this thumbnail
+													     and the "View file" button below just need the same
+													     data-lightbox-src/caption. The onerror here only swaps the
+													     small THUMBNAIL itself to a generic file icon when it isn't
+													     an image - a separate, purely cosmetic concern from what the
+													     lightbox does when clicked. */-->
+													<a href="#" class="d-block text-decoration-none lightbox-trigger mb-2"
+														th:attr="data-lightbox-src=${doc.url()},data-lightbox-caption=${doc.label() != null ? doc.label() : doc.documentType().getLabel()}">
+														<img th:src="${doc.url()}" alt="Document preview" class="img-fluid rounded border"
+															style="height:80px;width:100%;object-fit:cover;"
+															onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+														<div class="d-none align-items-center justify-content-center bg-light rounded" style="height:80px;">
+															<i class="ph-file-text ph-lg text-muted"></i>
+														</div>
+													</a>
+													<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+														th:attr="data-lightbox-src=${doc.url()},data-lightbox-caption=${doc.label() != null ? doc.label() : doc.documentType().getLabel()}">
 														<i class="ph-file-text me-1"></i>
 														View file
 													</a>
 												</div>
 											</div>
 										</div>
-										<p class="text-muted fs-sm mb-0" th:if="${#lists.isEmpty(legalDocuments)}">No legal documents uploaded yet.</p>
+										<p class="text-muted fs-sm mb-0" id="legalDocumentsEmpty" th:classappend="${not #lists.isEmpty(legalDocuments)} ? 'd-none'">No legal documents uploaded yet.</p>
 
 									</div>
 								</div>
@@ -334,6 +354,7 @@
 												<div class="mb-3">
 													<label class="form-label">Max customers per day</label>
 													<input type="number" min="0" th:field="*{maxCustomersPerDay}" class="form-control" placeholder="e.g., 3">
+													<div class="fs-sm text-muted mt-1">How many separate client bookings you can take on in one day.</div>
 												</div>
 											</div>
 										</div>
@@ -364,11 +385,11 @@
 							<!-- /service scope & metrics -->
 
 
-							<!-- Marketplace Escrow & Policies -->
+							<!-- Vendor Policies -->
 							<div class="tab-pane fade" id="tab-policies">
 								<div class="card">
 									<div class="card-header">
-										<h6 class="mb-0">Marketplace Escrow &amp; Policies</h6>
+										<h6 class="mb-0">Vendor Policies</h6>
 									</div>
 									<div class="card-body">
 
@@ -378,7 +399,8 @@
 											<label class="form-label">Cancellation policy</label>
 
 											<div class="mb-2" th:if="${settingsDocuments.cancellationPolicyUrl() != null}">
-												<a th:href="${settingsDocuments.cancellationPolicyUrl()}" target="_blank" class="btn btn-light btn-sm">
+												<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+													th:attr="data-lightbox-src=${settingsDocuments.cancellationPolicyUrl()},data-lightbox-caption='Cancellation policy'">
 													<i class="ph-file-pdf me-1"></i>
 													View current file
 												</a>
@@ -393,7 +415,8 @@
 											<label class="form-label">Refund terms</label>
 
 											<div class="mb-2" th:if="${settingsDocuments.refundTermsUrl() != null}">
-												<a th:href="${settingsDocuments.refundTermsUrl()}" target="_blank" class="btn btn-light btn-sm">
+												<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+													th:attr="data-lightbox-src=${settingsDocuments.refundTermsUrl()},data-lightbox-caption='Refund terms'">
 													<i class="ph-file-pdf me-1"></i>
 													View current file
 												</a>
@@ -407,7 +430,7 @@
 									</div>
 								</div>
 							</div>
-							<!-- /marketplace escrow & policies -->
+							<!-- /vendor policies -->
 
 
 							<!-- Payment Methods -->
@@ -437,11 +460,24 @@
 											</button>
 										</h6>
 
-										<div class="row" th:if="${not #lists.isEmpty(paymentMethods)}">
+										<div class="row" id="paymentMethodsGrid" th:classappend="${#lists.isEmpty(paymentMethods)} ? 'd-none'">
 											<div class="col-lg-4 col-md-6" th:each="method : ${paymentMethods}">
 												<div class="card">
-													<div class="card-body text-center">
-														<div class="d-flex align-items-center justify-content-center bg-light rounded mb-3 mx-auto" style="width:120px;height:120px;">
+													<div class="card-body text-center position-relative">
+														<!--/* Plain button + AJAX, same reasoning as the Legal
+														     Documents delete button below - this card sits inside
+														     #settingsForm, so a nested <form> here would silently
+														     break the whole page's Save Changes. */-->
+														<button type="button" class="btn btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0 position-absolute top-0 end-0 m-2 settings-delete-btn"
+															style="width:28px;height:28px;" title="Remove"
+															th:attr="data-delete-url=@{'/vendor/settings/payment-methods/' + ${method.id()} + '/delete'}">
+															<i class="ph-x fs-sm"></i>
+														</button>
+														<a href="#" class="d-block mb-3 lightbox-trigger" th:if="${method.qrImageUrl() != null}"
+															th:attr="data-lightbox-src=${method.qrImageUrl()},data-lightbox-caption=${method.label()}">
+															<img th:src="${method.qrImageUrl()}" alt="QR code" class="rounded mx-auto d-block border" style="width:120px;height:120px;object-fit:cover;">
+														</a>
+														<div class="d-flex align-items-center justify-content-center bg-light rounded mb-3 mx-auto" style="width:120px;height:120px;" th:if="${method.qrImageUrl() == null}">
 															<i class="ph-qr-code ph-2x text-muted"></i>
 														</div>
 														<h6 class="mb-2" th:text="${method.label()}">Payment method</h6>
@@ -453,7 +489,7 @@
 											</div>
 										</div>
 
-										<p class="text-muted mb-0" th:if="${#lists.isEmpty(paymentMethods)}">No payment methods yet. Add a QR code so planners can pay you directly once it's approved.</p>
+										<p class="text-muted mb-0" id="paymentMethodsEmpty" th:classappend="${not #lists.isEmpty(paymentMethods)} ? 'd-none'">No payment methods yet. Add a QR code so planners can pay you directly once it's approved.</p>
 
 									</div>
 								</div>
@@ -463,9 +499,9 @@
 						</div>
 
 						<div class="d-flex justify-content-end mt-3">
-							<button type="submit" class="btn btn-primary">
+							<button type="submit" class="btn btn-primary settings-submit-btn">
 								<i class="ph-check-circle me-2"></i>
-								Save Changes
+								<span class="btn-label">Save Changes</span>
 							</button>
 						</div>
 
@@ -498,7 +534,7 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 
-				<form th:action="@{/vendor/settings/payment-methods}" th:object="${vendorPaymentMethodForm}" method="post" enctype="multipart/form-data">
+				<form id="addPaymentMethodForm" th:action="@{/vendor/settings/payment-methods}" th:object="${vendorPaymentMethodForm}" onsubmit="return false;">
 					<div class="modal-header">
 						<h5 class="modal-title">Add Payment Method</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -513,14 +549,19 @@
 						<div class="mb-0">
 							<label class="form-label">QR code image</label>
 							<input type="file" name="qrImage" class="form-control" accept="image/png,image/jpeg" required>
-							<div class="fs-sm text-muted mt-1">PNG or JPEG only. Held for review before it appears on your storefront.</div>
+							<div class="fs-sm text-muted mt-1">PNG or JPEG only. Held for review before it appears on your storefront. Not saved until you click Save Changes.</div>
 						</div>
 					</div>
 
 					<div class="modal-footer">
 						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-						<button type="submit" class="btn btn-primary">
-							<i class="ph-check-circle me-2"></i>
+						<!--/* type="button", not submit - this doesn't actually
+						     upload anything. It just queues the entry client-side
+						     (see the pending-uploads script at the bottom of this
+						     page) so it only gets sent to the server once the
+						     vendor clicks the page's real Save Changes button. */-->
+						<button type="button" id="addPaymentMethodQueueBtn" class="btn btn-primary">
+							<i class="ph-plus-circle me-2"></i>
 							Add Payment Method
 						</button>
 					</div>
@@ -537,7 +578,7 @@
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
 
-				<form th:action="@{/vendor/settings/legal-documents}" th:object="${vendorLegalDocumentForm}" method="post" enctype="multipart/form-data">
+				<form id="addLegalDocumentForm" th:action="@{/vendor/settings/legal-documents}" th:object="${vendorLegalDocumentForm}" onsubmit="return false;">
 					<div class="modal-header">
 						<h5 class="modal-title">Add Legal Document</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -557,14 +598,18 @@
 						<div class="mb-0">
 							<label class="form-label">Document file</label>
 							<input type="file" name="file" class="form-control" accept="image/*,application/pdf" required>
-							<div class="fs-sm text-muted mt-1">Image or PDF. Shown to planners on your storefront - this is business paperwork, not a personal document.</div>
+							<div class="fs-sm text-muted mt-1">Image or PDF. Shown to planners on your storefront - this is business paperwork, not a personal document. Not saved until you click Save Changes.</div>
 						</div>
 					</div>
 
 					<div class="modal-footer">
 						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-						<button type="submit" class="btn btn-primary">
-							<i class="ph-check-circle me-2"></i>
+						<!--/* type="button", not submit - see the matching
+						     comment on the Add Payment Method modal's button;
+						     same reasoning, this only queues the entry
+						     client-side until Save Changes is clicked. */-->
+						<button type="button" id="addLegalDocumentQueueBtn" class="btn btn-primary">
+							<i class="ph-plus-circle me-2"></i>
 							Add Document
 						</button>
 					</div>
@@ -589,6 +634,216 @@
 		});
 	</script>
 	<!-- /operating area multiselect -->
+
+
+	<!-- Add Document / Add Payment Method - queued client-side, not saved
+	     until Save Changes. Each modal's button just pushes a pending entry
+	     (label/type + the raw File, previewed via URL.createObjectURL) into
+	     an in-memory queue and renders a matching "pending" card into that
+	     tab's grid with its own remove (x) - nothing has been sent to the
+	     server yet at that point, so removing one is a plain DOM/array
+	     splice, no confirmation needed. The queues are only actually
+	     uploaded (one at a time, each via the same endpoint the old direct
+	     form submit used to hit) when Save Changes is clicked, right before
+	     that click's own multipart PUT of every other field - see the
+	     "Save Changes" script below. -->
+	<script>
+		(function () {
+			var pendingLegalDocuments = []; // {documentType, typeLabel, label, file}
+			var pendingPaymentMethods = []; // {label, file}
+
+			var legalDocGrid = document.getElementById('legalDocumentsGrid');
+			var legalDocEmpty = document.getElementById('legalDocumentsEmpty');
+			var paymentGrid = document.getElementById('paymentMethodsGrid');
+			var paymentEmpty = document.getElementById('paymentMethodsEmpty');
+
+			function refreshEmptyState(grid, empty) {
+				var hasAny = grid.children.length > 0;
+				grid.classList.toggle('d-none', !hasAny);
+				empty.classList.toggle('d-none', hasAny);
+			}
+
+			// Each entry tracks its own pending card element (entry.cardEl)
+			// so a successful upload can remove exactly that card, and
+			// nothing else, once it's actually saved.
+			function pendingCard(titleText, previewUrl, onRemove) {
+				var col = document.createElement('div');
+				col.className = 'col-lg-4 col-md-6';
+				col.innerHTML =
+					'<div class="border border-primary rounded p-3" style="border-style:dashed !important;">' +
+						'<div class="d-flex align-items-center justify-content-between gap-2 mb-2">' +
+							'<span class="fw-semibold fs-sm text-truncate" style="min-width:0;"></span>' +
+							'<button type="button" class="btn btn-outline-secondary rounded-circle d-inline-flex align-items-center justify-content-center p-0 flex-shrink-0" style="width:28px;height:28px;" title="Remove"><i class="ph-x fs-sm"></i></button>' +
+						'</div>' +
+						'<img class="img-fluid rounded border mb-2" style="height:80px;width:100%;object-fit:cover;">' +
+						'<span class="badge bg-warning text-dark d-block text-center fw-normal">Pending &ndash; saved with Save Changes</span>' +
+					'</div>';
+				col.querySelector('span.fw-semibold').textContent = titleText;
+				col.querySelector('img').src = previewUrl;
+				col.querySelector('button').addEventListener('click', function () {
+					onRemove();
+					col.remove();
+				});
+				return col;
+			}
+
+			document.getElementById('addLegalDocumentQueueBtn').addEventListener('click', function () {
+				var form = document.getElementById('addLegalDocumentForm');
+				var typeSelect = form.querySelector('[name="documentType"]');
+				var labelInput = form.querySelector('[name="label"]');
+				var fileInput = form.querySelector('[name="file"]');
+				if (!fileInput.files || !fileInput.files[0]) {
+					alert('Please choose a document file.');
+					return;
+				}
+				var entry = {
+					documentType: typeSelect.value,
+					typeLabel: typeSelect.options[typeSelect.selectedIndex].text,
+					label: labelInput.value,
+					file: fileInput.files[0]
+				};
+				entry.cardEl = pendingCard(entry.label || entry.typeLabel, URL.createObjectURL(entry.file), function () {
+					var idx = pendingLegalDocuments.indexOf(entry);
+					if (idx !== -1) {
+						pendingLegalDocuments.splice(idx, 1);
+					}
+					refreshEmptyState(legalDocGrid, legalDocEmpty);
+				});
+				pendingLegalDocuments.push(entry);
+				legalDocGrid.appendChild(entry.cardEl);
+				refreshEmptyState(legalDocGrid, legalDocEmpty);
+				form.reset();
+				bootstrap.Modal.getInstance(document.getElementById('addLegalDocumentModal')).hide();
+			});
+
+			document.getElementById('addPaymentMethodQueueBtn').addEventListener('click', function () {
+				var form = document.getElementById('addPaymentMethodForm');
+				var labelInput = form.querySelector('[name="label"]');
+				var fileInput = form.querySelector('[name="qrImage"]');
+				if (!labelInput.value) {
+					alert('Please enter a label.');
+					return;
+				}
+				if (!fileInput.files || !fileInput.files[0]) {
+					alert('Please choose a QR code image.');
+					return;
+				}
+				var entry = { label: labelInput.value, file: fileInput.files[0] };
+				entry.cardEl = pendingCard(entry.label, URL.createObjectURL(entry.file), function () {
+					var idx = pendingPaymentMethods.indexOf(entry);
+					if (idx !== -1) {
+						pendingPaymentMethods.splice(idx, 1);
+					}
+					refreshEmptyState(paymentGrid, paymentEmpty);
+				});
+				pendingPaymentMethods.push(entry);
+				paymentGrid.appendChild(entry.cardEl);
+				refreshEmptyState(paymentGrid, paymentEmpty);
+				form.reset();
+				bootstrap.Modal.getInstance(document.getElementById('addPaymentMethodModal')).hide();
+			});
+
+			// Uploads a queue in order, one request at a time - each
+			// successfully-sent entry is spliced out of its queue and its
+			// pending card removed immediately, so if one fails partway
+			// through, retrying Save Changes only re-sends what's actually
+			// left, never duplicates what already made it.
+			function uploadQueue(list, grid, empty, buildFormData, url) {
+				if (!list.length) {
+					return Promise.resolve();
+				}
+				var entry = list[0];
+				return fetch(url, { method: 'POST', body: buildFormData(entry) })
+					.then(function (res) {
+						return res.json().catch(function () { return {}; }).then(function (body) {
+							if (!res.ok) {
+								throw new Error(body.error || 'Could not save one of your pending uploads. Please try again.');
+							}
+							list.splice(0, 1);
+							entry.cardEl.remove();
+							refreshEmptyState(grid, empty);
+							return uploadQueue(list, grid, empty, buildFormData, url);
+						});
+					});
+			}
+
+			var mainForm = document.getElementById('settingsForm');
+			mainForm.addEventListener('submit', function (e) {
+				e.preventDefault();
+				window.showPageSpinner('Saving…');
+
+				uploadQueue(pendingLegalDocuments, legalDocGrid, legalDocEmpty, function (entry) {
+					var fd = new FormData();
+					fd.append('documentType', entry.documentType);
+					fd.append('label', entry.label || '');
+					fd.append('file', entry.file);
+					return fd;
+				}, document.getElementById('addLegalDocumentForm').getAttribute('action'))
+					.then(function () {
+						return uploadQueue(pendingPaymentMethods, paymentGrid, paymentEmpty, function (entry) {
+							var fd = new FormData();
+							fd.append('label', entry.label);
+							fd.append('qrImage', entry.file);
+							return fd;
+						}, document.getElementById('addPaymentMethodForm').getAttribute('action'));
+					})
+					.then(function () {
+						// Every pending upload succeeded (or there were none) -
+						// now do the real save of every other field, as a
+						// normal browser submit so the resulting redirect
+						// shows the usual "settings saved" page/flash message.
+						HTMLFormElement.prototype.submit.call(mainForm);
+					})
+					.catch(function (err) {
+						window.hidePageSpinner();
+						alert(err.message || 'Could not save your changes. Please try again.');
+					});
+			});
+		})();
+	</script>
+	<!-- /add document / add payment method -->
+
+
+	<!-- Legal document / payment method delete - confirm first (see
+	     fragments/common.html's confirmActionModal), then AJAX, not a form
+	     submit (see either button's own comment for why one wasn't used
+	     here). Both delete endpoints return JSON specifically so this can
+	     tell a real failure apart from success without a redirect getting
+	     silently followed and discarded by fetch(). -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.settings-delete-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') {
+						return;
+					}
+					window.confirmAction('Remove this permanently? This cannot be undone.', function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner('Removing…');
+						fetch(btn.getAttribute('data-delete-url'), { method: 'POST' })
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) {
+									throw new Error(result.body.error || 'Could not remove this. Please try again.');
+								}
+								window.location.href = '/vendor/settings';
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+		});
+	</script>
+	<!-- /legal document delete -->
+
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
+	<div th:replace="~{fragments/common :: confirmActionModal}"></div>
+	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
 
 </body>
 </html>

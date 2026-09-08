@@ -37,4 +37,14 @@ public class VendorOnboardingForm {
     private String country;
     private List<String> operatingAreas;
     private boolean acceptedTerms;
+
+    // Populated client-side by onboarding.html's inline script (grecaptcha.execute)
+    // right before submit - real reCAPTCHA v3, verified for real by the backend
+    // (see UserService#becomeVendor there), unlike everything else in this app.
+    private String recaptchaToken;
+
+    // Pre-filled server-side from the session (see WebSession.REFERRAL_CODE,
+    // stashed by AuthWebController#vendorLogin from /vendor/?ref=CODE) -
+    // real, verified by the backend (VendorReferralService#attribute).
+    private String referralCode;
 }

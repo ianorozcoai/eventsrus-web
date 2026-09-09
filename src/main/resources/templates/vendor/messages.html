@@ -122,7 +122,7 @@
 												th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
 												th:text="${#strings.substring(message.senderName(), 0, 1)}">P</div>
 
-											<div class="rounded-pill px-3 py-2" style="max-width:60%;"
+											<div class="rounded-4 px-3 py-2" style="max-width:60%;white-space:pre-wrap;"
 												th:classappend="${message.senderUserId() == vendorUserId} ? 'bg-purple text-white' : 'bg-light'"
 												th:text="${message.body()}">Message body</div>
 										</div>

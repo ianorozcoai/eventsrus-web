@@ -31,6 +31,11 @@
 										<h5 class="fw-bold mb-0">Tell me more about your event plans.</h5>
 									</div>
 
+									<div th:if="${eventCreationError}" class="alert alert-danger alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										<span th:text="${eventCreationError}"></span>
+									</div>
+
 									<form th:action="@{/planner/events}" th:object="${plannerIntakeForm}" method="post">
 
 										<div class="row">
@@ -137,32 +142,60 @@
 							<div class="tab-pane fade" th:classappend="${activeTab == 'overview'} ? 'show active'" id="tab-overview">
 								<div class="row g-3">
 
-									<!-- Coordinator chat -->
+									<!-- Events Coordinator - scoped AI ideas/advice assistant. One
+									     real Claude call per question (CoordinatorController on the
+									     backend), never a simulated reply. Deliberately narrow: only
+									     ever sees this event's own type/date/location/description,
+									     never vendor/quotation/booking data, and its system prompt
+									     redirects anything vendor-specific back to the real
+									     planner-vendor conversation instead of answering for the
+									     vendor - see CoordinatorService. -->
 									<div class="col-lg-6">
 										<div class="card mb-0 h-100 d-flex flex-column">
-											<div class="card-header bg-white">
+											<div class="card-header bg-white d-flex align-items-center">
 												<h6 class="mb-0">
 													<i class="ph-sparkle me-2"></i>
-													Coordinator Chat
+													Events Coordinator
 												</h6>
+												<span class="badge bg-light text-dark ms-auto"
+													th:text="${coordinatorHistory.questionsRemainingToday()} + ' of ' + ${coordinatorHistory.dailyLimit()} + ' questions left today'">
+													Questions left today
+												</span>
 											</div>
 											<div class="card-body flex-grow-1 overflow-auto" style="max-height:60vh;">
-												<th:block th:each="chatMessage : ${chatThread}">
-													<div class="d-flex justify-content-end mb-3" th:if="${chatMessage.plannerMessage()}">
-														<div class="rounded-4 px-3 py-2 bg-primary text-white" style="max-width:85%;" th:text="${chatMessage.body()}">Planner message</div>
+
+												<div th:if="${coordinatorError}" class="alert alert-danger alert-dismissible">
+													<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+													<span th:text="${coordinatorError}">Error</span>
+												</div>
+
+												<div class="d-flex align-items-start mb-3" th:if="${selectedEvent.aiIdeaText() != null}">
+													<div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white flex-shrink-0 me-2" style="width:32px;height:32px;">
+														<i class="ph-robot"></i>
 													</div>
-													<div class="d-flex align-items-start mb-3" th:unless="${chatMessage.plannerMessage()}">
+													<div class="rounded-4 px-3 py-2 bg-light" style="white-space:pre-wrap;" th:text="${selectedEvent.aiIdeaText()}">Idea text</div>
+												</div>
+
+												<th:block th:each="qa : ${coordinatorHistory.questions()}">
+													<div class="d-flex justify-content-end mb-2">
+														<div class="rounded-pill px-3 py-2 bg-primary text-white" style="max-width:80%;white-space:pre-wrap;" th:text="${qa.question()}">Question</div>
+													</div>
+													<div class="d-flex align-items-start mb-3">
 														<div class="d-flex align-items-center justify-content-center rounded-circle bg-dark text-white flex-shrink-0 me-2" style="width:32px;height:32px;">
 															<i class="ph-robot"></i>
 														</div>
-														<div class="rounded-4 px-3 py-2 bg-light" style="max-width:85%;" th:text="${chatMessage.body()}">Coordinator reply</div>
+														<div class="rounded-4 px-3 py-2 bg-light" style="max-width:80%;white-space:pre-wrap;" th:text="${qa.answer()}">Answer</div>
 													</div>
 												</th:block>
+
+												<p class="text-muted mb-0" th:if="${selectedEvent.aiIdeaText() == null and #lists.isEmpty(coordinatorHistory.questions())}">
+													Ask for event ideas, themes, or general planning advice below - the coordinator won't discuss vendor pricing or availability, that stays in your Chats with each vendor.
+												</p>
 											</div>
-											<div class="card-footer bg-white">
-												<form th:action="@{/planner/events/{eventId}/coordinator-chat(eventId=${selectedEvent.id()})}" method="post" class="d-flex align-items-center gap-2">
-													<input type="text" id="coordinatorChatInput" name="message" class="form-control rounded-pill" placeholder="Ask your coordinator a follow-up question..." required>
-													<button type="button" class="btn btn-light btn-icon rounded-circle flex-shrink-0 voice-input-btn" data-target-input="coordinatorChatInput" title="Speak instead of typing">
+											<div class="border-top p-3" th:if="${coordinatorHistory.questionsRemainingToday() > 0}">
+												<form th:action="@{/planner/events/{eventId}/coordinator/ask(eventId=${selectedEvent.id()})}" method="post" class="d-flex align-items-center gap-2">
+													<input type="text" id="coordinatorQuestionInput" name="question" class="form-control rounded-pill" placeholder="Ask for event ideas or advice..." required maxlength="1000">
+													<button type="button" class="btn btn-light btn-icon rounded-circle flex-shrink-0 voice-input-btn" data-target-input="coordinatorQuestionInput" title="Speak instead of typing">
 														<i class="ph-microphone"></i>
 													</button>
 													<button type="submit" class="btn btn-primary btn-icon rounded-circle flex-shrink-0">
@@ -170,43 +203,87 @@
 													</button>
 												</form>
 											</div>
+											<div class="border-top p-3 text-center text-muted fs-sm" th:if="${coordinatorHistory.questionsRemainingToday() <= 0}">
+												You've reached today's question limit. Try again tomorrow.
+											</div>
 										</div>
 									</div>
-									<!-- /coordinator chat -->
+									<!-- /Events Coordinator -->
 
 
-									<!-- Recommended suppliers -->
+									<!-- Recommended suppliers - location/date filter is always visible
+									     and editable, not just at creation (neither is required up
+									     front). Location is what actually triggers matching: changing
+									     it (or date, once location is already set) live-refreshes the
+									     results below via AJAX - see the script block near the bottom
+									     of this page and PlannerController#refreshSuppliers. -->
 									<div class="col-lg-6">
-										<div class="card mb-0 h-100">
+										<div class="card mb-0 h-100 d-flex flex-column">
 											<div class="card-header bg-white">
 												<h6 class="mb-0">
 													<i class="ph-users-three me-2"></i>
 													Recommended Suppliers
 												</h6>
 											</div>
-											<div class="card-body overflow-auto" style="max-height:60vh;">
-												<div class="row g-3" th:if="${not #lists.isEmpty(selectedEvent.suggestedSuppliers())}">
-													<div class="col-md-6" th:each="supplier : ${selectedEvent.suggestedSuppliers()}">
-														<div class="border rounded p-3 h-100 d-flex flex-column">
-															<span class="badge bg-indigo mb-2 align-self-start" th:text="${supplier.businessType().label}">Category</span>
-															<h6 class="mb-1" th:text="${supplier.businessName()}">Business name</h6>
-															<div class="text-muted fs-sm mb-2">
-																<i class="ph-map-pin me-1"></i>
-																<span th:text="${supplier.city()}">City</span>
-															</div>
-															<p class="text-muted fs-sm mb-3" th:text="${supplier.description()}">Description</p>
-															<a th:if="${supplier.slug() != null}" th:href="@{'/vendor/storefront/' + ${supplier.slug()}(eventId=${selectedEvent.id()})}" target="_blank" class="btn btn-outline-primary btn-sm mt-auto">
-																<i class="ph-storefront me-1"></i>
-																View Storefront
-															</a>
-															<span th:if="${supplier.slug() == null}" class="text-muted fs-sm mt-auto">
-																<i class="ph-clock me-1"></i>
-																Storefront coming soon
-															</span>
-														</div>
+
+											<div class="card-body py-3 border-bottom">
+												<div class="row g-2">
+													<div class="col-6">
+														<label class="form-label fs-sm mb-1" for="supplierLocationInput">Location</label>
+														<select id="supplierLocationInput" class="form-select form-select-sm">
+															<option value="">Select a province</option>
+															<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"
+																th:selected="${selectedEvent.location() == province}"></option>
+														</select>
+													</div>
+													<div class="col-6">
+														<label class="form-label fs-sm mb-1" for="supplierDateInput">Date <span class="text-muted fs-sm fw-normal">(optional)</span></label>
+														<input type="date" id="supplierDateInput" class="form-control form-control-sm" th:value="${selectedEvent.eventDate()}">
 													</div>
 												</div>
-												<p class="text-muted mb-0" th:if="${#lists.isEmpty(selectedEvent.suggestedSuppliers())}">No suppliers matched this event's location yet.</p>
+											</div>
+
+											<div class="card-body overflow-auto flex-grow-1" style="max-height:50vh;">
+												<div id="suppliersSpinner" class="text-center py-5 d-none">
+													<div class="spinner-border text-primary mb-2" role="status"></div>
+													<div class="text-muted fs-sm">Matching Vendors&hellip;</div>
+												</div>
+												<div id="suppliersResultWrapper">
+													<!--/* th:remove="tag" so the AJAX endpoint (returning just this
+													     fragment) emits its children only - no wrapper div to nest
+													     inside #suppliersResultWrapper on swap. */-->
+													<div th:fragment="suppliersResults" th:remove="tag">
+														<p class="text-muted mb-0" th:if="${suppliersError != null}" th:text="${suppliersError}">Error</p>
+														<th:block th:if="${suppliersError == null}">
+															<p class="text-muted mb-0" th:if="${selectedEvent.location() == null}">
+																Waiting for location before we can match you with relevant vendors.
+															</p>
+															<th:block th:if="${selectedEvent.location() != null}">
+																<div class="row g-3" th:if="${not #lists.isEmpty(selectedEvent.suggestions())}">
+																	<div class="col-md-6" th:each="supplier : ${selectedEvent.suggestions()}">
+																		<div class="border rounded p-3 h-100 d-flex flex-column">
+																			<span class="badge bg-indigo mb-2 align-self-start" th:text="${supplier.vendorType().label}">Category</span>
+																			<h6 class="mb-1" th:text="${supplier.businessName() != null} ? ${supplier.businessName()} : ${supplier.vendorType().label} + ' vendor'">Business name</h6>
+																			<div class="text-muted fs-sm mb-3" th:if="${supplier.city() != null}">
+																				<i class="ph-map-pin me-1"></i>
+																				<span th:text="${supplier.city()}">City</span>
+																			</div>
+																			<a th:if="${supplier.slug() != null}" th:href="@{'/vendor/storefront/' + ${supplier.slug()}(eventId=${selectedEvent.id()})}" target="_blank" class="btn btn-outline-primary btn-sm mt-auto">
+																				<i class="ph-storefront me-1"></i>
+																				View Storefront
+																			</a>
+																			<span th:if="${supplier.slug() == null}" class="text-muted fs-sm mt-auto">
+																				<i class="ph-clock me-1"></i>
+																				No matching vendor yet - check back soon
+																			</span>
+																		</div>
+																	</div>
+																</div>
+																<p class="text-muted mb-0" th:if="${#lists.isEmpty(selectedEvent.suggestions())}">No suppliers matched this event's location yet.</p>
+															</th:block>
+														</th:block>
+													</div>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -231,10 +308,10 @@
 
 													<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:44px;height:44px;"
 														th:classappend="${conversation.id() % 3 == 0} ? 'bg-indigo' : (${conversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
-														th:text="${#strings.substring(vendorBusinessName, 0, 1)}">V</div>
+														th:text="${#strings.substring(conversation.otherPartyName(), 0, 1)}">V</div>
 
 													<div class="ms-3 flex-grow-1 overflow-hidden">
-														<div class="fw-semibold text-truncate" th:text="${vendorBusinessName}">Vendor</div>
+														<div class="fw-semibold text-truncate" th:text="${conversation.otherPartyName()}">Vendor</div>
 														<div class="text-truncate text-muted fs-sm" th:text="${conversation.lastMessagePreview()}">Last message</div>
 													</div>
 												</a>
@@ -246,9 +323,9 @@
 											<div class="d-flex align-items-center p-3 border-bottom">
 												<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:36px;height:36px;"
 													th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
-													th:text="${#strings.substring(vendorBusinessName, 0, 1)}">V</div>
+													th:text="${#strings.substring(selectedConversation.otherPartyName(), 0, 1)}">V</div>
 												<div class="ms-3">
-													<a class="fw-semibold text-body" th:href="@{'/vendor/storefront/' + ${vendorSlug}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${vendorBusinessName}">Vendor name</a>
+													<span class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Vendor name</span>
 													<div class="text-muted fs-sm">
 														<i class="ph-user-circle me-1"></i>
 														Vendor
@@ -258,18 +335,14 @@
 
 											<div class="flex-grow-1 overflow-auto p-3">
 
-												<div th:if="${chatNotice}" class="alert alert-success alert-dismissible">
-													<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-													<span th:text="${chatNotice}">Notice</span>
-												</div>
 												<div th:if="${replySent}" class="alert alert-success alert-dismissible">
 													<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-													Your reply has been sent. <span class="text-muted">(stub only for now - won't appear in the thread below)</span>
+													Your reply has been sent.
 												</div>
 
 												<th:block th:each="message : ${thread}">
 													<div class="d-flex mb-2" th:classappend="${message.senderUserId() == plannerUserId} ? 'justify-content-end' : 'justify-content-start'">
-														<div class="rounded-pill px-3 py-2" style="max-width:60%;"
+														<div class="rounded-4 px-3 py-2" style="max-width:60%;white-space:pre-wrap;"
 															th:classappend="${message.senderUserId() == plannerUserId} ? 'bg-primary text-white' : 'bg-light'"
 															th:text="${message.body()}">Message body</div>
 													</div>
@@ -313,15 +386,14 @@
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 									<span th:if="${bookingIncludedScreenshot}">Your booking and payment screenshot have been submitted - the vendor will confirm once they've verified it.</span>
 									<span th:unless="${bookingIncludedScreenshot}">Your booking has been submitted. You can upload a payment screenshot anytime from the Bookings tab.</span>
-									<span class="text-muted">(stub only for now)</span>
 								</div>
 								<div th:if="${quotationDeclined}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Quotation declined. <span class="text-muted">(stub only for now)</span>
+									Quotation declined.
 								</div>
 								<div th:if="${quotationRevised}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Revision request sent to the vendor - they'll send an updated quotation. <span class="text-muted">(stub only for now)</span>
+									Revision request sent to the vendor - they'll send an updated quotation.
 								</div>
 								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -514,11 +586,11 @@
 
 								<div th:if="${screenshotSubmitted}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Your payment screenshot has been submitted for the vendor's review. <span class="text-muted">(stub only for now)</span>
+									Your payment screenshot has been submitted for the vendor's review.
 								</div>
 								<div th:if="${bookingCancelled}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Booking cancelled. The vendor has been notified. <span class="text-muted">(stub only for now)</span>
+									Booking cancelled. The vendor has been notified.
 								</div>
 								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -722,6 +794,60 @@
 
 	</div>
 	<!-- /page content -->
+
+
+	<!-- Live vendor matching - fires on location/date change, no submit
+	     button. Location is the trigger: with it blank, changing date does
+	     nothing (there's nothing to match against yet) and no request is
+	     made at all. -->
+	<th:block th:if="${selectedEvent != null}">
+		<script th:inline="javascript">
+			document.addEventListener('DOMContentLoaded', function () {
+				var eventId = /*[[${selectedEvent.id()}]]*/ 0;
+				var locationInput = document.getElementById('supplierLocationInput');
+				var dateInput = document.getElementById('supplierDateInput');
+				var spinner = document.getElementById('suppliersSpinner');
+				var resultWrapper = document.getElementById('suppliersResultWrapper');
+				if (!locationInput || !dateInput || !resultWrapper) {
+					return;
+				}
+
+				function refreshSuppliers() {
+					var location = locationInput.value;
+					if (!location) {
+						resultWrapper.innerHTML = '<p class="text-muted mb-0">Waiting for location before we can match you with relevant vendors.</p>';
+						return;
+					}
+
+					spinner.classList.remove('d-none');
+					resultWrapper.classList.add('d-none');
+
+					var params = new URLSearchParams();
+					params.set('location', location);
+					if (dateInput.value) {
+						params.set('eventDate', dateInput.value);
+					}
+
+					fetch('/planner/events/' + eventId + '/suppliers?' + params.toString(), { method: 'POST' })
+						.then(function (res) { return res.text(); })
+						.then(function (html) {
+							resultWrapper.innerHTML = html;
+						})
+						.catch(function () {
+							resultWrapper.innerHTML = '<p class="text-muted mb-0">Couldn\'t update vendor matches. Please try again.</p>';
+						})
+						.finally(function () {
+							spinner.classList.add('d-none');
+							resultWrapper.classList.remove('d-none');
+						});
+				}
+
+				locationInput.addEventListener('change', refreshSuppliers);
+				dateInput.addEventListener('change', refreshSuppliers);
+			});
+		</script>
+	</th:block>
+	<!-- /live vendor matching -->
 
 
 	<!-- Voice input - speak instead of typing, for the coordinator chat and

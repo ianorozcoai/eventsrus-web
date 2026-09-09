@@ -570,9 +570,7 @@ public class VendorController {
             redirectAttributes.addFlashAttribute("storefrontFormError", e.getMessage());
             return redirectAfterStorefrontFailure(redirectSlug, eventId);
         }
-        return redirectAfterStorefrontSubmit(
-                redirectSlug, eventId, "quotationRequestSubmitted",
-                "Your quotation request has been sent.", redirectAttributes);
+        return redirectAfterStorefrontSubmit(redirectSlug, eventId, "quotationRequestSubmitted", redirectAttributes);
     }
 
     @PostMapping("/storefront/inquiry")
@@ -596,9 +594,7 @@ public class VendorController {
             redirectAttributes.addFlashAttribute("storefrontFormError", e.getMessage());
             return redirectAfterStorefrontFailure(redirectSlug, eventId);
         }
-        return redirectAfterStorefrontSubmit(
-                redirectSlug, eventId, "inquirySubmitted",
-                "Your message has been sent.", redirectAttributes);
+        return redirectAfterStorefrontSubmit(redirectSlug, eventId, "inquirySubmitted", redirectAttributes);
     }
 
     // Both real endpoints behind these two forms are
@@ -627,17 +623,18 @@ public class VendorController {
         return redirectSlug != null ? "redirect:/vendor/storefront/" + redirectSlug : "redirect:/vendor/storefront";
     }
 
-    // When reached from a planner event's Overview tab (eventId present),
-    // send the planner back into that event's Chats tab instead of just
-    // back to the storefront - that's where the new conversation now lives.
+    // Stays on the storefront either way (a submission doesn't navigate the
+    // planner away to their Chats tab anymore - they land right back where
+    // they were, with the existing inquirySubmitted/quotationRequestSubmitted
+    // alert on this same page confirming it went through), preserving
+    // eventId in the URL so the page keeps its "linked to my event" context
+    // (isOwnStorefront check, hidden eventId field on these same forms) for
+    // anything submitted next.
     private String redirectAfterStorefrontSubmit(
-            String redirectSlug, Long eventId, String plainFlashKey, String eventFlashMessage, RedirectAttributes redirectAttributes) {
-        if (eventId != null) {
-            redirectAttributes.addFlashAttribute("chatNotice", eventFlashMessage);
-            return "redirect:/planner/events?eventId=" + eventId + "&tab=chats";
-        }
+            String redirectSlug, Long eventId, String plainFlashKey, RedirectAttributes redirectAttributes) {
         redirectAttributes.addFlashAttribute(plainFlashKey, true);
-        return redirectSlug != null ? "redirect:/vendor/storefront/" + redirectSlug : "redirect:/vendor/storefront";
+        String base = redirectSlug != null ? "redirect:/vendor/storefront/" + redirectSlug : "redirect:/vendor/storefront";
+        return eventId != null ? base + "?eventId=" + eventId : base;
     }
 
     @GetMapping("/settings")

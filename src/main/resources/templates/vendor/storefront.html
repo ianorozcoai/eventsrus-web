@@ -52,7 +52,7 @@
 									</div>
 
 									<h1 class="fw-bold mb-2" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
-									<p class="mb-4 opacity-75" style="max-width:640px;" th:text="${profile.description()}">Description</p>
+									<p class="mb-4 opacity-75" style="max-width:640px;white-space:pre-wrap;" th:text="${profile.description()}">Description</p>
 
 									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10" th:if="${profile.primaryRegion() != null or (profile.rating() != null and profile.rating() > 0) or profile.responseTime() != null}">
 										<div th:if="${profile.primaryRegion() != null}">
@@ -145,7 +145,7 @@
 											<div class="border rounded p-3 h-100" style="cursor:pointer;" data-bs-toggle="modal" th:attr="data-bs-target='#packageDetailModal-' + ${pkg.id()}">
 												<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
 												<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
-												<p class="text-muted fs-sm mb-2" th:text="${pkg.description()}">Description</p>
+												<p class="text-muted fs-sm mb-2" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
 												<div class="fw-semibold mb-2" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</div>
 
 												<!-- Real photos for this package - each a .lightbox-trigger
@@ -175,7 +175,7 @@
 														<div class="modal-body">
 															<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
 															<h5 class="mb-3" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</h5>
-															<p class="text-muted" th:text="${pkg.description()}">Description</p>
+															<p class="text-muted" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
 
 															<div th:if="${not #lists.isEmpty(pkg.images())}">
 																<h6 class="fw-semibold mt-4 mb-3">Photos</h6>
@@ -330,12 +330,16 @@
 									<h6 class="mb-0">Payment Methods</h6>
 								</div>
 								<div class="card-body">
-									<p class="text-muted fs-sm mb-3" th:if="${profile.paymentInstructions() != null}" th:text="${profile.paymentInstructions()}">Payment instructions</p>
+									<p class="text-muted fs-sm mb-3" style="white-space:pre-wrap;" th:if="${profile.paymentInstructions() != null}" th:text="${profile.paymentInstructions()}">Payment instructions</p>
 
 									<div class="row g-3">
 										<div class="col-6" th:each="method : ${profile.paymentMethods()}">
 											<div class="border rounded p-3 text-center h-100">
-												<div class="d-flex align-items-center justify-content-center bg-light rounded mb-2 mx-auto" style="width:90px;height:90px;">
+												<a href="#" class="d-block mb-2 lightbox-trigger" th:if="${method.qrImageUrl() != null}"
+													th:attr="data-lightbox-src=${method.qrImageUrl()},data-lightbox-caption=${method.label()}">
+													<img th:src="${method.qrImageUrl()}" alt="QR code" class="rounded mx-auto d-block border" style="width:90px;height:90px;object-fit:cover;">
+												</a>
+												<div class="d-flex align-items-center justify-content-center bg-light rounded mb-2 mx-auto" style="width:90px;height:90px;" th:if="${method.qrImageUrl() == null}">
 													<i class="ph-qr-code ph-2x text-muted"></i>
 												</div>
 												<div class="fw-semibold fs-sm" th:text="${method.label()}">Payment method</div>
@@ -355,10 +359,6 @@
 									<h5 class="fw-bold mb-1">Request for Quotation</h5>
 									<p class="text-muted fs-sm mb-4">Receive a customized price estimate and package breakdown.</p>
 
-									<div th:if="${quotationRequestSubmitted}" class="alert alert-success alert-dismissible">
-										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-										Your quotation request has been sent.
-									</div>
 									<div th:if="${storefrontFormError}" class="alert alert-danger alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 										<span th:text="${storefrontFormError}"></span>
@@ -408,10 +408,6 @@
 									<h5 class="fw-bold mb-1">Direct Client Inquiry</h5>
 									<p class="text-muted fs-sm mb-4">Ask a question or check availability directly.</p>
 
-									<div th:if="${inquirySubmitted}" class="alert alert-success alert-dismissible">
-										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-										Your message has been sent.
-									</div>
 									<div th:if="${storefrontFormError}" class="alert alert-danger alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 										<span th:text="${storefrontFormError}"></span>
@@ -484,6 +480,18 @@
 	</script>
 
 	<div th:replace="~{fragments/common :: imageLightbox}"></div>
+
+	<div th:replace="~{fragments/common :: sweetAlertScript}"></div>
+	<script th:if="${quotationRequestSubmitted}">
+		document.addEventListener('DOMContentLoaded', function () {
+			window.showAlert('Your quotation request has been sent.');
+		});
+	</script>
+	<script th:if="${inquirySubmitted}">
+		document.addEventListener('DOMContentLoaded', function () {
+			window.showAlert('Your message has been sent.');
+		});
+	</script>
 
 </body>
 </html>

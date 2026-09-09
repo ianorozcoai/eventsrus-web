@@ -1,6 +1,11 @@
 package com.web.eventsrus.backend;
 
 import com.web.eventsrus.model.AdminPlannerSummary;
+import com.web.eventsrus.model.CoordinatorHistory;
+import com.web.eventsrus.model.CoordinatorQuestion;
+import com.web.eventsrus.model.EventType;
+import com.web.eventsrus.model.PlannerEvent;
+import com.web.eventsrus.model.PlannerEventSummary;
 import com.web.eventsrus.model.SupportTicket;
 import com.web.eventsrus.model.SupportTicketMessage;
 import com.web.eventsrus.model.VendorBooking;
@@ -13,11 +18,13 @@ import com.web.eventsrus.model.VendorLegalDocumentForm;
 import com.web.eventsrus.model.VendorLegalDocumentItem;
 import com.web.eventsrus.model.VendorPackageForm;
 import com.web.eventsrus.model.VendorPackageImageItem;
+import com.web.eventsrus.model.PlannerProfileForm;
 import com.web.eventsrus.model.VendorPackageItem;
 import com.web.eventsrus.model.VendorPaymentMethodForm;
 import com.web.eventsrus.model.VendorPaymentMethodItem;
 import com.web.eventsrus.model.VendorPublicProfile;
 import com.web.eventsrus.model.VendorQuotation;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -185,6 +192,25 @@ public class BackendClient {
         return putJson("/api/v1/bookings/" + bookingId + "/cancel", jwt, Map.of("reason", reason), VendorBooking.class);
     }
 
+    public List<VendorBooking> getPlannerBookings(String jwt) {
+        return get("/api/v1/planners/me/bookings", jwt, new ParameterizedTypeReference<List<VendorBooking>>() {});
+    }
+
+    public VendorBooking bookFromQuotation(
+            String jwt, Long quotationId, java.math.BigDecimal price, Instant eventDatetime, String agreementDetails) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("price", price);
+        body.put("eventDatetime", eventDatetime);
+        body.put("agreementDetails", agreementDetails);
+        return postJson("/api/v1/quotations/" + quotationId + "/book", jwt, body, VendorBooking.class);
+    }
+
+    public VendorBooking submitPaymentScreenshot(String jwt, Long bookingId, MultipartFile screenshot) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addFileIfPresent(body, "screenshot", screenshot);
+        return postMultipart("/api/v1/bookings/" + bookingId + "/payment-screenshot", jwt, body, VendorBooking.class);
+    }
+
     // --- Conversations / messages ---
 
     public List<VendorConversation> getConversations(String jwt) {
@@ -211,6 +237,59 @@ public class BackendClient {
 
     public List<VendorQuotation> getQuotations(String jwt) {
         return get("/api/v1/vendors/me/quotations", jwt, new ParameterizedTypeReference<List<VendorQuotation>>() {});
+    }
+
+    public List<VendorQuotation> getPlannerQuotations(String jwt) {
+        return get("/api/v1/planners/me/quotations", jwt, new ParameterizedTypeReference<List<VendorQuotation>>() {});
+    }
+
+    public VendorQuotation declineQuotation(String jwt, Long quotationId) {
+        return backendRestClient.put()
+                .uri("/api/v1/quotations/" + quotationId + "/decline")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(VendorQuotation.class);
+    }
+
+    public VendorQuotation reviseQuotation(String jwt, Long quotationId, LocalDate targetDate, String message, List<Long> packageIds) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("targetDate", targetDate);
+        body.put("message", message);
+        body.put("packageIds", packageIds);
+        return postJson("/api/v1/quotations/" + quotationId + "/revise", jwt, body, VendorQuotation.class);
+    }
+
+    // --- Events (planner) ---
+
+    public PlannerEvent createEvent(String jwt, EventType eventType, LocalDate eventDate, String location, String description) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("eventType", eventType != null ? eventType.name() : null);
+        body.put("eventDate", eventDate);
+        body.put("location", location);
+        body.put("description", description);
+        return postJson("/api/v1/events", jwt, body, PlannerEvent.class);
+    }
+
+    public List<PlannerEventSummary> listEvents(String jwt) {
+        return get("/api/v1/events", jwt, new ParameterizedTypeReference<List<PlannerEventSummary>>() {});
+    }
+
+    public PlannerEvent getEvent(String jwt, Long eventId) {
+        return get("/api/v1/events/" + eventId, jwt, PlannerEvent.class);
+    }
+
+    /** Names the event and marks it saved - splits out from createEvent since the real CreateEventRequest has no name field. */
+    /** Sets/changes date and/or location after creation - the only way to supply these once past the initial intake form. */
+    public PlannerEvent updateEventDetails(String jwt, Long eventId, LocalDate eventDate, String location) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("eventDate", eventDate);
+        body.put("location", location);
+        return putJson("/api/v1/events/" + eventId + "/details", jwt, body, PlannerEvent.class);
+    }
+
+    public PlannerEvent saveEvent(String jwt, Long eventId, String name) {
+        return putJson("/api/v1/events/" + eventId + "/save", jwt, Map.of("name", name), PlannerEvent.class);
     }
 
     // --- Calendar ---
@@ -373,15 +452,17 @@ public class BackendClient {
     }
 
     /** Planner-initiated - requires the visiting PLANNER's own jwt, not the vendor's. */
-    public VendorConversationMessage submitQuotationRequest(
+    public VendorQuotation submitQuotationRequest(
             String jwt, Long eventId, Long vendorUserId, String plannerName, LocalDate targetDate, String message, List<Long> packageIds) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("plannerName", plannerName);
         body.put("targetDate", targetDate);
         body.put("message", message);
         body.put("packageIds", packageIds);
+        // Real endpoint is QuotationController#requestQuotation - returns a
+        // QuotationResponse (VendorQuotation), NOT a conversation message.
         return postJson("/api/v1/events/" + eventId + "/vendors/" + vendorUserId + "/quotations", jwt, body,
-                VendorConversationMessage.class);
+                VendorQuotation.class);
     }
 
     /** Planner-initiated - requires the visiting PLANNER's own jwt, not the vendor's. */
@@ -481,6 +562,35 @@ public class BackendClient {
     public BackendVendorVerificationDocuments getVendorVerificationDocuments(String adminJwt, Long vendorUserId) {
         return get("/api/v1/admin/vendors/" + vendorUserId + "/verification-documents", adminJwt,
                 BackendVendorVerificationDocuments.class);
+    }
+
+    // --- Planner's own profile (any logged-in user - a vendor has one too, just reached from a different page) ---
+
+    public PlannerProfileForm getProfile(String jwt) {
+        return get("/api/v1/users/me/profile", jwt, PlannerProfileForm.class);
+    }
+
+    /**
+     * Returns a fresh token, not just the saved profile - email is editable
+     * here and is also the JWT subject, so a caller who changes their own
+     * email needs a reissued token or their next request would fail to
+     * resolve to any user (see UserController#updateProfile). The caller
+     * must store this back into the session (WebSession.store) - the token
+     * this method was called with becomes stale the moment this succeeds.
+     */
+    public BackendAuthResponse updateProfile(String jwt, PlannerProfileForm form) {
+        return putJson("/api/v1/users/me/profile", jwt, form, BackendAuthResponse.class);
+    }
+
+    // --- Events Coordinator (planner-facing AI ideas/advice assistant) ---
+
+    public CoordinatorHistory getCoordinatorHistory(String jwt, Long eventId) {
+        return get("/api/v1/events/" + eventId + "/coordinator/questions", jwt, CoordinatorHistory.class);
+    }
+
+    public CoordinatorQuestion askCoordinator(String jwt, Long eventId, String question) {
+        return postJson("/api/v1/events/" + eventId + "/coordinator/ask", jwt, Map.of("question", question),
+                CoordinatorQuestion.class);
     }
 
     public BackendAdminDashboardStats getAdminDashboardStats(String adminJwt) {

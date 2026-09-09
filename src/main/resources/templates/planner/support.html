@@ -20,13 +20,12 @@
 				<!-- Page header -->
 				<div class="page-header page-header-light shadow">
 					<div class="page-header-content d-lg-flex">
-						<div class="d-flex">
+						<div class="d-flex flex-fill align-items-center">
 							<h4 class="page-title mb-0">Support</h4>
-						</div>
-						<div class="ms-lg-auto my-2 my-lg-0">
-							<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTicketModal">
+
+							<button type="button" class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#newTicketModal">
 								<i class="ph-plus me-2"></i>
-								New Ticket
+								Create Ticket
 							</button>
 						</div>
 					</div>
@@ -46,12 +45,21 @@
 				<!-- Content area -->
 				<div class="content">
 
-					<div th:if="${ticketCreated}" class="alert alert-success alert-dismissible">
-						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Your ticket has been submitted. Our support team will get back to you soon. <span class="text-muted">(stub only for now)</span>
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - please try again in a moment.</span>
 					</div>
 
-					<div class="card mb-0" th:if="${not #lists.isEmpty(tickets)}">
+					<div th:if="${ticketCreated}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Your ticket has been submitted. Our support team will get back to you soon.
+					</div>
+					<div th:if="${supportError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${supportError}"></span>
+					</div>
+
+					<div class="card mb-0" th:if="${not backendUnavailable and not #lists.isEmpty(tickets)}">
 						<div class="d-flex messenger-shell">
 
 							<!-- Ticket list -->
@@ -100,11 +108,7 @@
 
 									<div th:if="${replySent}" class="alert alert-success alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-										Your reply has been sent. <span class="text-muted">(stub only for now - won't appear in the thread below)</span>
-									</div>
-									<div th:if="${supportError}" class="alert alert-danger alert-dismissible">
-										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-										<span th:text="${supportError}">Error</span>
+										Your reply has been sent.
 									</div>
 
 									<th:block th:each="message : ${thread}">
@@ -115,6 +119,10 @@
 												<div class="rounded-3 px-3 py-2"
 													th:classappend="${message.senderUserId() == currentUserId} ? 'bg-purple text-white' : (${message.senderRole() == 'ADMIN'} ? 'bg-info-subtle' : 'bg-light')"
 													th:text="${message.body()}">Message body</div>
+												<a href="#" class="d-block mt-1 lightbox-trigger" th:if="${message.attachmentUrl() != null}"
+													th:attr="data-lightbox-src=${message.attachmentUrl()},data-lightbox-caption='Attached screenshot'">
+													<img th:src="${message.attachmentUrl()}" alt="Attached screenshot" class="img-fluid rounded border" style="max-height:160px;">
+												</a>
 											</div>
 										</div>
 									</th:block>
@@ -126,11 +134,18 @@
 								</div>
 
 								<div class="border-top p-3" th:if="${selectedTicket.status().name() != 'CLOSED'}">
-									<form th:action="@{/planner/support/{id}/reply(id=${selectedTicket.id()})}" method="post" class="d-flex align-items-center gap-2">
-										<input type="text" name="message" class="form-control rounded-pill" placeholder="Type a reply..." required>
-										<button type="submit" class="btn btn-purple btn-icon rounded-circle flex-shrink-0">
-											<i class="ph-paper-plane-tilt"></i>
-										</button>
+									<form th:action="@{/planner/support/{id}/reply(id=${selectedTicket.id()})}" method="post" enctype="multipart/form-data" class="support-form">
+										<div class="d-flex align-items-center gap-2">
+											<input type="text" name="message" class="form-control rounded-pill" placeholder="Type a reply..." required>
+											<label class="btn btn-flat-secondary btn-icon rounded-circle flex-shrink-0 mb-0" title="Attach a screenshot">
+												<i class="ph-paperclip"></i>
+												<input type="file" name="attachment" accept="image/png,image/jpeg" class="d-none support-reply-attachment">
+											</label>
+											<button type="submit" class="btn btn-purple btn-icon rounded-circle flex-shrink-0 support-submit-btn">
+												<i class="ph-paper-plane-tilt"></i>
+											</button>
+										</div>
+										<div class="fs-sm text-muted mt-1 support-reply-attachment-name d-none"></div>
 									</form>
 								</div>
 								<p class="text-muted fs-sm text-center p-3 mb-0" th:if="${selectedTicket.status().name() == 'CLOSED'}">
@@ -143,13 +158,13 @@
 						</div>
 					</div>
 
-					<div class="card" th:if="${#lists.isEmpty(tickets)}">
+					<div class="card" th:if="${not backendUnavailable and #lists.isEmpty(tickets)}">
 						<div class="card-body text-center py-5">
 							<i class="ph-lifebuoy ph-3x text-muted mb-3 d-block"></i>
 							<p class="text-muted mb-3">No support tickets yet.</p>
 							<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTicketModal">
 								<i class="ph-plus me-2"></i>
-								Raise a Ticket
+								Create Ticket
 							</button>
 						</div>
 					</div>
@@ -179,9 +194,9 @@
 	<div class="modal fade" id="newTicketModal" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog modal-dialog-centered">
 			<div class="modal-content">
-				<form th:action="@{/planner/support}" th:object="${createTicketForm}" method="post">
+				<form th:action="@{/planner/support}" th:object="${createTicketForm}" method="post" enctype="multipart/form-data" class="support-form">
 					<div class="modal-header">
-						<h5 class="modal-title">Raise a Support Ticket</h5>
+						<h5 class="modal-title">Create Ticket</h5>
 						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 					</div>
 					<div class="modal-body">
@@ -195,16 +210,21 @@
 								<option th:each="cat : ${ticketCategories}" th:value="${cat}" th:text="${cat.getLabel()}"></option>
 							</select>
 						</div>
-						<div class="mb-0">
+						<div class="mb-3">
 							<label class="form-label">Details</label>
 							<textarea th:field="*{message}" rows="4" class="form-control" placeholder="Tell us what's going on, including any event, booking, or quotation this is about." required></textarea>
+						</div>
+						<div class="mb-0">
+							<label class="form-label">Screenshot <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+							<input type="file" name="attachment" accept="image/png,image/jpeg" class="form-control">
+							<div class="fs-sm text-muted mt-1">PNG or JPEG only. Attach a screenshot of what you're seeing, if it helps explain the issue.</div>
 						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-						<button type="submit" class="btn btn-primary">
+						<button type="submit" class="btn btn-primary support-submit-btn">
 							<i class="ph-paper-plane-tilt me-2"></i>
-							Submit Ticket
+							Create Ticket
 						</button>
 					</div>
 				</form>
@@ -212,6 +232,48 @@
 		</div>
 	</div>
 	<!-- /New Ticket modal -->
+
+
+	<!-- Reply attachment - shows the picked filename under the reply box,
+	     since a bare file input has no visible feedback once it's hidden
+	     behind the paperclip icon button. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.support-reply-attachment').forEach(function (input) {
+				var nameEl = input.closest('form').querySelector('.support-reply-attachment-name');
+				input.addEventListener('change', function () {
+					if (input.files && input.files[0]) {
+						nameEl.textContent = 'Attached: ' + input.files[0].name;
+						nameEl.classList.remove('d-none');
+					} else {
+						nameEl.classList.add('d-none');
+					}
+				});
+			});
+		});
+	</script>
+	<!-- /reply attachment -->
+
+
+	<!-- Submit spinner -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.support-form').forEach(function (form) {
+				form.addEventListener('submit', function () {
+					if (form.dataset.armed === '1') {
+						return;
+					}
+					form.dataset.armed = '1';
+					window.showPageSpinner('Sending…');
+				});
+			});
+		});
+	</script>
+	<!-- /submit spinner -->
+
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
+	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
 
 </body>
 </html>

@@ -25,7 +25,11 @@
 
 							<div th:if="${profileSaved}" class="alert alert-success alert-dismissible">
 								<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-								Your profile has been saved. <span class="text-muted">(stub only for now)</span>
+								Your profile has been saved.
+							</div>
+							<div th:if="${profileError}" class="alert alert-danger alert-dismissible">
+								<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+								<span th:text="${profileError}"></span>
 							</div>
 
 							<div class="card">

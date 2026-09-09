@@ -492,5 +492,29 @@
 		</script>
 	</th:block>
 
+	<!--/* SweetAlert2-powered popup - centered on screen with a real icon
+	     (checkmark for success, X for error), used for one-shot
+	     confirmations instead of an inline banner that's easy to
+	     submit-and-scroll straight past. Self-hosted like every other JS
+	     library here (bootstrap, dropzone, jquery) rather than a CDN link -
+	     see /assets/js/sweetalert2. Include once per page with
+	     th:replace="~{fragments/common :: sweetAlertScript}", then call
+	     window.showAlert('Message here') from that page's own script (e.g.
+	     right after a flash-driven th:if block, so it only fires once on
+	     the page load that actually carries the flash). Pass 'error' as a
+	     second argument for an error-styled alert. */-->
+	<th:block th:fragment="sweetAlertScript">
+		<script th:src="@{/assets/js/sweetalert2/sweetalert2.all.min.js}"></script>
+		<script>
+			window.showAlert = function (message, variant) {
+				Swal.fire({
+					icon: variant === 'error' ? 'error' : 'success',
+					title: message,
+					confirmButtonColor: '#ff6b35'
+				});
+			};
+		</script>
+	</th:block>
+
 </body>
 </html>

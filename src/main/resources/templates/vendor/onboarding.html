@@ -232,6 +232,17 @@
 											<div id="operatingAreasFeedback" class="fs-sm text-danger mt-1 d-none">Please select at least one operating area.</div>
 										</div>
 
+										<div class="mb-3">
+											<label class="form-label">Event types you cater to</label>
+											<select th:field="*{cateredEventTypes}" multiple="multiple" required class="form-control multiselect-event-types"
+												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+												data-filter-placeholder="Search for an event type..." data-number-displayed="999">
+												<option th:each="type : ${eventTypeOptions}" th:value="${type}" th:text="${type.label}"></option>
+											</select>
+											<div class="fs-sm text-muted mt-1">Select every type of event you take on — this helps planners find you for the right occasions.</div>
+											<div id="cateredEventTypesFeedback" class="fs-sm text-danger mt-1 d-none">Please select at least one event type you cater to.</div>
+										</div>
+
 										<!-- Documents -->
 										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Documents</h6>
 										<p class="text-muted fs-sm mb-3">Used to verify your business — kept private, only visible to EventsRUs admins.</p>
@@ -422,11 +433,14 @@
 		document.addEventListener('DOMContentLoaded', function () {
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
 				jQuery('.multiselect-operating-areas').multiselect();
+				jQuery('.multiselect-event-types').multiselect();
 			}
 
 			var form = document.getElementById('onboardingForm');
 			var operatingAreas = document.getElementById('operatingAreas');
 			var feedback = document.getElementById('operatingAreasFeedback');
+			var cateredEventTypes = document.getElementById('cateredEventTypes');
+			var eventTypesFeedback = document.getElementById('cateredEventTypesFeedback');
 			var tokenField = document.getElementById('recaptchaToken');
 			var siteKey = /*[[${recaptchaSiteKey}]]*/ '';
 			var submitButton = document.getElementById('onboardingSubmitButton');
@@ -499,6 +513,17 @@
 				}
 				if (feedback) {
 					feedback.classList.add('d-none');
+				}
+
+				if (cateredEventTypes && cateredEventTypes.selectedOptions.length === 0) {
+					if (eventTypesFeedback) {
+						eventTypesFeedback.classList.remove('d-none');
+					}
+					cateredEventTypes.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
+					return;
+				}
+				if (eventTypesFeedback) {
+					eventTypesFeedback.classList.add('d-none');
 				}
 
 				setSubmitting(true);

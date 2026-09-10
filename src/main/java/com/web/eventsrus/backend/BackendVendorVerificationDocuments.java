@@ -1,6 +1,7 @@
 package com.web.eventsrus.backend;
 
 import com.web.eventsrus.model.VendorLegalDocumentItem;
+import com.web.eventsrus.model.VendorReview;
 import java.time.Instant;
 import java.util.List;
 
@@ -14,4 +15,6 @@ public record BackendVendorVerificationDocuments(
         List<VendorLegalDocumentItem> legalDocuments,
         boolean verified,
         Instant verifiedAt,
-        String verifiedByAdmin) {}
+        String verifiedByAdmin,
+        boolean topVendor,
+        List<VendorReview> reviews) {}

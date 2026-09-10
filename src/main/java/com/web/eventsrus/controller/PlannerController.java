@@ -3,21 +3,59 @@ package com.web.eventsrus.controller;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendClient;
 import com.web.eventsrus.backend.WebSession;
+import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.EventType;
 import com.web.eventsrus.model.PhilippineProvinces;
 import com.web.eventsrus.model.PlannerEvent;
 import com.web.eventsrus.model.PlannerEventSummary;
 import com.web.eventsrus.model.PlannerIntakeForm;
+import com.web.eventsrus.model.PlannerVendorSuggestion;
 import com.web.eventsrus.model.VendorBooking;
 import com.web.eventsrus.model.VendorConversation;
 import com.web.eventsrus.model.VendorConversationMessage;
 import com.web.eventsrus.model.VendorQuotation;
+import static com.web.eventsrus.model.BusinessType.ARCADE;
+import static com.web.eventsrus.model.BusinessType.BRIDAL_GOWN_DESIGNER;
+import static com.web.eventsrus.model.BusinessType.CAKE_AND_PASTRIES;
+import static com.web.eventsrus.model.BusinessType.CATERING;
+import static com.web.eventsrus.model.BusinessType.DECORATION_PRODUCTION;
+import static com.web.eventsrus.model.BusinessType.ENTERTAINMENT;
+import static com.web.eventsrus.model.BusinessType.EVENT_COORDINATOR;
+import static com.web.eventsrus.model.BusinessType.EVENT_HOST;
+import static com.web.eventsrus.model.BusinessType.FLORAL_SERVICES;
+import static com.web.eventsrus.model.BusinessType.FOOD_CARTS_GRAZING;
+import static com.web.eventsrus.model.BusinessType.HAIR_AND_MAKEUP;
+import static com.web.eventsrus.model.BusinessType.INFLATABLES;
+import static com.web.eventsrus.model.BusinessType.INTERACTIVE_BAR_MIXOLOGY_SERVICES;
+import static com.web.eventsrus.model.BusinessType.INVITATIONS;
+import static com.web.eventsrus.model.BusinessType.LED_WALL_VISUAL_PROJECTION_RENTALS;
+import static com.web.eventsrus.model.BusinessType.LIGHTS_AND_SOUNDS;
+import static com.web.eventsrus.model.BusinessType.LIVE_EVENT_PAINTERS_SKETCH_ARTISTS;
+import static com.web.eventsrus.model.BusinessType.MOBILE_PLAYGROUND;
+import static com.web.eventsrus.model.BusinessType.PERFORMERS;
+import static com.web.eventsrus.model.BusinessType.PHOTO_AND_VIDEO;
+import static com.web.eventsrus.model.BusinessType.PHOTO_BOOTHS;
+import static com.web.eventsrus.model.BusinessType.POWER_GENERATOR_SERVICES;
+import static com.web.eventsrus.model.BusinessType.SECURITY_CROWD_CONTROL;
+import static com.web.eventsrus.model.BusinessType.SOUVENIR_GIVEAWAYS;
+import static com.web.eventsrus.model.BusinessType.SPECIAL_EFFECTS;
+import static com.web.eventsrus.model.BusinessType.STAGING_TRUSSING_FLOORING_RENTALS;
+import static com.web.eventsrus.model.BusinessType.SUIT_RENTALS;
+import static com.web.eventsrus.model.BusinessType.TRANSPORT_SHUTTLE_FLEET_SERVICES;
+import static com.web.eventsrus.model.BusinessType.VENUE;
+import static com.web.eventsrus.model.BusinessType.WARDROBE_STYLISTS_DRESSERS;
+
 import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -115,7 +153,128 @@ public class PlannerController {
         model.addAttribute("selectedConversation", selectedConversation);
         model.addAttribute("thread", thread);
         model.addAttribute("coordinatorHistory", backendClient.getCoordinatorHistory(jwt, selected.id()));
+        model.addAttribute("businessTypes", BusinessType.values());
+        addSupplierPanelAttributes(model, selected);
         return "planner/events";
+    }
+
+    // Which vendor categories matter for a given kind of event, most
+    // important first. Drives the order categories appear in and which ones
+    // sit up top vs. behind "show more service categories". A category not
+    // in the list still shows (as a match) - just down in the long tail.
+    private static final List<BusinessType> WEDDING_TYPES = List.of(
+            VENUE, CATERING, PHOTO_AND_VIDEO, EVENT_COORDINATOR, HAIR_AND_MAKEUP, FLORAL_SERVICES,
+            CAKE_AND_PASTRIES, BRIDAL_GOWN_DESIGNER, SUIT_RENTALS, DECORATION_PRODUCTION, LIGHTS_AND_SOUNDS,
+            ENTERTAINMENT, EVENT_HOST, INVITATIONS, PHOTO_BOOTHS, SOUVENIR_GIVEAWAYS,
+            WARDROBE_STYLISTS_DRESSERS, TRANSPORT_SHUTTLE_FLEET_SERVICES, SPECIAL_EFFECTS);
+
+    private static final List<BusinessType> PARTY_TYPES = List.of(
+            VENUE, CATERING, PHOTO_AND_VIDEO, EVENT_HOST, CAKE_AND_PASTRIES, DECORATION_PRODUCTION,
+            ENTERTAINMENT, PHOTO_BOOTHS, FOOD_CARTS_GRAZING, SOUVENIR_GIVEAWAYS, INFLATABLES,
+            MOBILE_PLAYGROUND, ARCADE, PERFORMERS, LIGHTS_AND_SOUNDS, INTERACTIVE_BAR_MIXOLOGY_SERVICES,
+            INVITATIONS, SPECIAL_EFFECTS);
+
+    private static final List<BusinessType> MILESTONE_TYPES = List.of(
+            VENUE, CATERING, PHOTO_AND_VIDEO, EVENT_HOST, EVENT_COORDINATOR, CAKE_AND_PASTRIES,
+            DECORATION_PRODUCTION, FLORAL_SERVICES, ENTERTAINMENT, PHOTO_BOOTHS, HAIR_AND_MAKEUP,
+            LIGHTS_AND_SOUNDS, FOOD_CARTS_GRAZING, INTERACTIVE_BAR_MIXOLOGY_SERVICES, SOUVENIR_GIVEAWAYS,
+            INVITATIONS);
+
+    private static final List<BusinessType> CORPORATE_TYPES = List.of(
+            VENUE, CATERING, LIGHTS_AND_SOUNDS, LED_WALL_VISUAL_PROJECTION_RENTALS,
+            STAGING_TRUSSING_FLOORING_RENTALS, EVENT_HOST, EVENT_COORDINATOR, PHOTO_AND_VIDEO,
+            ENTERTAINMENT, PERFORMERS, DECORATION_PRODUCTION, POWER_GENERATOR_SERVICES,
+            SECURITY_CROWD_CONTROL, TRANSPORT_SHUTTLE_FLEET_SERVICES, INTERACTIVE_BAR_MIXOLOGY_SERVICES,
+            LIVE_EVENT_PAINTERS_SKETCH_ARTISTS, SPECIAL_EFFECTS, INVITATIONS, SOUVENIR_GIVEAWAYS);
+
+    private static final List<BusinessType> PRODUCTION_TYPES = List.of(
+            VENUE, LIGHTS_AND_SOUNDS, STAGING_TRUSSING_FLOORING_RENTALS, LED_WALL_VISUAL_PROJECTION_RENTALS,
+            POWER_GENERATOR_SERVICES, SECURITY_CROWD_CONTROL, PERFORMERS, ENTERTAINMENT, EVENT_HOST,
+            FOOD_CARTS_GRAZING, CATERING, TRANSPORT_SHUTTLE_FLEET_SERVICES, SPECIAL_EFFECTS,
+            PHOTO_AND_VIDEO, INTERACTIVE_BAR_MIXOLOGY_SERVICES);
+
+    private static List<BusinessType> relevantTypesFor(EventType type) {
+        if (type == null) {
+            return MILESTONE_TYPES;
+        }
+        return switch (type) {
+            case WEDDING -> WEDDING_TYPES;
+            case BIRTHDAY, PARTY, BABY_SHOWER -> PARTY_TYPES;
+            case SEMINAR, NETWORKING_EVENT, PRODUCT_LAUNCH, TEAM_BUILDING, CORPORATE_RETREAT,
+                    TRADE_SHOW, GALA, FUNDRAISER, EXHIBITION -> CORPORATE_TYPES;
+            case CONCERT, FESTIVAL, SPORTS_EVENT -> PRODUCTION_TYPES;
+            default -> MILESTONE_TYPES;
+        };
+    }
+
+    /**
+     * Turns the backend's flat list of suggestions into the Overview
+     * panel's model: a compact, relevance-ordered set of category groups
+     * (each already ranked Top Vendor -> Verified -> rating by the backend),
+     * the categories relevant to this event type up front and the rest
+     * flagged for the "show more service categories" fold, plus a single
+     * list of category labels that matched nothing so the template can
+     * render one line instead of a dozen empty cards.
+     */
+    private void addSupplierPanelAttributes(Model model, PlannerEvent event) {
+        Map<BusinessType, List<PlannerVendorSuggestion>> byType = new LinkedHashMap<>();
+        for (PlannerVendorSuggestion s : event.suggestions()) {
+            byType.computeIfAbsent(s.vendorType(), k -> new ArrayList<>());
+            if (s.vendorProfileId() != null) {
+                byType.get(s.vendorType()).add(s);
+            }
+        }
+
+        List<BusinessType> relevantOrder = relevantTypesFor(event.eventType());
+        Set<BusinessType> emitted = new LinkedHashSet<>();
+        List<SupplierGroup> groups = new ArrayList<>();
+
+        for (BusinessType t : relevantOrder) {
+            List<PlannerVendorSuggestion> vendors = byType.get(t);
+            if (vendors != null && !vendors.isEmpty()) {
+                groups.add(toSupplierGroup(t, vendors, true));
+                emitted.add(t);
+            }
+        }
+        for (Map.Entry<BusinessType, List<PlannerVendorSuggestion>> e : byType.entrySet()) {
+            if (!emitted.contains(e.getKey()) && !e.getValue().isEmpty()) {
+                groups.add(toSupplierGroup(e.getKey(), e.getValue(), false));
+                emitted.add(e.getKey());
+            }
+        }
+
+        List<String> emptyTypeLabels = new ArrayList<>();
+        for (BusinessType t : BusinessType.values()) {
+            List<PlannerVendorSuggestion> vendors = byType.get(t);
+            if (vendors == null || vendors.isEmpty()) {
+                emptyTypeLabels.add(t.getLabel());
+            }
+        }
+
+        int matchTotal = groups.stream().mapToInt(SupplierGroup::matchCount).sum();
+        int verifiedTotal = groups.stream().mapToInt(SupplierGroup::verifiedCount).sum();
+        int moreCatCount = (int) groups.stream().filter(g -> !g.relevant()).count();
+
+        model.addAttribute("supplierGroups", groups);
+        model.addAttribute("supplierEmptyTypes", emptyTypeLabels);
+        model.addAttribute("supplierMatchTotal", matchTotal);
+        model.addAttribute("supplierVerifiedTotal", verifiedTotal);
+        model.addAttribute("supplierMoreCatCount", moreCatCount);
+    }
+
+    private SupplierGroup toSupplierGroup(BusinessType type, List<PlannerVendorSuggestion> ranked, boolean relevant) {
+        int verified = (int) ranked.stream().filter(PlannerVendorSuggestion::verified).count();
+        return new SupplierGroup(type, type.getLabel(), relevant, ranked.size(), verified, ranked);
+    }
+
+    /** One business-type card in the Overview's Recommended Suppliers panel. */
+    public record SupplierGroup(
+            BusinessType type,
+            String label,
+            boolean relevant,
+            int matchCount,
+            int verifiedCount,
+            List<PlannerVendorSuggestion> vendors) {
     }
 
     @PostMapping
@@ -158,6 +317,7 @@ public class PlannerController {
         try {
             PlannerEvent updated = backendClient.updateEventDetails(WebSession.token(session), eventId, eventDate, location);
             model.addAttribute("selectedEvent", updated);
+            addSupplierPanelAttributes(model, updated);
         } catch (BackendApiException e) {
             model.addAttribute("suppliersError", "Couldn't update vendor matches. Please try again.");
         }
@@ -301,6 +461,52 @@ public class PlannerController {
             try {
                 backendClient.submitPaymentScreenshot(WebSession.token(session), bookingId, screenshot);
                 redirectAttributes.addFlashAttribute("screenshotSubmitted", true);
+            } catch (BackendApiException e) {
+                redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+            }
+        }
+        redirectAttributes.addAttribute("eventId", eventId);
+        redirectAttributes.addAttribute("tab", "bookings");
+        return "redirect:/planner/events";
+    }
+
+    @PostMapping("/{eventId}/bookings/{bookingId}/review")
+    public String submitReview(
+            @PathVariable Long eventId,
+            @PathVariable Long bookingId,
+            @RequestParam int rating,
+            @RequestParam String comment,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (rating < 1 || rating > 5 || comment == null || comment.isBlank()) {
+            redirectAttributes.addFlashAttribute("bookingsError", "A star rating and a written review are both required.");
+        } else {
+            try {
+                backendClient.submitReview(WebSession.token(session), bookingId, rating, comment);
+                redirectAttributes.addFlashAttribute("reviewSubmitted", true);
+            } catch (BackendApiException e) {
+                redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+            }
+        }
+        redirectAttributes.addAttribute("eventId", eventId);
+        redirectAttributes.addAttribute("tab", "bookings");
+        return "redirect:/planner/events";
+    }
+
+    @PostMapping("/{eventId}/reviews/{reviewId}")
+    public String updateReview(
+            @PathVariable Long eventId,
+            @PathVariable Long reviewId,
+            @RequestParam int rating,
+            @RequestParam String comment,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (rating < 1 || rating > 5 || comment == null || comment.isBlank()) {
+            redirectAttributes.addFlashAttribute("bookingsError", "A star rating and a written review are both required.");
+        } else {
+            try {
+                backendClient.updateReview(WebSession.token(session), reviewId, rating, comment);
+                redirectAttributes.addFlashAttribute("reviewSubmitted", true);
             } catch (BackendApiException e) {
                 redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
             }

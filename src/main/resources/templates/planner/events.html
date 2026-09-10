@@ -219,11 +219,15 @@
 									     of this page and PlannerController#refreshSuppliers. -->
 									<div class="col-lg-6">
 										<div class="card mb-0 h-100 d-flex flex-column">
-											<div class="card-header bg-white">
+											<div class="card-header bg-white d-flex align-items-center">
 												<h6 class="mb-0">
 													<i class="ph-users-three me-2"></i>
 													Recommended Suppliers
 												</h6>
+												<button type="button" class="btn btn-sm btn-outline-secondary ms-auto"
+													data-bs-toggle="modal" data-bs-target="#supplierFilterModal">
+													<i class="ph-funnel me-1"></i>Filter<span id="supplierFilterBadge" class="badge bg-primary ms-1 d-none">0</span>
+												</button>
 											</div>
 
 											<div class="card-body py-3 border-bottom">
@@ -259,27 +263,47 @@
 																Waiting for location before we can match you with relevant vendors.
 															</p>
 															<th:block th:if="${selectedEvent.location() != null}">
-																<div class="row g-3" th:if="${not #lists.isEmpty(selectedEvent.suggestions())}">
-																	<div class="col-md-6" th:each="supplier : ${selectedEvent.suggestions()}">
-																		<div class="border rounded p-3 h-100 d-flex flex-column">
-																			<span class="badge bg-indigo mb-2 align-self-start" th:text="${supplier.vendorType().label}">Category</span>
-																			<h6 class="mb-1" th:text="${supplier.businessName() != null} ? ${supplier.businessName()} : ${supplier.vendorType().label} + ' vendor'">Business name</h6>
-																			<div class="text-muted fs-sm mb-3" th:if="${supplier.city() != null}">
-																				<i class="ph-map-pin me-1"></i>
-																				<span th:text="${supplier.city()}">City</span>
-																			</div>
-																			<a th:if="${supplier.slug() != null}" th:href="@{'/vendor/storefront/' + ${supplier.slug()}(eventId=${selectedEvent.id()})}" target="_blank" class="btn btn-outline-primary btn-sm mt-auto">
-																				<i class="ph-storefront me-1"></i>
-																				View Storefront
-																			</a>
-																			<span th:if="${supplier.slug() == null}" class="text-muted fs-sm mt-auto">
-																				<i class="ph-clock me-1"></i>
-																				No matching vendor yet - check back soon
-																			</span>
-																		</div>
+																<div th:if="${supplierGroups != null and not #lists.isEmpty(supplierGroups)}">
+
+																	<!--/* Match summary - the headline number, so the panel reads
+																	     as "here's roughly what's available" before the detail. */-->
+																	<div class="d-flex align-items-center justify-content-between mb-3">
+																		<span class="fs-sm text-muted">
+																			<span class="fw-semibold text-body" th:text="${supplierMatchTotal}">0</span> vendors match this event<span class="supplier-shown-note"></span>
+																		</span>
+																		<span class="fs-sm text-success" th:if="${supplierVerifiedTotal > 0}">
+																			<i class="ph-shield-check"></i> <span th:text="${supplierVerifiedTotal}">0</span> verified
+																		</span>
 																	</div>
+
+																	<!--/* Categories that matter for this event type, in priority
+																	     order. The first few open on load (top 3 vendors, ranked
+																	     Top Vendor -> Verified -> rating by the backend); the rest
+																	     collapse to just a header you can tap open. */-->
+																	<th:block th:each="group, gs : ${supplierGroups}" th:if="${group.relevant()}">
+																		<div th:replace="~{fragments/planner-suppliers :: supplierCard(${group}, ${selectedEvent.id()}, ${gs.index < 3})}"></div>
+																	</th:block>
+
+																	<!--/* Everything else that matched, folded behind one button. */-->
+																	<th:block th:if="${supplierMoreCatCount > 0}">
+																		<button type="button" class="btn btn-sm btn-light w-100 my-2" data-supplier-toggle="more-cats"
+																			th:attr="data-label-more=|Show ${supplierMoreCatCount} more service categories|,data-label-less=|Hide extra categories|"
+																			th:text="|Show ${supplierMoreCatCount} more service categories|">Show more</button>
+																		<th:block th:each="group : ${supplierGroups}" th:if="${!group.relevant()}">
+																			<div th:replace="~{fragments/planner-suppliers :: supplierCard(${group}, ${selectedEvent.id()}, false)}"></div>
+																		</th:block>
+																	</th:block>
+
+																	<!--/* Categories with nothing in this area yet - one line, not
+																	     a dozen empty cards. */-->
+																	<p class="text-muted fs-sm mt-3 mb-0"
+																		th:if="${supplierEmptyTypes != null and not #lists.isEmpty(supplierEmptyTypes)}">
+																		<i class="ph-info me-1"></i>
+																		No matches yet in this area for
+																		<span th:text="${#strings.listJoin(supplierEmptyTypes, ', ')}">Arcade, Inflatables</span>.
+																	</p>
 																</div>
-																<p class="text-muted mb-0" th:if="${#lists.isEmpty(selectedEvent.suggestions())}">No suppliers matched this event's location yet.</p>
+																<p class="text-muted mb-0" th:if="${supplierGroups == null or #lists.isEmpty(supplierGroups)}">No suppliers matched this event's location yet.</p>
 															</th:block>
 														</th:block>
 													</div>
@@ -598,6 +622,10 @@
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 									Booking cancelled. The vendor has been notified.
 								</div>
+								<div th:if="${reviewSubmitted}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Thanks - your review has been posted to the vendor's storefront.
+								</div>
 								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 									<span th:text="${bookingsError}">Error</span>
@@ -666,6 +694,14 @@
 															<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
 																<i class="ph-prohibit me-1"></i>
 																Cancel
+															</button>
+															<button th:if="${booking.canReview()}" type="button" class="btn btn-warning text-dark btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#reviewModal-' + ${booking.id()}">
+																<i class="ph-star me-1"></i>
+																Leave a Review
+															</button>
+															<button th:if="${booking.reviewId() != null}" type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#reviewModal-' + ${booking.id()}">
+																<i class="ph-pencil-simple me-1"></i>
+																Edit Review
 															</button>
 														</div>
 													</td>
@@ -765,6 +801,50 @@
 								</div>
 								<!-- /per-booking "View Reason" modals -->
 
+								<!-- Per-booking review modals - shown for bookings the planner can
+								     review (successful, event 3+ days past, see BookingResponse#canReview)
+								     or has already reviewed (Edit). -->
+								<div class="modal fade" th:each="booking : ${bookings}" th:if="${booking.canReview() or booking.reviewId() != null}"
+									th:id="'reviewModal-' + ${booking.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form class="review-form"
+												th:action="${booking.reviewId() != null}
+													? @{'/planner/events/' + ${selectedEvent.id()} + '/reviews/' + ${booking.reviewId()}}
+													: @{'/planner/events/' + ${selectedEvent.id()} + '/bookings/' + ${booking.id()} + '/review'}"
+												method="post">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Review ' + ${booking.vendorBusinessName()}">Review vendor</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<label class="form-label d-block mb-1">Your rating</label>
+													<div class="review-stars fs-3 lh-1 mb-2">
+														<i class="ph-star review-star" style="cursor:pointer;" th:each="i : ${#numbers.sequence(1,5)}"
+															th:attr="data-value=${i}"
+															th:classappend="${booking.reviewRating() != null and i &lt;= booking.reviewRating()} ? 'text-warning' : 'text-muted opacity-25'"></i>
+													</div>
+													<div class="text-danger fs-sm mb-2 d-none review-rating-hint">Pick a star rating.</div>
+													<input type="hidden" name="rating" class="review-rating-input"
+														th:value="${booking.reviewRating() != null ? booking.reviewRating() : ''}">
+													<div>
+														<label class="form-label">Your review</label>
+														<textarea name="comment" rows="4" maxlength="2000" class="form-control" required
+															placeholder="How did the vendor do? What should other planners know?"
+															th:text="${booking.reviewComment()}"></textarea>
+													</div>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+													<button type="submit" class="btn btn-primary"
+														th:text="${booking.reviewId() != null} ? 'Update Review' : 'Post Review'">Post Review</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-booking review modals -->
+
 							</div>
 							<!-- /bookings -->
 
@@ -800,6 +880,61 @@
 
 	</div>
 	<!-- /page content -->
+
+
+	<!--/* Filter hide - own class with !important so it wins over Bootstrap's
+	     d-flex (display:flex !important) on the vendor rows. */-->
+	<style>.supplier-filtered{display:none !important;}</style>
+
+	<!-- Recommended-suppliers filter - pure client-side over the already
+	     rendered cards (no re-fetch). Unchecked categories hide their whole
+	     card; "verified only" hides non-verified vendor rows. State is kept
+	     per event in localStorage and re-applied after each AJAX refresh. -->
+	<div class="modal fade" id="supplierFilterModal" tabindex="-1" aria-hidden="true" th:if="${selectedEvent != null}">
+		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title"><i class="ph-funnel me-2"></i>Filter suppliers</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="fw-semibold mb-2">Show</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="supplierVerifiedFilter" id="supFilterAll" value="all" checked>
+						<label class="form-check-label" for="supFilterAll">All suppliers</label>
+					</div>
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="supplierVerifiedFilter" id="supFilterVerified" value="verified">
+						<label class="form-check-label" for="supFilterVerified">Verified suppliers only</label>
+					</div>
+
+					<hr>
+
+					<div class="d-flex align-items-center justify-content-between mb-2">
+						<span class="fw-semibold">Service categories</span>
+						<span>
+							<button type="button" class="btn btn-link btn-sm p-0 me-3" data-sup-cat-bulk="all">Select all</button>
+							<button type="button" class="btn btn-link btn-sm p-0" data-sup-cat-bulk="none">Clear all</button>
+						</span>
+					</div>
+					<div class="row g-1">
+						<div class="col-sm-6" th:each="bt : ${businessTypes}">
+							<div class="form-check">
+								<input class="form-check-input supplier-cat-check" type="checkbox"
+									th:id="'supCat-' + ${bt}" th:value="${bt}" checked>
+								<label class="form-check-label fs-sm" th:for="'supCat-' + ${bt}" th:text="${bt.label}">Venue</label>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-sup-filter-reset>Reset</button>
+					<button type="button" class="btn btn-primary" data-sup-filter-apply data-bs-dismiss="modal">Apply</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /suppliers filter modal -->
 
 
 	<!-- Live vendor matching - fires on location/date change, no submit
@@ -845,11 +980,153 @@
 						.finally(function () {
 							spinner.classList.add('d-none');
 							resultWrapper.classList.remove('d-none');
+							applySupplierFilter();
 						});
 				}
 
 				locationInput.addEventListener('change', refreshSuppliers);
 				dateInput.addEventListener('change', refreshSuppliers);
+
+				// Delegated so it keeps working after the results fragment is
+				// swapped in by refreshSuppliers(). "See all N" reveals the
+				// hidden rows in one category; "show more service categories"
+				// reveals the non-relevant category cards.
+				document.addEventListener('click', function (e) {
+					var catHeader = e.target.closest('[data-supplier-toggle="cat"]');
+					if (catHeader) {
+						var body = catHeader.parentElement.querySelector('.supplier-body');
+						var caret = catHeader.querySelector('.supplier-caret');
+						if (body) {
+							var collapsed = body.classList.toggle('d-none');
+							if (caret) {
+								caret.classList.toggle('ph-caret-down', collapsed);
+								caret.classList.toggle('ph-caret-up', !collapsed);
+							}
+						}
+						return;
+					}
+					var seeAll = e.target.closest('[data-supplier-toggle="see-all"]');
+					if (seeAll) {
+						var card = seeAll.closest('.supplier-group');
+						var rows = card ? card.querySelectorAll('.supplier-hidden') : [];
+						if (!rows.length) { return; }
+						var reveal = rows[0].classList.contains('d-none');
+						rows.forEach(function (r) { r.classList.toggle('d-none', !reveal); });
+						seeAll.textContent = reveal ? seeAll.dataset.labelLess : seeAll.dataset.labelMore;
+						return;
+					}
+					var moreCats = e.target.closest('[data-supplier-toggle="more-cats"]');
+					if (moreCats) {
+						var cards = document.querySelectorAll('.supplier-cat-extra');
+						if (!cards.length) { return; }
+						var reveal2 = cards[0].classList.contains('d-none');
+						cards.forEach(function (c) { c.classList.toggle('d-none', !reveal2); });
+						moreCats.textContent = reveal2 ? moreCats.dataset.labelLess : moreCats.dataset.labelMore;
+					}
+				});
+
+				// --- Supplier filter (client-side, per-event, persisted) ---
+				function filterKey() { return 'supplierFilter:' + eventId; }
+				function loadFilterState() {
+					try { return JSON.parse(localStorage.getItem(filterKey()) || '{}') || {}; }
+					catch (err) { return {}; }
+				}
+				function saveFilterState(s) {
+					try { localStorage.setItem(filterKey(), JSON.stringify(s)); } catch (err) { /* private mode */ }
+				}
+
+				function updateFilterBadge(st) {
+					var badge = document.getElementById('supplierFilterBadge');
+					if (!badge) { return; }
+					var n = (st.hiddenTypes ? st.hiddenTypes.length : 0) + (st.verifiedOnly ? 1 : 0);
+					badge.textContent = n;
+					badge.classList.toggle('d-none', n === 0);
+				}
+
+				function applySupplierFilter() {
+					var st = loadFilterState();
+					var hidden = {};
+					(st.hiddenTypes || []).forEach(function (t) { hidden[t] = true; });
+					var vOnly = st.verifiedOnly === true;
+					var shownVendors = 0;
+
+					document.querySelectorAll('.supplier-group').forEach(function (card) {
+						var type = card.getAttribute('data-type');
+						var visRows = 0;
+						card.querySelectorAll('.supplier-vendor-row').forEach(function (row) {
+							var pass = !vOnly || row.getAttribute('data-verified') === 'true';
+							row.classList.toggle('supplier-filtered', !pass);
+							if (pass) { visRows++; }
+						});
+						var hideCard = !!hidden[type] || visRows === 0;
+						card.classList.toggle('supplier-filtered', hideCard);
+
+						// Header count badge follows the "verified only" filter;
+						// category unchecking doesn't thin a shown card's list, so
+						// there the badge stays the full match count.
+						var badge = card.querySelector('.supplier-count-badge');
+						if (badge) {
+							badge.textContent = vOnly ? visRows : (badge.getAttribute('data-total') || visRows);
+						}
+
+						if (!hideCard) { shownVendors += visRows; }
+					});
+
+					var active = (st.hiddenTypes && st.hiddenTypes.length) || vOnly;
+					document.querySelectorAll('.supplier-shown-note').forEach(function (n) {
+						n.textContent = active ? ('  ·  ' + shownVendors + ' shown') : '';
+					});
+					updateFilterBadge(st);
+				}
+
+				function syncFilterModalFromState() {
+					var st = loadFilterState();
+					var hidden = {};
+					(st.hiddenTypes || []).forEach(function (t) { hidden[t] = true; });
+					document.querySelectorAll('.supplier-cat-check').forEach(function (cb) {
+						cb.checked = !hidden[cb.value];
+					});
+					var vOnly = st.verifiedOnly === true;
+					var rAll = document.getElementById('supFilterAll');
+					var rVer = document.getElementById('supFilterVerified');
+					if (rAll) { rAll.checked = !vOnly; }
+					if (rVer) { rVer.checked = vOnly; }
+				}
+
+				var filterModal = document.getElementById('supplierFilterModal');
+				if (filterModal) {
+					filterModal.addEventListener('show.bs.modal', syncFilterModalFromState);
+				}
+				document.querySelectorAll('[data-sup-cat-bulk]').forEach(function (b) {
+					b.addEventListener('click', function () {
+						var check = b.getAttribute('data-sup-cat-bulk') === 'all';
+						document.querySelectorAll('.supplier-cat-check').forEach(function (cb) { cb.checked = check; });
+					});
+				});
+				var applyBtn = document.querySelector('[data-sup-filter-apply]');
+				if (applyBtn) {
+					applyBtn.addEventListener('click', function () {
+						var hiddenTypes = [];
+						document.querySelectorAll('.supplier-cat-check').forEach(function (cb) {
+							if (!cb.checked) { hiddenTypes.push(cb.value); }
+						});
+						var vEl = document.getElementById('supFilterVerified');
+						saveFilterState({ hiddenTypes: hiddenTypes, verifiedOnly: !!(vEl && vEl.checked) });
+						applySupplierFilter();
+					});
+				}
+				var resetBtn = document.querySelector('[data-sup-filter-reset]');
+				if (resetBtn) {
+					resetBtn.addEventListener('click', function () {
+						saveFilterState({ hiddenTypes: [], verifiedOnly: false });
+						syncFilterModalFromState();
+						applySupplierFilter();
+					});
+				}
+
+				// Apply any stored filter to the server-rendered cards on load
+				// (refreshSuppliers() re-applies it after each AJAX swap).
+				applySupplierFilter();
 			});
 		</script>
 	</th:block>
@@ -910,6 +1187,43 @@
 		});
 	</script>
 	<!-- /voice input -->
+
+	<!-- Review modal star picker -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.review-form').forEach(function (form) {
+				var input = form.querySelector('.review-rating-input');
+				var hint = form.querySelector('.review-rating-hint');
+				var stars = form.querySelectorAll('.review-star');
+
+				function paint(val) {
+					stars.forEach(function (s) {
+						var v = parseInt(s.getAttribute('data-value'), 10);
+						s.classList.toggle('text-warning', v <= val);
+						s.classList.toggle('text-muted', v > val);
+						s.classList.toggle('opacity-25', v > val);
+					});
+				}
+
+				stars.forEach(function (s) {
+					s.addEventListener('click', function () {
+						var v = parseInt(s.getAttribute('data-value'), 10);
+						input.value = v;
+						hint.classList.add('d-none');
+						paint(v);
+					});
+				});
+
+				form.addEventListener('submit', function (e) {
+					if (!input.value) {
+						e.preventDefault();
+						hint.classList.remove('d-none');
+					}
+				});
+			});
+		});
+	</script>
+	<!-- /review modal star picker -->
 
 </body>
 </html>

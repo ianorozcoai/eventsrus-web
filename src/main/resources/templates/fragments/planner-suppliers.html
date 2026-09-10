@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--/*
+    One collapsible business-type card for the planner Overview's
+    Recommended Suppliers panel.
+      group   - a PlannerController.SupplierGroup
+      eventId - current event id (storefront link's ?eventId= lead tracking)
+      open    - render expanded (true) or collapsed to just the header (false)
+
+    Collapsed by default so the panel reads as a short "what's available"
+    list; the header toggles the body. Inside an open body only the first 3
+    vendors show - "See all N" reveals the rest (.supplier-hidden). A
+    non-relevant category also carries .supplier-cat-extra.d-none so the
+    whole card stays folded until "show more service categories".
+    Toggle JS lives in planner/events.html (delegated).
+*/-->
+<div th:fragment="supplierCard(group, eventId, open)" class="card mb-2 supplier-group"
+     th:attr="data-type=${group.type()}"
+     th:classappend="${!group.relevant()} ? ' supplier-cat-extra d-none' : ''">
+
+    <button type="button" data-supplier-toggle="cat"
+            class="card-header d-flex align-items-center py-2 w-100 border-0 text-start"
+            th:classappend="${group.relevant()} ? ' bg-primary text-white' : ' bg-light'">
+        <i class="supplier-caret me-2" th:classappend="${open} ? ' ph-caret-up' : ' ph-caret-down'"></i>
+        <span class="fw-semibold" th:text="${group.label()}">Catering</span>
+        <span class="badge ms-2 supplier-count-badge"
+              th:classappend="${group.relevant()} ? ' bg-white text-primary' : ' bg-secondary text-white'"
+              th:attr="data-total=${group.matchCount()}"
+              th:text="${group.matchCount()}">46</span>
+        <span class="ms-auto fs-sm" th:if="${group.verifiedCount() > 0}"
+              th:classappend="${group.relevant()} ? ' text-white opacity-75' : ' text-success'"
+              th:title="${group.verifiedCount()} + ' verified'">
+            <i class="ph-shield-check"></i> <span th:text="${group.verifiedCount()}">12</span>
+        </span>
+    </button>
+
+    <ul class="list-group list-group-flush supplier-body" th:classappend="${!open} ? ' d-none' : ''">
+        <li th:each="vendor, vi : ${group.vendors()}"
+            class="list-group-item d-flex align-items-center py-2 supplier-vendor-row"
+            th:attr="data-verified=${vendor.verified()}"
+            th:classappend="${vi.index >= 3} ? ' supplier-hidden d-none' : ''">
+
+            <img th:if="${vendor.logoImageUrl() != null}" th:src="${vendor.logoImageUrl()}" alt="Logo"
+                 class="rounded-circle border flex-shrink-0" style="width:32px;height:32px;object-fit:cover;">
+            <span th:if="${vendor.logoImageUrl() == null}"
+                  class="d-flex align-items-center justify-content-center rounded-circle bg-light text-muted flex-shrink-0"
+                  style="width:32px;height:32px;">
+                <i class="ph-storefront"></i>
+            </span>
+
+            <div class="ms-2 flex-grow-1 overflow-hidden">
+                <div class="fw-semibold text-truncate" th:text="${vendor.businessName()}">Business name</div>
+                <div class="d-flex align-items-center flex-wrap gap-1">
+                    <span th:if="${vendor.reviewCount() > 0}" class="text-warning fs-sm fw-semibold"
+                          th:title="${vendor.reviewCount()} + ' review(s)'">
+                        <i class="ph-star"></i>
+                        <span th:text="${vendor.averageRating()}">4.8</span>
+                        <span class="text-muted fw-normal">(<span th:text="${vendor.reviewCount()}">12</span>)</span>
+                    </span>
+                    <span th:if="${vendor.topVendor()}" class="badge rounded-pill text-white"
+                          style="background-color:#b8860b;" title="Top Vendor">
+                        <i class="ph-crown-simple me-1"></i>Top Vendor
+                    </span>
+                    <span th:if="${vendor.verified()}" class="badge rounded-pill bg-success text-white"
+                          title="Verified by EventsRUs">
+                        <i class="ph-shield-check me-1"></i>Verified
+                    </span>
+                </div>
+            </div>
+
+            <a th:href="@{'/vendor/storefront/' + ${vendor.slug()}(eventId=${eventId})}" target="_blank"
+               class="btn btn-primary btn-sm flex-shrink-0 ms-2">View Vendor</a>
+        </li>
+
+        <li th:if="${group.matchCount() > 3}" class="list-group-item p-0">
+            <button type="button" class="btn btn-sm btn-link text-decoration-none w-100 py-2"
+                    data-supplier-toggle="see-all"
+                    th:attr="data-label-more=|See all ${group.matchCount()}|,data-label-less=|Show less|"
+                    th:text="|See all ${group.matchCount()}|">See all</button>
+        </li>
+    </ul>
+</div>
+
+</body>
+</html>

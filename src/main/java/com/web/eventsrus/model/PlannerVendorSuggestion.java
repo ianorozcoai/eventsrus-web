@@ -7,4 +7,5 @@ package com.web.eventsrus.model;
  * AiSuggestionService/VendorSearchService (see EventService#toResponse).
  */
 public record PlannerVendorSuggestion(
-        BusinessType vendorType, Long vendorProfileId, String businessName, String slug, String logoImageUrl, String city) {}
+        BusinessType vendorType, Long vendorProfileId, String businessName, String slug, String logoImageUrl,
+        String city, boolean verified, boolean topVendor, Double averageRating, int reviewCount) {}

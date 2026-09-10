@@ -102,6 +102,7 @@ public class VendorController {
         model.addAttribute("businessTypes", BusinessType.values());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
         model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);
+        model.addAttribute("eventTypeOptions", EventType.values());
         model.addAttribute("documentTypes", LegalDocumentType.values());
         model.addAttribute("recaptchaSiteKey", recaptchaSiteKey);
         return "vendor/onboarding";

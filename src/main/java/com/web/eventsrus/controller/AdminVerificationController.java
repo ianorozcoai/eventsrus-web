@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -104,6 +105,38 @@ public class AdminVerificationController {
         try {
             backendClient.unverifyVendor(jwt, userId);
             redirectAttributes.addFlashAttribute("vendorUnverified", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("verificationError", e.getMessage());
+        }
+        return "redirect:/admin/verifications/" + userId;
+    }
+
+    @PostMapping("/{userId}/top")
+    public String setTop(@PathVariable Long userId, @RequestParam boolean topVendor,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = requireBackendToken(session, redirectAttributes);
+        if (jwt == null) {
+            return "redirect:/admin/verifications/" + userId;
+        }
+        try {
+            backendClient.setTopVendor(jwt, userId, topVendor);
+            redirectAttributes.addFlashAttribute("topVendorUpdated", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("verificationError", e.getMessage());
+        }
+        return "redirect:/admin/verifications/" + userId;
+    }
+
+    @PostMapping("/{userId}/reviews/{reviewId}/hidden")
+    public String setReviewHidden(@PathVariable Long userId, @PathVariable Long reviewId, @RequestParam boolean hidden,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = requireBackendToken(session, redirectAttributes);
+        if (jwt == null) {
+            return "redirect:/admin/verifications/" + userId;
+        }
+        try {
+            backendClient.setReviewHidden(jwt, reviewId, hidden);
+            redirectAttributes.addFlashAttribute("reviewModerated", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("verificationError", e.getMessage());
         }

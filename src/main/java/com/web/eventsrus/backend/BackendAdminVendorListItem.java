@@ -26,4 +26,5 @@ public record BackendAdminVendorListItem(
         boolean verified,
         Instant verifiedAt,
         String verifiedByAdmin,
+        boolean topVendor,
         Instant createdAt) {}

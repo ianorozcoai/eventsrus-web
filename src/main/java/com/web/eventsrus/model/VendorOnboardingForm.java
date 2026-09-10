@@ -36,6 +36,13 @@ public class VendorOnboardingForm {
     private String postalCode;
     private String country;
     private List<String> operatingAreas;
+
+    // Which event types the vendor caters to - mandatory at onboarding
+    // (backend enforces @NotEmpty on VendorOnboardingRequest.cateredEventTypes;
+    // onboarding.html also blocks submit client-side). Editable later in
+    // Account Settings' Service Scope tab (VendorSettingsForm).
+    private List<EventType> cateredEventTypes;
+
     private boolean acceptedTerms;
 
     // Populated client-side by onboarding.html's inline script (grecaptcha.execute)

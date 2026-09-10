@@ -24,6 +24,7 @@ import com.web.eventsrus.model.VendorPaymentMethodForm;
 import com.web.eventsrus.model.VendorPaymentMethodItem;
 import com.web.eventsrus.model.VendorPublicProfile;
 import com.web.eventsrus.model.VendorQuotation;
+import com.web.eventsrus.model.VendorReview;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -125,6 +126,9 @@ public class BackendClient {
         addIfPresent(body, "country", form.getCountry());
         if (form.getOperatingAreas() != null) {
             form.getOperatingAreas().forEach(area -> body.add("operatingAreas", area));
+        }
+        if (form.getCateredEventTypes() != null) {
+            form.getCateredEventTypes().forEach(type -> body.add("cateredEventTypes", type.name()));
         }
         body.add("acceptedTerms", String.valueOf(form.isAcceptedTerms()));
         addIfPresent(body, "recaptchaToken", form.getRecaptchaToken());
@@ -620,6 +624,36 @@ public class BackendClient {
     public void unverifyVendor(String adminJwt, Long vendorUserId) {
         backendRestClient.post()
                 .uri("/api/v1/admin/vendors/" + vendorUserId + "/unverify")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
+    public void setTopVendor(String adminJwt, Long vendorUserId, boolean topVendor) {
+        backendRestClient.post()
+                .uri("/api/v1/admin/vendors/" + vendorUserId + (topVendor ? "/mark-top" : "/unmark-top"))
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
+    // --- Reviews ---
+
+    public VendorReview submitReview(String jwt, Long bookingId, int rating, String comment) {
+        return postJson("/api/v1/bookings/" + bookingId + "/review", jwt,
+                Map.of("rating", rating, "comment", comment), VendorReview.class);
+    }
+
+    public VendorReview updateReview(String jwt, Long reviewId, int rating, String comment) {
+        return putJson("/api/v1/reviews/" + reviewId, jwt,
+                Map.of("rating", rating, "comment", comment), VendorReview.class);
+    }
+
+    public void setReviewHidden(String adminJwt, Long reviewId, boolean hidden) {
+        backendRestClient.post()
+                .uri("/api/v1/admin/reviews/" + reviewId + (hidden ? "/hide" : "/unhide"))
                 .header("Authorization", "Bearer " + adminJwt)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::raise)

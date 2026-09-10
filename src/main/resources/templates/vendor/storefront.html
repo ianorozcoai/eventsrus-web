@@ -54,16 +54,16 @@
 									<h1 class="fw-bold mb-2" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
 									<p class="mb-4 opacity-75" style="max-width:640px;white-space:pre-wrap;" th:text="${profile.description()}">Description</p>
 
-									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10" th:if="${profile.primaryRegion() != null or (profile.rating() != null and profile.rating() > 0) or profile.responseTime() != null}">
+									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10" th:if="${profile.primaryRegion() != null or (profile.averageRating() != null) or profile.responseTime() != null}">
 										<div th:if="${profile.primaryRegion() != null}">
 											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-map-pin me-1"></i> Primary Region</div>
 											<div class="fw-bold" th:text="${profile.primaryRegion()}">Nationwide Coverage</div>
 										</div>
-										<div th:if="${profile.rating() != null and profile.rating() > 0}">
+										<div th:if="${profile.averageRating() != null}">
 											<div class="opacity-50 fs-sm text-uppercase fw-semibold"><i class="ph-star me-1"></i> Rating</div>
 											<div class="fw-bold">
-												<span th:text="${profile.rating()}">4.9</span>
-												<span class="opacity-75 fw-normal">(<span th:text="${profile.bookingsCount()}">100</span>+ bookings)</span>
+												<span th:text="${profile.averageRating()}">4.9</span>
+												<span class="opacity-75 fw-normal">(<span th:text="${profile.reviewCount()}">12</span> review<span th:if="${profile.reviewCount() != 1}">s</span>)</span>
 											</div>
 										</div>
 										<div th:if="${profile.responseTime() != null}">
@@ -205,9 +205,10 @@
 								<div class="card-body p-4">
 									<div class="d-flex align-items-center mb-3">
 										<h6 class="text-uppercase fw-bold text-muted mb-0" style="letter-spacing:.5px;">Client Reviews &amp; Testimonials</h6>
-										<a href="#" class="text-decoration-none fw-semibold ms-auto" style="color:#ff6b35;" th:if="${not #lists.isEmpty(profile.reviews())}">
-											View More <i class="ph-caret-right"></i>
-										</a>
+										<button type="button" class="btn btn-link text-decoration-none fw-semibold ms-auto p-0" style="color:#ff6b35;"
+											th:if="${#lists.size(profile.reviews()) > 2}" data-bs-toggle="modal" data-bs-target="#allReviewsModal">
+											View all <span th:text="${#lists.size(profile.reviews())}">5</span> <i class="ph-caret-right"></i>
+										</button>
 									</div>
 
 									<div class="text-center py-4" th:if="${#lists.isEmpty(profile.reviews())}">
@@ -220,23 +221,58 @@
 											<div class="border rounded p-3 h-100">
 												<div class="d-flex align-items-start justify-content-between mb-2">
 													<div class="d-flex align-items-center">
-														<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:40px;height:40px;" th:classappend="${iter.index % 2 == 0} ? 'bg-indigo' : 'bg-dark'" th:text="${review.reviewerInitials()}">XX</div>
+														<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:40px;height:40px;"
+															th:classappend="${iter.index % 2 == 0} ? 'bg-indigo' : 'bg-dark'"
+															th:text="${#strings.isEmpty(review.reviewerName()) ? 'P' : #strings.toUpperCase(#strings.substring(review.reviewerName(), 0, 1))}">P</div>
 														<div class="ms-2">
 															<div class="fw-semibold" th:text="${review.reviewerName()}">Reviewer name</div>
-															<div class="text-muted fs-sm" th:text="${review.reviewerRole()}">Role</div>
+															<div class="text-muted fs-sm">
+																<span th:if="${review.eventName() != null}" th:text="${review.eventName()}">Event</span>
+																<span th:if="${review.eventDate() != null}" th:text="' &middot; ' + ${#temporals.format(review.eventDate(), 'MMM yyyy')}"></span>
+															</div>
 														</div>
 													</div>
 													<div class="flex-shrink-0">
 														<i class="ph-star" th:each="i : ${#numbers.sequence(1, 5)}" th:classappend="${i <= review.rating()} ? 'text-warning' : 'text-muted opacity-25'"></i>
 													</div>
 												</div>
-												<p class="fst-italic text-muted mb-0" th:text="'&quot;' + ${review.quote()} + '&quot;'">"Quote"</p>
+												<p class="fst-italic text-muted mb-0" style="white-space:pre-wrap;" th:text="'&quot;' + ${review.comment()} + '&quot;'">"Quote"</p>
 											</div>
 										</div>
 									</div>
 								</div>
 							</div>
 							<!-- /client reviews -->
+
+							<!-- All reviews modal -->
+							<div class="modal fade" id="allReviewsModal" tabindex="-1" aria-hidden="true" th:if="${not #lists.isEmpty(profile.reviews())}">
+								<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+									<div class="modal-content">
+										<div class="modal-header">
+											<h5 class="modal-title" th:text="'All reviews for ' + ${profile.businessName()}">All reviews</h5>
+											<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+										</div>
+										<div class="modal-body">
+											<div class="border rounded p-3 mb-3" th:each="review : ${profile.reviews()}">
+												<div class="d-flex align-items-start justify-content-between mb-2">
+													<div>
+														<div class="fw-semibold" th:text="${review.reviewerName()}">Reviewer name</div>
+														<div class="text-muted fs-sm">
+															<span th:if="${review.eventName() != null}" th:text="${review.eventName()}">Event</span>
+															<span th:if="${review.eventDate() != null}" th:text="' &middot; ' + ${#temporals.format(review.eventDate(), 'MMM yyyy')}"></span>
+														</div>
+													</div>
+													<div class="flex-shrink-0">
+														<i class="ph-star" th:each="i : ${#numbers.sequence(1, 5)}" th:classappend="${i <= review.rating()} ? 'text-warning' : 'text-muted opacity-25'"></i>
+													</div>
+												</div>
+												<p class="fst-italic text-muted mb-0" style="white-space:pre-wrap;" th:text="'&quot;' + ${review.comment()} + '&quot;'">"Quote"</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /all reviews modal -->
 
 
 							<!-- Verification & Legalities - a business can have several

@@ -58,6 +58,14 @@
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 						<span th:text="${verificationError}"></span>
 					</div>
+					<div th:if="${topVendorUpdated}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Top Vendor status updated.
+					</div>
+					<div th:if="${reviewModerated}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Review visibility updated.
+					</div>
 
 					<div th:if="${documents != null}">
 
@@ -77,22 +85,35 @@
 										<span class="badge bg-warning text-dark fs-sm px-3 py-2" th:unless="${documents.verified()}">
 											<i class="ph-clock me-1"></i> Pending Review
 										</span>
+										<span class="badge bg-warning text-dark fs-sm px-3 py-2" th:if="${documents.topVendor()}">
+											<i class="ph-crown-simple me-1"></i> Top Vendor
+										</span>
 									</div>
 									<div class="fs-sm text-muted" th:if="${documents.verified()}">
 										by <span th:text="${documents.verifiedByAdmin() ?: 'an admin'}">admin</span>
 										on <span th:text="${#temporals.format(documents.verifiedAt(), 'MMM d, yyyy h:mm a')}">date</span>
 									</div>
 
-									<form th:if="${documents.verified()}" th:action="@{'/admin/verifications/' + ${userId} + '/unverify'}" method="post" class="d-inline">
-										<button type="submit" class="btn btn-outline-danger mt-2">
-											<i class="ph-shield-slash me-1"></i> Revoke Verification
-										</button>
-									</form>
-									<form th:unless="${documents.verified()}" th:action="@{'/admin/verifications/' + ${userId} + '/verify'}" method="post" class="d-inline">
-										<button type="submit" class="btn btn-success mt-2">
-											<i class="ph-check-circle me-1"></i> Mark as Verified
-										</button>
-									</form>
+									<div class="mt-2 d-flex flex-wrap gap-2 justify-content-end">
+										<form th:if="${documents.verified()}" th:action="@{'/admin/verifications/' + ${userId} + '/unverify'}" method="post">
+											<button type="submit" class="btn btn-outline-danger">
+												<i class="ph-shield-slash me-1"></i> Revoke Verification
+											</button>
+										</form>
+										<form th:unless="${documents.verified()}" th:action="@{'/admin/verifications/' + ${userId} + '/verify'}" method="post">
+											<button type="submit" class="btn btn-success">
+												<i class="ph-check-circle me-1"></i> Mark as Verified
+											</button>
+										</form>
+
+										<form th:action="@{'/admin/verifications/' + ${userId} + '/top'}" method="post">
+											<input type="hidden" name="topVendor" th:value="${!documents.topVendor()}">
+											<button type="submit" class="btn" th:classappend="${documents.topVendor()} ? 'btn-outline-secondary' : 'btn-warning text-dark'">
+												<i class="ph-crown-simple me-1"></i>
+												<span th:text="${documents.topVendor()} ? 'Remove Top Vendor' : 'Mark as Top Vendor'">Mark as Top Vendor</span>
+											</button>
+										</form>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -156,6 +177,44 @@
 								</div>
 							</div>
 							<!-- /legal documents -->
+
+							<!-- Reviews - moderation. Hidden reviews are dimmed and still listed here. -->
+							<div class="col-12">
+								<div class="card">
+									<div class="card-header">
+										<h6 class="mb-0">Reviews <span class="text-muted fw-normal" th:text="'(' + ${#lists.size(documents.reviews())} + ')'">(0)</span></h6>
+									</div>
+									<div class="list-group list-group-flush" th:if="${not #lists.isEmpty(documents.reviews())}">
+										<div th:each="review : ${documents.reviews()}" class="list-group-item" th:classappend="${review.hidden()} ? 'bg-light opacity-75'">
+											<div class="d-flex align-items-start">
+												<div class="flex-grow-1">
+													<div class="d-flex align-items-center gap-2 mb-1">
+														<span class="fw-semibold" th:text="${review.reviewerName()}">Reviewer</span>
+														<span>
+															<i class="ph-star" th:each="i : ${#numbers.sequence(1, 5)}" th:classappend="${i <= review.rating()} ? 'text-warning' : 'text-muted opacity-25'"></i>
+														</span>
+														<span class="badge bg-secondary" th:if="${review.hidden()}">Hidden</span>
+														<span class="text-muted fs-sm ms-auto" th:text="${#temporals.format(review.createdAt(), 'MMM d, yyyy')}">date</span>
+													</div>
+													<div class="text-muted fs-sm mb-1">
+														<span th:if="${review.eventName() != null}" th:text="${review.eventName()}">Event</span>
+													</div>
+													<p class="mb-0" style="white-space:pre-wrap;" th:text="${review.comment()}">Comment</p>
+												</div>
+												<form th:action="@{'/admin/verifications/' + ${userId} + '/reviews/' + ${review.id()} + '/hidden'}" method="post" class="ms-3 flex-shrink-0">
+													<input type="hidden" name="hidden" th:value="${!review.hidden()}">
+													<button type="submit" class="btn btn-sm" th:classappend="${review.hidden()} ? 'btn-outline-secondary' : 'btn-outline-danger'"
+														th:text="${review.hidden()} ? 'Unhide' : 'Hide'">Hide</button>
+												</form>
+											</div>
+										</div>
+									</div>
+									<div class="card-body text-muted fs-sm" th:if="${#lists.isEmpty(documents.reviews())}">
+										<i class="ph-x-circle me-1"></i> No reviews yet.
+									</div>
+								</div>
+							</div>
+							<!-- /reviews -->
 
 						</div>
 

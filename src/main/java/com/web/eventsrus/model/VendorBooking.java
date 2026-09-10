@@ -27,4 +27,8 @@ public record VendorBooking(
         Instant invoiceUploadedAt,
         Instant cancelledAt,
         String cancellationReason,
-        Long cancelledByUserId) {}
+        Long cancelledByUserId,
+        boolean canReview,
+        Long reviewId,
+        Integer reviewRating,
+        String reviewComment) {}

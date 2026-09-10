@@ -312,7 +312,7 @@
 
 													<div class="ms-3 flex-grow-1 overflow-hidden">
 														<div class="fw-semibold text-truncate" th:text="${conversation.otherPartyName()}">Vendor</div>
-														<div class="text-truncate text-muted fs-sm" th:text="${conversation.lastMessagePreview()}">Last message</div>
+														<div class="text-truncate text-muted fs-sm" th:text="${conversation.otherPartyBusinessType() != null} ? ${conversation.otherPartyBusinessType().label} : 'Vendor'">Business type</div>
 													</div>
 												</a>
 											</div>
@@ -328,9 +328,15 @@
 													<span class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Vendor name</span>
 													<div class="text-muted fs-sm">
 														<i class="ph-user-circle me-1"></i>
-														Vendor
+														<span th:text="${selectedConversation.otherPartyBusinessType() != null} ? ${selectedConversation.otherPartyBusinessType().label} : 'Vendor'">Vendor</span>
 													</div>
 												</div>
+												<a th:if="${selectedConversation.otherPartySlug() != null}"
+													th:href="@{'/vendor/storefront/' + ${selectedConversation.otherPartySlug()}(eventId=${selectedEvent.id()})}"
+													target="_blank" class="btn btn-primary btn-sm ms-auto flex-shrink-0">
+													<i class="ph-storefront me-1"></i>
+													View Storefront
+												</a>
 											</div>
 
 											<div class="flex-grow-1 overflow-auto p-3">

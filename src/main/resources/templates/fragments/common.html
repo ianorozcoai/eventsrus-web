@@ -148,24 +148,28 @@
 						<a th:href="@{/vendor/leads}" class="nav-link" th:classappend="${activePage == 'leads'} ? 'active'">
 							<i class="ph-users"></i>
 							<span>Leads</span>
+							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navLeadsCount > 0}" th:text="${navLeadsCount}">0</span>
 						</a>
 					</li>
 					<li class="nav-item">
 						<a th:href="@{/vendor/bookings}" class="nav-link" th:classappend="${activePage == 'bookings'} ? 'active'">
 							<i class="ph-calendar-check"></i>
 							<span>Bookings</span>
+							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navBookingsCount > 0}" th:text="${navBookingsCount}">0</span>
 						</a>
 					</li>
 					<li class="nav-item">
 						<a th:href="@{/vendor/messages}" class="nav-link" th:classappend="${activePage == 'messages'} ? 'active'">
 							<i class="ph-chat-circle-text"></i>
 							<span>Messages</span>
+							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navMessagesCount > 0}" th:text="${navMessagesCount}">0</span>
 						</a>
 					</li>
 					<li class="nav-item">
 						<a th:href="@{/vendor/quotations}" class="nav-link" th:classappend="${activePage == 'quotations'} ? 'active'">
 							<i class="ph-file-text"></i>
 							<span>Quotations</span>
+							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navQuotationsCount > 0}" th:text="${navQuotationsCount}">0</span>
 						</a>
 					</li>
 					<li class="nav-item">

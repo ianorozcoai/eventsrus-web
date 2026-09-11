@@ -14,6 +14,12 @@ public final class WebSession {
     public static final String EMAIL = "auth.email";
     public static final String FIRST_NAME = "auth.firstName";
     public static final String ROLE = "auth.role";
+    // Which door this account is permanently locked to (planner or vendor) -
+    // distinct from ROLE, which still flows PLANNER -> VENDOR once
+    // onboarding is finished. See NavController#index and
+    // WebMvcConfig - both need this, not ROLE, to correctly recognize
+    // someone mid-vendor-onboarding instead of treating them as a planner.
+    public static final String SIGNUP_INTENT = "auth.signupIntent";
     public static final String SUBSCRIPTION_PLAN = "auth.subscriptionPlan";
     public static final String SUBSCRIPTION_EXPIRES_AT = "auth.subscriptionExpiresAt";
     public static final String SUBSCRIPTION_EXPIRING_SOON = "auth.subscriptionExpiringSoon";
@@ -48,6 +54,10 @@ public final class WebSession {
         return session == null ? null : (String) session.getAttribute(ROLE);
     }
 
+    public static String signupIntent(HttpSession session) {
+        return session == null ? null : (String) session.getAttribute(SIGNUP_INTENT);
+    }
+
     public static String firstName(HttpSession session) {
         return session == null ? null : (String) session.getAttribute(FIRST_NAME);
     }
@@ -73,6 +83,7 @@ public final class WebSession {
         session.setAttribute(EMAIL, auth.email());
         session.setAttribute(FIRST_NAME, auth.firstName());
         session.setAttribute(ROLE, auth.role());
+        session.setAttribute(SIGNUP_INTENT, auth.signupIntent());
         storeSubscription(session, auth.plan(), auth.planExpiresAt(), false, auth.plan() == null);
     }
 

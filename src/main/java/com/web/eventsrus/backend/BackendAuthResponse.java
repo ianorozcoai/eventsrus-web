@@ -9,6 +9,7 @@ public record BackendAuthResponse(
         String tokenType,
         long expiresIn,
         String role,
+        String signupIntent,
         String firstName,
         String email,
         String plan,

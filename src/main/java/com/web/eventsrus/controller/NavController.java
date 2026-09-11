@@ -19,7 +19,16 @@ public class NavController {
     @GetMapping("/")
     public String index(HttpSession session) {
         if (WebSession.isLoggedIn(session)) {
-            return "redirect:" + ("VENDOR".equals(WebSession.role(session)) ? "/vendor/dashboard" : "/planner/dashboard");
+            // signupIntent, not role: someone mid-vendor-onboarding still
+            // has role=PLANNER (that only flips once onboarding finishes),
+            // but they're locked to the vendor identity - send them back to
+            // finish onboarding, not into the planner dashboard as if
+            // they'd never started. See WebMvcConfig for the same rule
+            // applied to /planner/** directly.
+            if ("VENDOR".equals(WebSession.signupIntent(session))) {
+                return "redirect:" + ("VENDOR".equals(WebSession.role(session)) ? "/vendor/dashboard" : "/vendor/onboarding");
+            }
+            return "redirect:/planner/dashboard";
         }
         return "landing";
     }

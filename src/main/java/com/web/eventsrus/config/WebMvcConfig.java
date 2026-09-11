@@ -20,10 +20,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Any logged-in user (either role) can use the planner experience -
-        // a vendor can also plan/book events, same dual-sided-marketplace
-        // convention used everywhere else in this app.
-        registry.addInterceptor(new RequireRoleInterceptor(null, "/planner/"))
+        // Any logged-in user can use the planner experience, EXCEPT an
+        // account locked to the vendor identity (signupIntent=VENDOR,
+        // whether or not onboarding is finished yet) - each email is
+        // exactly one identity, permanently, so a vendor account doesn't
+        // get a planner side too. See RequireNotVendorIntentInterceptor.
+        registry.addInterceptor(new RequireNotVendorIntentInterceptor())
                 .addPathPatterns("/planner/**")
                 .excludePathPatterns("/planner", "/planner/");
 
@@ -72,6 +74,33 @@ public class WebMvcConfig implements WebMvcConfigurer {
             }
             if (requiredRole != null && !requiredRole.equals(WebSession.role(session))) {
                 response.sendRedirect("/vendor/onboarding");
+                return false;
+            }
+            return true;
+        }
+    }
+
+    /**
+     * Not logged in -> redirect to /planner/ (the login page). Logged in
+     * but locked to the vendor identity -> redirect to wherever they
+     * actually belong: /vendor/dashboard if onboarding is already done,
+     * /vendor/onboarding if not - same decision NavController#index makes
+     * for "/". Everyone else (a real planner, or an as-yet-undeclared
+     * session) passes through.
+     */
+    // Package-private (not private) so RequireNotVendorIntentInterceptorTest
+    // can exercise preHandle directly.
+    static class RequireNotVendorIntentInterceptor implements HandlerInterceptor {
+        @Override
+        public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
+                throws Exception {
+            HttpSession session = request.getSession(false);
+            if (!WebSession.isLoggedIn(session)) {
+                response.sendRedirect("/planner/");
+                return false;
+            }
+            if ("VENDOR".equals(WebSession.signupIntent(session))) {
+                response.sendRedirect("VENDOR".equals(WebSession.role(session)) ? "/vendor/dashboard" : "/vendor/onboarding");
                 return false;
             }
             return true;

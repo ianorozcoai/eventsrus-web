@@ -32,6 +32,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -57,6 +58,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BackendClient {
 
     private final RestClient backendRestClient;
@@ -755,9 +757,17 @@ public class BackendClient {
     @SuppressWarnings("unchecked")
     private void raise(org.springframework.http.HttpRequest request,
             org.springframework.http.client.ClientHttpResponse response) throws java.io.IOException {
+        // Read the raw body once (before any parsing attempt) so a failure to
+        // reach eventsrus-backend - private networking hiccup, an unexpected
+        // proxy in front of it, anything that isn't the app's own JSON error
+        // shape - is still fully visible in this service's own logs instead
+        // of silently collapsing into the generic fallback message below.
+        String rawBody = new String(response.getBody().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        log.error("Backend call failed: {} {} -> {} body={}",
+                request.getMethod(), request.getURI(), response.getStatusCode(), rawBody);
         String message;
         try {
-            Map<String, Object> body = (Map<String, Object>) objectMapper.readValue(response.getBody(), Map.class);
+            Map<String, Object> body = (Map<String, Object>) objectMapper.readValue(rawBody, Map.class);
             message = String.valueOf(body.getOrDefault("message", "Request to eventsrus-backend failed"));
         } catch (Exception e) {
             message = "Request to eventsrus-backend failed (" + response.getStatusCode() + ")";

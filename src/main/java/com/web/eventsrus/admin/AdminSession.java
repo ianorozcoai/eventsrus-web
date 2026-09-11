@@ -4,15 +4,14 @@ import jakarta.servlet.http.HttpSession;
 
 /**
  * Session attribute for the admin module's login - entirely separate from
- * WebSession (the vendor Google-login flow). An admin session carries a
- * username (checked against AdminAccountService's in-memory account list -
- * no JWT involved for that part at all) plus, when the backend bridge
- * succeeds (see AdminAuthController#login / BackendClient#adminLogin), a
- * real ADMIN-role JWT for calling eventsrus-backend's actual
- * /api/v1/admin/** endpoints. TOKEN can be absent even while logged in - the
- * bridge call is best-effort, so the local-only admin pages (planners,
- * vendors directory, admin accounts) keep working even if
- * eventsrus-backend is unreachable at login time.
+ * WebSession (the vendor Google-login flow). Username/password is checked
+ * against eventsrus-backend's real admin_accounts table (BCrypt-hashed,
+ * see AdminAccountService there), and a successful login returns a real
+ * ADMIN-role JWT in the same call (see AdminAuthController#login /
+ * BackendClient#adminLogin) - there's no local account store here at all
+ * anymore. TOKEN can still be null if eventsrus-backend becomes unreachable
+ * *after* login (mid-session) - pages that need it show a "backend
+ * unavailable" notice rather than a stack trace.
  */
 public final class AdminSession {
 

@@ -24,6 +24,7 @@ import com.web.eventsrus.model.VendorPaymentMethodForm;
 import com.web.eventsrus.model.VendorPaymentMethodItem;
 import com.web.eventsrus.model.VendorPublicProfile;
 import com.web.eventsrus.model.VendorQuotation;
+import com.web.eventsrus.model.Notification;
 import com.web.eventsrus.model.VendorReview;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -60,9 +61,6 @@ public class BackendClient {
 
     private final RestClient backendRestClient;
     private final ObjectMapper objectMapper;
-
-    @org.springframework.beans.factory.annotation.Value("${internal-admin-key:}")
-    private String internalAdminKey;
 
     public BackendAuthResponse loginWithGoogle(String googleIdToken) {
         return backendRestClient.post()
@@ -532,31 +530,53 @@ public class BackendClient {
         return postMultipart("/api/v1/support-tickets/" + ticketId + "/messages", jwt, body, SupportTicket.class);
     }
 
-    // --- Admin (real backend bridge - see AdminInternalAuthController) ---
+    // --- Notifications (bell icon - see NotificationModelAttributes) ---
+
+    /** Every notification for the caller, newest first - the backend doesn't paginate this yet. */
+    public List<Notification> getNotifications(String jwt) {
+        return get("/api/v1/notifications", jwt, new ParameterizedTypeReference<List<Notification>>() {});
+    }
+
+    public Notification markNotificationRead(String jwt, Long notificationId) {
+        return backendRestClient.put()
+                .uri("/api/v1/notifications/" + notificationId + "/read")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(Notification.class);
+    }
+
+    // --- Admin (real accounts on the backend - see AdminAccountController) ---
 
     /**
-     * Exchanges the shared internal-admin-key for a real ADMIN-role JWT.
-     * Called once per eventsrus-web admin login (see AdminAuthController),
-     * not per-request - the caller holds onto the result for that admin's
-     * session. Returns null (rather than throwing) when the key isn't
-     * configured or the backend is unreachable/rejects it, so a failed
-     * bridge never blocks logging into this app's own local-only admin
-     * pages (planners, vendors directory, admin accounts).
+     * Real username/password check against eventsrus-backend's admin_accounts
+     * table, returning a genuine per-admin ADMIN-role JWT. Called once per
+     * eventsrus-web admin login (see AdminAuthController), not per-request -
+     * the caller holds onto the result for that admin's session. Returns
+     * null (rather than throwing) on bad credentials or an unreachable
+     * backend, so AdminAuthController can show one generic "invalid
+     * username or password" message either way.
      */
-    public String adminLogin() {
-        if (internalAdminKey == null || internalAdminKey.isBlank()) {
-            return null;
-        }
+    public String adminLogin(String username, String password) {
         try {
             Map<String, Object> body = backendRestClient.post()
-                    .uri("/api/v1/admin/internal-login")
-                    .header("X-Internal-Admin-Key", internalAdminKey)
+                    .uri("/api/v1/admin/auth/login")
+                    .body(Map.of("username", username, "password", password))
                     .retrieve()
                     .body(new ParameterizedTypeReference<Map<String, Object>>() {});
             return body == null ? null : (String) body.get("token");
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public List<BackendAdminAccount> listAdminAccounts(String adminJwt) {
+        return get("/api/v1/admin/accounts", adminJwt, new ParameterizedTypeReference<List<BackendAdminAccount>>() {});
+    }
+
+    public BackendAdminAccount createAdminAccount(String adminJwt, String username, String password) {
+        return postJson("/api/v1/admin/accounts", adminJwt, Map.of("username", username, "password", password),
+                BackendAdminAccount.class);
     }
 
     public List<BackendAdminVendorListItem> listVendorsForAdmin(String adminJwt) {

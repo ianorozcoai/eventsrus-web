@@ -33,11 +33,7 @@
 			</div>
 
 			<ul class="nav gap-sm-2 order-1 order-lg-2 ms-auto">
-				<li class="nav-item">
-					<a href="#" class="navbar-nav-link navbar-nav-link-icon rounded">
-						<i class="ph-bell"></i>
-					</a>
-				</li>
+				<li th:replace="~{fragments/common :: notificationBell(@{/planner/events/notifications})}"></li>
 				<li class="nav-item nav-item-dropdown-lg dropdown">
 					<a href="#" class="navbar-nav-link align-items-center rounded p-1" data-bs-toggle="dropdown" aria-expanded="false">
 						<div class="status-indicator-container">

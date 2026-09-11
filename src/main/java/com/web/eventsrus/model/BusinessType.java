@@ -1,5 +1,9 @@
 package com.web.eventsrus.model;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 /**
  * Mirrors eventsrus-backend's enums.BusinessType exactly (same names), so
  * the value submitted here needs no translation once this form posts to
@@ -45,5 +49,20 @@ public enum BusinessType {
 
     public String getLabel() {
         return label;
+    }
+
+    /**
+     * Alphabetical-by-label order - the one order every business-type
+     * dropdown/checklist/list in the app should render in (onboarding,
+     * account settings, the supplier filter modal, ...). Unlike EventType
+     * there's no pinned subset here, just enum declaration order (VENUE,
+     * CATERING, ... in no particular order for a user) replaced with
+     * something a planner or vendor can actually scan. Use this instead of
+     * {@link #values()} wherever BusinessType is shown to a user.
+     */
+    public static List<BusinessType> displayOrder() {
+        return Arrays.stream(values())
+                .sorted(Comparator.comparing(BusinessType::getLabel))
+                .toList();
     }
 }

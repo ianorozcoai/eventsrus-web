@@ -69,11 +69,7 @@
 			</div>
 
 			<ul class="nav gap-sm-2 order-1 order-lg-2 ms-auto">
-				<li class="nav-item">
-					<a href="#" class="navbar-nav-link navbar-nav-link-icon rounded">
-						<i class="ph-bell"></i>
-					</a>
-				</li>
+				<li th:replace="~{:: notificationBell(@{/vendor/notifications})}"></li>
 				<li class="nav-item nav-item-dropdown-lg dropdown">
 					<a href="#" class="navbar-nav-link align-items-center rounded p-1" data-bs-toggle="dropdown" aria-expanded="false">
 						<div class="status-indicator-container">
@@ -97,6 +93,51 @@
 			</ul>
 		</div>
 	</div>
+
+	<!--/*
+	    Bell-icon notification dropdown, shared by the vendor topnavbar
+	    (below) and fragments/planner-shell.html's - both are real
+	    WebSession users, so both get the same real notifications (see
+	    NotificationModelAttributes for unreadNotificationCount/
+	    recentNotifications; the admin module has no bell, see there for
+	    why). readAction is the role-specific base path (e.g. @{/vendor/notifications}
+	    or @{/planner/events/notifications}) that .../{id}/read is posted to.
+	*/-->
+	<li th:fragment="notificationBell(readAction)" class="nav-item nav-item-dropdown-lg dropdown">
+		<a href="#" class="navbar-nav-link navbar-nav-link-icon rounded position-relative" data-bs-toggle="dropdown" aria-expanded="false">
+			<i class="ph-bell"></i>
+			<span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}"
+				class="badge bg-danger rounded-pill position-absolute"
+				style="top:2px;right:2px;font-size:.55rem;padding:.25em .4em;"
+				th:text="${unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}">3</span>
+		</a>
+		<div class="dropdown-menu dropdown-menu-end p-0" style="width:340px;">
+			<div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom">
+				<span class="fw-semibold">Notifications</span>
+				<span th:if="${unreadNotificationCount != null and unreadNotificationCount > 0}" class="fs-sm text-muted"
+					th:text="${unreadNotificationCount} + ' unread'">3 unread</span>
+			</div>
+			<div style="max-height:360px;overflow-y:auto;">
+				<p th:if="${recentNotifications == null or #lists.isEmpty(recentNotifications)}" class="text-muted fs-sm text-center py-4 mb-0">
+					No notifications yet.
+				</p>
+				<form th:each="n : ${recentNotifications}" th:action="@{${readAction} + '/' + ${n.id()} + '/read'}" method="post" class="m-0">
+					<input type="hidden" name="relatedEntityType" th:value="${n.relatedEntityType()}">
+					<button type="submit" class="dropdown-item d-flex align-items-start gap-2 py-2 border-bottom border-0 bg-transparent w-100 text-start"
+						th:classappend="${!n.read()} ? ' bg-light'">
+						<i class="fs-lg flex-shrink-0 mt-1"
+							th:classappend="${n.relatedEntityType() == 'BOOKING' ? ' ph-calendar-check text-primary' : (n.relatedEntityType() == 'CONVERSATION' ? ' ph-chat-circle-text text-info' : (n.relatedEntityType() == 'LEAD' ? ' ph-user-plus text-success' : (n.relatedEntityType() == 'QUOTATION' ? ' ph-file-text text-warning' : (n.relatedEntityType() == 'REVIEW' ? ' ph-star text-warning' : (n.relatedEntityType() == 'SUPPORT_TICKET' ? ' ph-lifebuoy text-danger' : ' ph-bell text-muted')))))}"></i>
+						<span class="flex-grow-1">
+							<span class="d-block fw-semibold fs-sm" th:text="${n.title()}">Title</span>
+							<span class="d-block fs-sm text-muted" th:text="${n.body()}">Body</span>
+						</span>
+						<span th:if="${!n.read()}" class="rounded-circle bg-primary flex-shrink-0 mt-2" style="width:8px;height:8px;"></span>
+					</button>
+				</form>
+			</div>
+		</div>
+	</li>
+	<!-- /notification bell -->
 
 	<!--/* Main sidebar - every vendor feature lives here. `activePage` highlights the current one. */-->
 	<div th:fragment="sidebar(activePage)" class="sidebar sidebar-dark sidebar-main sidebar-expand-lg">

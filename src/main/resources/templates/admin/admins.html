@@ -40,7 +40,12 @@
 						<span th:text="${adminsError}">Error</span>
 					</div>
 
-					<div class="row">
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<div class="row" th:unless="${backendUnavailable}">
 						<div class="col-lg-5">
 							<div class="card">
 								<div class="card-header">

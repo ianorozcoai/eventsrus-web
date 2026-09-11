@@ -77,7 +77,7 @@
         <li th:if="${group.matchCount() > 3}" class="list-group-item p-0">
             <button type="button" class="btn btn-sm btn-link text-decoration-none w-100 py-2"
                     data-supplier-toggle="see-all"
-                    th:attr="data-label-more=|See all ${group.matchCount()}|,data-label-less=|Show less|"
+                    th:attr="data-total=${group.matchCount()},data-label-more=|See all ${group.matchCount()}|,data-label-less=|Show less|"
                     th:text="|See all ${group.matchCount()}|">See all</button>
         </li>
     </ul>

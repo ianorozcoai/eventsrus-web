@@ -97,6 +97,24 @@ public class PlannerController {
         this.backendClient = backendClient;
     }
 
+    /**
+     * Marks a bell-dropdown notification read. Unlike the vendor side,
+     * planner pages are all scoped to one event at a time and a
+     * notification doesn't carry which event it's about, so there's no
+     * single right place to deep-link to - back to the event list, where
+     * they can pick.
+     */
+    @PostMapping("/notifications/{id}/read")
+    public String markNotificationRead(@PathVariable Long id, HttpSession session) {
+        try {
+            backendClient.markNotificationRead(WebSession.token(session), id);
+        } catch (BackendApiException e) {
+            // Already read, not this planner's, or the backend hiccuped -
+            // still send them back rather than showing an error.
+        }
+        return "redirect:/planner/events";
+    }
+
     @GetMapping
     public String events(
             @RequestParam(required = false) Long eventId,
@@ -123,7 +141,7 @@ public class PlannerController {
             if (!model.containsAttribute("plannerIntakeForm")) {
                 model.addAttribute("plannerIntakeForm", new PlannerIntakeForm());
             }
-            model.addAttribute("eventTypes", EventType.values());
+            model.addAttribute("eventTypes", EventType.displayOrder());
             return "planner/events";
         }
 
@@ -153,7 +171,7 @@ public class PlannerController {
         model.addAttribute("selectedConversation", selectedConversation);
         model.addAttribute("thread", thread);
         model.addAttribute("coordinatorHistory", backendClient.getCoordinatorHistory(jwt, selected.id()));
-        model.addAttribute("businessTypes", BusinessType.values());
+        model.addAttribute("businessTypes", BusinessType.displayOrder());
         addSupplierPanelAttributes(model, selected);
         return "planner/events";
     }
@@ -199,8 +217,8 @@ public class PlannerController {
         }
         return switch (type) {
             case WEDDING -> WEDDING_TYPES;
-            case BIRTHDAY, PARTY, BABY_SHOWER -> PARTY_TYPES;
-            case SEMINAR, NETWORKING_EVENT, PRODUCT_LAUNCH, TEAM_BUILDING, CORPORATE_RETREAT,
+            case BIRTHDAY, DEBUT, PARTY, BABY_SHOWER -> PARTY_TYPES;
+            case SEMINAR, NETWORKING_EVENT, CORPORATE_EVENT, PRODUCT_LAUNCH, TEAM_BUILDING, CORPORATE_RETREAT,
                     TRADE_SHOW, GALA, FUNDRAISER, EXHIBITION -> CORPORATE_TYPES;
             case CONCERT, FESTIVAL, SPORTS_EVENT -> PRODUCTION_TYPES;
             default -> MILESTONE_TYPES;
@@ -236,15 +254,20 @@ public class PlannerController {
                 emitted.add(t);
             }
         }
-        for (Map.Entry<BusinessType, List<PlannerVendorSuggestion>> e : byType.entrySet()) {
-            if (!emitted.contains(e.getKey()) && !e.getValue().isEmpty()) {
-                groups.add(toSupplierGroup(e.getKey(), e.getValue(), false));
-                emitted.add(e.getKey());
-            }
+        // Categories that matched but aren't relevant to this event type sit
+        // behind "show more service categories" - alphabetical there (no
+        // relevance ranking applies), not raw enum/insertion order.
+        List<Map.Entry<BusinessType, List<PlannerVendorSuggestion>>> remaining = byType.entrySet().stream()
+                .filter(e -> !emitted.contains(e.getKey()) && !e.getValue().isEmpty())
+                .sorted(Comparator.comparing(e -> e.getKey().getLabel()))
+                .toList();
+        for (Map.Entry<BusinessType, List<PlannerVendorSuggestion>> e : remaining) {
+            groups.add(toSupplierGroup(e.getKey(), e.getValue(), false));
+            emitted.add(e.getKey());
         }
 
         List<String> emptyTypeLabels = new ArrayList<>();
-        for (BusinessType t : BusinessType.values()) {
+        for (BusinessType t : BusinessType.displayOrder()) {
             List<PlannerVendorSuggestion> vendors = byType.get(t);
             if (vendors == null || vendors.isEmpty()) {
                 emptyTypeLabels.add(t.getLabel());

@@ -1,6 +1,5 @@
 package com.web.eventsrus.controller;
 
-import com.web.eventsrus.admin.AdminAccountService;
 import com.web.eventsrus.admin.AdminSession;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendClient;
@@ -20,10 +19,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * The admin module - dashboard totals, a read-only Planner directory and
  * Vendor directory, and admin-account management. Real eventsrus-backend
  * data now, same pattern as AdminVerificationController/AdminSupportTicketController
- * (an admin session's real ADMIN-role JWT via the internal bridge - see
+ * (an admin session's real ADMIN-role JWT, issued at login time - see
  * AdminSession/AdminAuthController) - falls back to a friendly "backend
- * unavailable" notice rather than a stack trace if that bridge didn't
- * produce a token.
+ * unavailable" notice rather than a stack trace if that token is missing.
  */
 @Controller
 @RequestMapping("/admin")
@@ -31,7 +29,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminController {
 
     private final BackendClient backendClient;
-    private final AdminAccountService adminAccountService;
 
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
@@ -109,27 +106,45 @@ public class AdminController {
     }
 
     @GetMapping("/admins")
-    public String admins(Model model) {
-        model.addAttribute("admins", adminAccountService.listAll());
+    public String admins(HttpSession session, Model model) {
         model.addAttribute("activePage", "admins");
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("admins", List.of());
+            return "admin/admins";
+        }
+        try {
+            model.addAttribute("backendUnavailable", false);
+            model.addAttribute("admins", backendClient.listAdminAccounts(jwt));
+        } catch (BackendApiException e) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("admins", List.of());
+        }
         return "admin/admins";
     }
 
     @PostMapping("/admins")
     public String createAdmin(
-            @RequestParam String username, @RequestParam String password, RedirectAttributes redirectAttributes) {
+            @RequestParam String username, @RequestParam String password,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("adminsError", "Not connected to eventsrus-backend right now.");
+            return "redirect:/admin/admins";
+        }
         String trimmedUsername = username == null ? "" : username.trim();
         if (trimmedUsername.isBlank() || password == null || password.length() < 8) {
             redirectAttributes.addFlashAttribute(
                     "adminsError", "Username is required and password must be at least 8 characters.");
             return "redirect:/admin/admins";
         }
-        if (adminAccountService.usernameExists(trimmedUsername)) {
-            redirectAttributes.addFlashAttribute("adminsError", "That username is already taken.");
-            return "redirect:/admin/admins";
+        try {
+            backendClient.createAdminAccount(jwt, trimmedUsername, password);
+            redirectAttributes.addFlashAttribute("adminCreated", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("adminsError", e.getMessage());
         }
-        adminAccountService.create(trimmedUsername, password);
-        redirectAttributes.addFlashAttribute("adminCreated", true);
         return "redirect:/admin/admins";
     }
 }

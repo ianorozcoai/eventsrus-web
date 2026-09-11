@@ -1061,12 +1061,31 @@
 						var hideCard = !!hidden[type] || visRows === 0;
 						card.classList.toggle('supplier-filtered', hideCard);
 
-						// Header count badge follows the "verified only" filter;
-						// category unchecking doesn't thin a shown card's list, so
-						// there the badge stays the full match count.
+						// Header badge and the "See all N" button both follow the
+						// "verified only" filter, so they stay in sync with each
+						// other (this used to drift - the badge updated, the
+						// button kept showing the unfiltered total). Category
+						// unchecking doesn't thin a shown card's list, so both
+						// stay at the full match count for that.
+						var displayCount = vOnly ? visRows : null;
 						var badge = card.querySelector('.supplier-count-badge');
 						if (badge) {
-							badge.textContent = vOnly ? visRows : (badge.getAttribute('data-total') || visRows);
+							badge.textContent = displayCount !== null ? displayCount : (badge.getAttribute('data-total') || visRows);
+						}
+						var seeAllBtn = card.querySelector('[data-supplier-toggle="see-all"]');
+						if (seeAllBtn) {
+							var total = seeAllBtn.getAttribute('data-total');
+							var count = displayCount !== null ? displayCount : total;
+							var moreLabel = 'See all ' + count;
+							seeAllBtn.dataset.labelMore = moreLabel;
+							// Only overwrite the visible text while collapsed - if
+							// it's already expanded ("Show less"), leave that as-is;
+							// the corrected count is picked up next time it toggles.
+							var hiddenRows = card.querySelectorAll('.supplier-hidden');
+							var collapsed = hiddenRows.length === 0 || hiddenRows[0].classList.contains('d-none');
+							if (collapsed) {
+								seeAllBtn.textContent = moreLabel;
+							}
 						}
 
 						if (!hideCard) { shownVendors += visRows; }

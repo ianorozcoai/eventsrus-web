@@ -91,6 +91,33 @@ public class VendorController {
         return "vendor/dashboard";
     }
 
+    /**
+     * Marks a bell-dropdown notification read and sends the vendor to
+     * wherever that kind of thing lives - there's no per-item deep link
+     * (a booking notification doesn't carry, say, which tab to open), just
+     * the right list page. Falls back to the dashboard for anything
+     * unrecognized rather than erroring.
+     */
+    @PostMapping("/notifications/{id}/read")
+    public String markNotificationRead(@PathVariable Long id, @RequestParam(required = false) String relatedEntityType,
+            HttpSession session) {
+        try {
+            backendClient.markNotificationRead(WebSession.token(session), id);
+        } catch (BackendApiException e) {
+            // Already read, not this vendor's, or the backend hiccuped -
+            // still send them somewhere sensible rather than showing an error.
+        }
+        String type = relatedEntityType == null ? "" : relatedEntityType;
+        return "redirect:" + switch (type) {
+            case "BOOKING" -> "/vendor/bookings";
+            case "CONVERSATION" -> "/vendor/messages";
+            case "LEAD" -> "/vendor/leads";
+            case "QUOTATION" -> "/vendor/quotations";
+            case "SUPPORT_TICKET" -> "/vendor/support";
+            default -> "/vendor/dashboard";
+        };
+    }
+
     @GetMapping("/onboarding")
     public String onboardingForm(HttpSession session, Model model) {
         if (!model.containsAttribute("vendorOnboardingForm")) {
@@ -99,10 +126,10 @@ public class VendorController {
             form.setReferralCode(WebSession.referralCode(session));
             model.addAttribute("vendorOnboardingForm", form);
         }
-        model.addAttribute("businessTypes", BusinessType.values());
+        model.addAttribute("businessTypes", BusinessType.displayOrder());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
         model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);
-        model.addAttribute("eventTypeOptions", EventType.values());
+        model.addAttribute("eventTypeOptions", EventType.displayOrder());
         model.addAttribute("documentTypes", LegalDocumentType.values());
         model.addAttribute("recaptchaSiteKey", recaptchaSiteKey);
         return "vendor/onboarding";
@@ -658,10 +685,10 @@ public class VendorController {
         }
         model.addAttribute("legalDocuments", backendClient.getLegalDocuments(jwt));
         model.addAttribute("documentTypes", LegalDocumentType.values());
-        model.addAttribute("businessTypes", BusinessType.values());
+        model.addAttribute("businessTypes", BusinessType.displayOrder());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
         model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);
-        model.addAttribute("eventTypeOptions", EventType.values());
+        model.addAttribute("eventTypeOptions", EventType.displayOrder());
         model.addAttribute("activePage", "settings");
         model.addAttribute("pageTitle", "Account Settings");
         return "vendor/settings";

@@ -74,7 +74,7 @@ public class AuthWebController {
     public LoginResult loginWithGoogle(
             @RequestParam("idToken") String idToken, @RequestParam("intent") String intent, HttpSession session) {
         try {
-            BackendAuthResponse auth = backendClient.loginWithGoogle(idToken);
+            BackendAuthResponse auth = backendClient.loginWithGoogle(idToken, intent);
             WebSession.store(session, auth);
             String redirectTo = "planner".equals(intent)
                     ? "/planner/dashboard"

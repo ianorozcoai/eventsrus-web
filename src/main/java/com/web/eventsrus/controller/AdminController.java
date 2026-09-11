@@ -46,6 +46,7 @@ public class AdminController {
             model.addAttribute("vendorTicketCount", stats.vendorTicketCount());
             model.addAttribute("newVendorTicketCount", stats.newVendorTicketCount());
             model.addAttribute("newPlannerTicketCount", stats.newPlannerTicketCount());
+            model.addAttribute("incompleteVendorSignupCount", stats.incompleteVendorSignupCount());
         } catch (BackendApiException e) {
             model.addAttribute("backendUnavailable", true);
         }
@@ -93,14 +94,17 @@ public class AdminController {
         if (jwt == null) {
             model.addAttribute("backendUnavailable", true);
             model.addAttribute("vendors", List.of());
+            model.addAttribute("incompleteSignups", List.of());
             return "admin/vendors";
         }
         try {
             model.addAttribute("backendUnavailable", false);
             model.addAttribute("vendors", backendClient.listVendorsForAdmin(jwt));
+            model.addAttribute("incompleteSignups", backendClient.listIncompleteVendorSignups(jwt));
         } catch (BackendApiException e) {
             model.addAttribute("backendUnavailable", true);
             model.addAttribute("vendors", List.of());
+            model.addAttribute("incompleteSignups", List.of());
         }
         return "admin/vendors";
     }
@@ -144,6 +148,28 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("adminCreated", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("adminsError", e.getMessage());
+        }
+        return "redirect:/admin/admins";
+    }
+
+    @PostMapping("/admins/password")
+    public String changePassword(
+            @RequestParam String currentPassword, @RequestParam String newPassword,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("passwordError", "Not connected to eventsrus-backend right now.");
+            return "redirect:/admin/admins";
+        }
+        if (newPassword == null || newPassword.length() < 8) {
+            redirectAttributes.addFlashAttribute("passwordError", "New password must be at least 8 characters.");
+            return "redirect:/admin/admins";
+        }
+        try {
+            backendClient.changeAdminPassword(jwt, currentPassword, newPassword);
+            redirectAttributes.addFlashAttribute("passwordChanged", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("passwordError", e.getMessage());
         }
         return "redirect:/admin/admins";
     }

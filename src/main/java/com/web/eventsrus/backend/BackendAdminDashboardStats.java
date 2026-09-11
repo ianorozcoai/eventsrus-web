@@ -6,4 +6,5 @@ public record BackendAdminDashboardStats(
         long vendorCount,
         long vendorTicketCount,
         long newVendorTicketCount,
-        long newPlannerTicketCount) {}
+        long newPlannerTicketCount,
+        long incompleteVendorSignupCount) {}

@@ -64,10 +64,10 @@ public class BackendClient {
     private final RestClient backendRestClient;
     private final ObjectMapper objectMapper;
 
-    public BackendAuthResponse loginWithGoogle(String googleIdToken) {
+    public BackendAuthResponse loginWithGoogle(String googleIdToken, String intent) {
         return backendRestClient.post()
                 .uri("/api/v1/auth/google")
-                .body(Map.of("idToken", googleIdToken))
+                .body(Map.of("idToken", googleIdToken, "intent", intent))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::raise)
                 .body(BackendAuthResponse.class);
@@ -581,8 +581,24 @@ public class BackendClient {
                 BackendAdminAccount.class);
     }
 
+    /** Self-service - the backend resolves "which admin" from the JWT itself, not a request field. */
+    public void changeAdminPassword(String adminJwt, String currentPassword, String newPassword) {
+        backendRestClient.put()
+                .uri("/api/v1/admin/accounts/me/password")
+                .header("Authorization", "Bearer " + adminJwt)
+                .body(Map.of("currentPassword", currentPassword, "newPassword", newPassword))
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
     public List<BackendAdminVendorListItem> listVendorsForAdmin(String adminJwt) {
         return get("/api/v1/admin/vendors", adminJwt, new ParameterizedTypeReference<List<BackendAdminVendorListItem>>() {});
+    }
+
+    public List<BackendIncompleteVendorSignup> listIncompleteVendorSignups(String adminJwt) {
+        return get("/api/v1/admin/vendors/incomplete-signups", adminJwt,
+                new ParameterizedTypeReference<List<BackendIncompleteVendorSignup>>() {});
     }
 
     public BackendVendorVerificationDocuments getVendorVerificationDocuments(String adminJwt, Long vendorUserId) {

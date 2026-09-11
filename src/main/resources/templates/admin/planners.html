@@ -42,7 +42,7 @@
 						</div>
 
 						<div class="table-responsive">
-							<table class="table table-hover">
+							<table id="plannersTable" class="table table-hover w-100">
 								<thead>
 									<tr>
 										<th>Name</th>
@@ -91,6 +91,21 @@
 
 	</div>
 	<!-- /page content -->
+
+	<!--/* DataTables (self-hosted, not a CDN - same convention as fullcalendar/
+	     dropzone/multiselect elsewhere in this project, and the same
+	     treatment as admin/vendors.html) gives client-side pagination
+	     (20 rows/page), search and sorting without any backend paging
+	     protocol. */-->
+	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			$('#plannersTable').DataTable({ pageLength: 20 });
+		});
+	</script>
 
 </body>
 </html>

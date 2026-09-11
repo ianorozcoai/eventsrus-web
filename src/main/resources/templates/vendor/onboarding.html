@@ -86,8 +86,10 @@
 											<!-- Dev/testing convenience only, not a real product feature - fills
 											     the plain text inputs with plausible sample data so the form can
 											     be exercised quickly. Deliberately leaves every dropdown, file
-											     picker, and the terms checkbox untouched. -->
-											<button type="button" id="fillSampleDataButton" class="btn btn-outline-secondary btn-sm mt-3">
+											     picker, and the terms checkbox untouched. Only ever rendered on
+											     a localhost URL (see VendorController#onboardingForm) so it can
+											     never show up in production. -->
+											<button th:if="${showTestingTools}" type="button" id="fillSampleDataButton" class="btn btn-outline-secondary btn-sm mt-3">
 												<i class="ph-magic-wand me-1"></i> Fill Sample Data (Testing)
 											</button>
 										</div>

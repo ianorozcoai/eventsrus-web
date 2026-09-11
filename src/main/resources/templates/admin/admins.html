@@ -40,6 +40,16 @@
 						<span th:text="${adminsError}">Error</span>
 					</div>
 
+					<div th:if="${passwordChanged}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Password changed.
+					</div>
+
+					<div th:if="${passwordError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${passwordError}">Error</span>
+					</div>
+
 					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
 						<i class="ph-plugs me-3"></i>
 						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
@@ -63,6 +73,26 @@
 											<div class="form-text">At least 8 characters.</div>
 										</div>
 										<button type="submit" class="btn btn-primary w-100">Create Admin</button>
+									</form>
+								</div>
+							</div>
+
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Change My Password</h6>
+								</div>
+								<div class="card-body">
+									<form th:action="@{/admin/admins/password}" method="post">
+										<div class="mb-3">
+											<label class="form-label">Current password</label>
+											<input type="password" name="currentPassword" class="form-control" required>
+										</div>
+										<div class="mb-3">
+											<label class="form-label">New password</label>
+											<input type="password" name="newPassword" class="form-control" minlength="8" required>
+											<div class="form-text">At least 8 characters.</div>
+										</div>
+										<button type="submit" class="btn btn-primary w-100">Change Password</button>
 									</form>
 								</div>
 							</div>

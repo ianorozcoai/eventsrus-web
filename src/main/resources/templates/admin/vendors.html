@@ -36,40 +36,88 @@
 					</div>
 
 					<div class="card" th:unless="${backendUnavailable}">
-						<div class="card-header d-flex align-items-center">
-							<h6 class="mb-0">All Vendors</h6>
-							<span class="badge bg-primary ms-auto" th:text="${#lists.size(vendors)} + ' total'">0 total</span>
+
+						<div class="card-header">
+							<ul class="nav nav-tabs card-header-tabs" role="tablist">
+								<li class="nav-item">
+									<a href="#tab-vendors" class="nav-link active" data-bs-toggle="tab" role="tab">
+										<i class="ph-storefront me-2"></i> Vendors
+										<span class="badge bg-primary rounded-pill ms-2" th:text="${#lists.size(vendors)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#tab-incomplete" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-hourglass-medium me-2"></i> Incomplete Sign-ups
+										<span class="badge bg-secondary rounded-pill ms-2" th:text="${#lists.size(incompleteSignups)}">0</span>
+									</a>
+								</li>
+							</ul>
 						</div>
 
-						<div class="table-responsive">
-							<table class="table table-hover">
-								<thead>
-									<tr>
-										<th>Business Name</th>
-										<th>Business Type</th>
-										<th>City</th>
-										<th>Operating Areas</th>
-										<th></th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr th:each="vendor : ${vendors}">
-										<td th:text="${vendor.businessName()}">Business Name</td>
-										<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
-										<td th:text="${vendor.city()}">City</td>
-										<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
-										<td class="text-end">
-											<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="btn btn-light btn-sm">
-												<i class="ph-storefront me-1"></i> View Storefront
-												<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
-											</a>
-											<span th:unless="${vendor.slug() != null}" class="text-muted fs-sm">No storefront yet</span>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+						<div class="card-body tab-content">
+
+							<!-- Vendors who finished onboarding - have a real VendorProfile. -->
+							<div class="tab-pane fade show active" id="tab-vendors" role="tabpanel">
+								<div class="table-responsive">
+									<table id="vendorsTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business Name</th>
+												<th>Business Type</th>
+												<th>City</th>
+												<th>Operating Areas</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="vendor : ${vendors}">
+												<td th:text="${vendor.businessName()}">Business Name</td>
+												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
+												<td th:text="${vendor.city()}">City</td>
+												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
+												<td class="text-end">
+													<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="btn btn-light btn-sm">
+														<i class="ph-storefront me-1"></i> View Storefront
+														<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
+													</a>
+													<span th:unless="${vendor.slug() != null}" class="text-muted fs-sm">No storefront yet</span>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Signed up through "Become a Vendor" but never finished the
+							     onboarding form - no VendorProfile exists for these yet, so
+							     none of the columns above (business name, type, storefront...)
+							     apply; this is just who to maybe follow up with. -->
+							<div class="tab-pane fade" id="tab-incomplete" role="tabpanel">
+								<div class="table-responsive">
+									<table id="incompleteSignupsTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Name</th>
+												<th>Email</th>
+												<th>Mobile Number</th>
+												<th>Signed Up</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="signup : ${incompleteSignups}">
+												<td th:text="${signup.firstName()} + ' ' + ${signup.lastName()}">Name</td>
+												<td th:text="${signup.email()}">Email</td>
+												<td th:text="${signup.mobileNumber() ?: '—'}">Mobile Number</td>
+												<td th:text="${#temporals.format(signup.signedUpAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
 						</div>
 					</div>
+
 				</div>
 				<!-- /content area -->
 
@@ -89,6 +137,35 @@
 
 	</div>
 	<!-- /page content -->
+
+	<!--/* DataTables (self-hosted, not a CDN - same convention as fullcalendar/
+	     dropzone/multiselect elsewhere in this project) gives both tables
+	     client-side pagination (20 rows/page), search and sorting without
+	     any backend paging protocol. Only loaded on this page, matching how
+	     vendor/planner pages only pull in jquery/fullcalendar/multiselect
+	     where they're actually used, rather than in the shared admin-shell. */-->
+	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			// The Vendors tab is visible on load, so its table can init
+			// immediately. The Incomplete Sign-ups tab starts hidden
+			// (display:none) - DataTables measures column widths at init
+			// time, so initializing a table inside a hidden tab pane
+			// collapses every column to zero width. Deferring its init to
+			// the tab's own "shown" event (first time only) avoids that.
+			var vendorsTable = $('#vendorsTable').DataTable({ pageLength: 20 });
+			var incompleteTable = null;
+
+			document.querySelector('a[href="#tab-incomplete"]').addEventListener('shown.bs.tab', function () {
+				if (!incompleteTable) {
+					incompleteTable = $('#incompleteSignupsTable').DataTable({ pageLength: 20 });
+				}
+			});
+		});
+	</script>
 
 </body>
 </html>

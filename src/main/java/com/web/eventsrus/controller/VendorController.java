@@ -31,6 +31,7 @@ import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
 import com.web.eventsrus.backend.BackendVendorSettingsResponse;
 import com.web.eventsrus.backend.WebSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -119,7 +120,7 @@ public class VendorController {
     }
 
     @GetMapping("/onboarding")
-    public String onboardingForm(HttpSession session, Model model) {
+    public String onboardingForm(HttpServletRequest request, HttpSession session, Model model) {
         if (!model.containsAttribute("vendorOnboardingForm")) {
             VendorOnboardingForm form = new VendorOnboardingForm();
             form.setCountry("Philippines");
@@ -132,6 +133,10 @@ public class VendorController {
         model.addAttribute("eventTypeOptions", EventType.displayOrder());
         model.addAttribute("documentTypes", LegalDocumentType.values());
         model.addAttribute("recaptchaSiteKey", recaptchaSiteKey);
+        // "Fill Sample Data" is a dev-only convenience - never show it off a
+        // localhost URL, so it can't end up live in production by accident.
+        String host = request.getServerName();
+        model.addAttribute("showTestingTools", "localhost".equals(host) || "127.0.0.1".equals(host));
         return "vendor/onboarding";
     }
 

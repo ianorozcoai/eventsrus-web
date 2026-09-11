@@ -80,8 +80,9 @@
 							</div>
 							<!-- /current plan -->
 
-							<!-- Renew / subscribe -->
-							<div class="card">
+							<!-- Renew / subscribe - hidden off a localhost URL until PayPal
+							     is off sandbox credentials (see VendorSubscriptionWebController). -->
+							<div class="card" th:if="${showSubscriptionPayment}">
 								<div class="card-header">
 									<h6 class="mb-0" th:text="${status.plan() != null ? 'Renew PRO' : 'Subscribe to PRO'}">Subscribe to PRO</h6>
 								</div>

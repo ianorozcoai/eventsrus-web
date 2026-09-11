@@ -5,6 +5,7 @@ import com.web.eventsrus.backend.BackendClient;
 import com.web.eventsrus.backend.BackendCreateSubscriptionResponse;
 import com.web.eventsrus.backend.BackendSubscriptionStatus;
 import com.web.eventsrus.backend.WebSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -28,7 +29,7 @@ public class VendorSubscriptionWebController {
     private final BackendClient backendClient;
 
     @GetMapping
-    public String view(HttpSession session, Model model) {
+    public String view(HttpServletRequest request, HttpSession session, Model model) {
         String jwt = WebSession.token(session);
         BackendSubscriptionStatus status = backendClient.getSubscriptionStatus(jwt);
         WebSession.storeSubscription(session, status.plan(), status.expiresAt(), status.expiringSoon(), status.expired());
@@ -36,6 +37,13 @@ public class VendorSubscriptionWebController {
         model.addAttribute("status", status);
         model.addAttribute("history", backendClient.getBillingHistory(jwt));
         model.addAttribute("firstName", session.getAttribute(WebSession.FIRST_NAME));
+        // PayPal is still on sandbox credentials with placeholder plan IDs -
+        // real vendors shouldn't see (or be able to click) real-looking
+        // pricing until that's live. Same localhost-only gate as the
+        // onboarding form's "Fill Sample Data" button - see
+        // VendorController#onboardingForm.
+        String host = request.getServerName();
+        model.addAttribute("showSubscriptionPayment", "localhost".equals(host) || "127.0.0.1".equals(host));
         return "vendor/subscription";
     }
 

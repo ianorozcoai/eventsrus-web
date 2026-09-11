@@ -125,6 +125,10 @@ public class VendorController {
             VendorOnboardingForm form = new VendorOnboardingForm();
             form.setCountry("Philippines");
             form.setReferralCode(WebSession.referralCode(session));
+            // Default to the Google account's own email - still just a
+            // starting point, not locked: the field stays editable in case
+            // they'd rather use a different business contact address.
+            form.setContactEmail(WebSession.email(session));
             model.addAttribute("vendorOnboardingForm", form);
         }
         model.addAttribute("businessTypes", BusinessType.displayOrder());

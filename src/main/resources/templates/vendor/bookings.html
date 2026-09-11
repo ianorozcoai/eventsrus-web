@@ -67,7 +67,7 @@
 						</div>
 
 						<div class="table-responsive" th:if="${not #lists.isEmpty(bookings)}">
-							<table class="table table-hover">
+							<table id="bookingsTable" class="table table-hover w-100">
 								<thead>
 									<tr>
 										<th>Event</th>
@@ -279,6 +279,23 @@
 
 	</div>
 	<!-- /page content -->
+
+	<!--/* DataTables (self-hosted, not a CDN - same convention as fullcalendar/
+	     dropzone/multiselect elsewhere in this project) gives client-side
+	     pagination (20 rows/page), search and sorting without any backend
+	     paging protocol. The table only exists in the DOM when there's at
+	     least one booking (see th:if above) - guard the init accordingly. */-->
+	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			if (document.getElementById('bookingsTable')) {
+				$('#bookingsTable').DataTable({ pageLength: 20 });
+			}
+		});
+	</script>
 
 </body>
 </html>

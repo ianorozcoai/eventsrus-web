@@ -41,6 +41,16 @@
 				<!-- Content area -->
 				<div class="content">
 
+					<div th:if="${quotationResponded}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Quote sent to the planner.
+					</div>
+
+					<div th:if="${quotationsError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${quotationsError}">Error</span>
+					</div>
+
 					<div class="card">
 						<div class="card-header d-flex align-items-center">
 							<h6 class="mb-0">Quotation requests from planners</h6>
@@ -69,10 +79,31 @@
 										</td>
 										<td th:text="${#temporals.format(quotation.createdAt(), 'MMM dd, yyyy')}">-</td>
 										<td>
-											<a th:if="${quotation.pdfUrl() != null}" th:href="${quotation.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
-												<i class="ph-file-pdf me-1"></i> View
-											</a>
-											<span th:if="${quotation.pdfUrl() == null}" class="text-muted fs-sm">Not sent yet</span>
+											<!--/* One action menu instead of a row of buttons - same burger-icon
+											     pattern used for the planner's quotation actions and the vendor's
+											     bookings (see fragments/common.html topnavbar for the same
+											     dropdown convention). Each item keeps the exact same th:if
+											     visibility rule it had as a standalone button/link. */-->
+											<div class="dropdown">
+												<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+													<i class="ph-list"></i>
+												</button>
+												<div class="dropdown-menu dropdown-menu-end">
+													<a th:if="${quotation.pdfUrl() != null}" th:href="${quotation.pdfUrl()}" target="_blank" class="dropdown-item">
+														<i class="ph-file-pdf me-2"></i> View Quote
+													</a>
+													<button th:if="${quotation.pdfUrl() == null and quotation.status().name() == 'REQUESTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#respondQuotationModal-' + ${quotation.id()}">
+														<i class="ph-upload-simple me-2 text-primary"></i> Respond
+													</button>
+													<span th:if="${quotation.pdfUrl() == null and quotation.status().name() != 'REQUESTED'}" class="dropdown-item-text text-muted fs-sm">Not sent yet</span>
+													<!-- Always available (even before a first response) - a revised
+													     ask on a REQUESTED quotation is itself a version worth
+													     seeing, not just the vendor's side. -->
+													<button type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#quotationHistoryModal-' + ${quotation.id()}">
+														<i class="ph-clock-counter-clockwise me-2"></i> History
+													</button>
+												</div>
+											</div>
 										</td>
 									</tr>
 								</tbody>
@@ -84,6 +115,95 @@
 							<p class="text-muted mb-0">No quotation requests yet. They'll show up here once planners request one.</p>
 						</div>
 					</div>
+
+					<!-- Per-quotation "Respond" modals - uploading a PDF here is
+					     what moves a REQUESTED quotation to RESPONDED (see
+					     QuotationService#respondWithPdf) - only rendered for
+					     quotations still awaiting a first response. -->
+					<div class="modal fade" th:each="quotation : ${quotations}" th:if="${quotation.status().name() == 'REQUESTED'}" th:id="'respondQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<form th:action="@{'/vendor/quotations/' + ${quotation.id()} + '/respond'}" method="post" enctype="multipart/form-data">
+									<div class="modal-header">
+										<h5 class="modal-title" th:text="'Respond to ' + ${quotation.eventName()}">Respond to Quotation</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+									</div>
+									<div class="modal-body">
+										<!-- What the planner actually asked for - shown in full (unlike
+										     the table row's truncated message) so there's enough context
+										     here to write an accurate quote without hunting for it
+										     elsewhere. -->
+										<div class="bg-light rounded p-3 mb-3">
+											<div class="d-flex flex-wrap gap-2 mb-2">
+												<span class="badge bg-primary" th:text="${quotation.eventType()?.getLabel()}">Event Type</span>
+												<span class="badge bg-light text-dark border" th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">Target Date</span>
+											</div>
+											<div th:if="${not #lists.isEmpty(quotation.packageNames())}" class="mb-2">
+												<div class="fs-sm fw-semibold text-muted mb-1">Package(s) requested</div>
+												<span class="badge bg-secondary me-1" th:each="packageName : ${quotation.packageNames()}" th:text="${packageName}">Package</span>
+											</div>
+											<div class="fs-sm fw-semibold text-muted mb-1">Planner's message</div>
+											<p class="mb-0" th:text="${quotation.requestMessage()}">Message</p>
+										</div>
+
+										<p class="text-muted fs-sm">Upload your quote as a PDF - the planner will be notified and can review it, ask for changes, or book directly from it.</p>
+										<label class="form-label">Quote PDF</label>
+										<input type="file" name="pdf" class="form-control mb-3" accept=".pdf" required>
+
+										<label class="form-label">Message <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+										<textarea name="message" rows="2" class="form-control" placeholder="Anything you'd like the planner to know about this quote..."></textarea>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+										<button type="submit" class="btn btn-primary">
+											<i class="ph-upload-simple me-2"></i>
+											Send Quote
+										</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					<!-- /per-quotation "Respond" modals -->
+
+					<!-- Per-quotation "Version History" modals - the full
+					     REQUESTED/RESPONDED/DECLINED timeline from
+					     quotation_status_history (see
+					     QuotationController#history), not just the current
+					     status - every past PDF and message stays visible
+					     here even after a later response supersedes it. -->
+					<div class="modal fade" th:each="quotation : ${quotations}" th:id="'quotationHistoryModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title" th:text="'History - ' + ${quotation.eventName()}">Version History</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body">
+									<div th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}" class="d-flex mb-3 pb-3 border-bottom">
+										<div class="flex-shrink-0 me-3">
+											<span class="badge" th:classappend="${historyEntry.toStatus().name() == 'RESPONDED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-warning')" th:text="${historyEntry.toStatus()}">STATUS</span>
+										</div>
+										<div class="flex-grow-1">
+											<div class="fs-sm text-muted mb-1">
+												<span th:text="${historyEntry.changedByName()}">Who</span> &middot;
+												<span th:text="${#temporals.format(historyEntry.createdAt(), 'MMM d, yyyy h:mm a')}">Date</span>
+											</div>
+											<p class="mb-1" th:if="${historyEntry.reason() != null}" th:text="${historyEntry.reason()}">Message/reason</p>
+											<a th:if="${historyEntry.pdfUrl() != null}" th:href="${historyEntry.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
+												<i class="ph-file-pdf me-1"></i> View this version's PDF
+											</a>
+										</div>
+									</div>
+									<p th:if="${#lists.isEmpty(historyByQuotationId.get(quotation.id()))}" class="text-muted mb-0">No history yet.</p>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /per-quotation "Version History" modals -->
 
 				</div>
 				<!-- /content area -->

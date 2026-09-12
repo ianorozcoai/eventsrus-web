@@ -68,7 +68,12 @@
 				<ul class="navbar-nav mt-2 mt-lg-0"></ul>
 			</div>
 
-			<ul class="nav gap-sm-2 order-1 order-lg-2 ms-auto">
+			<ul class="nav gap-sm-2 align-items-center order-1 order-lg-2 ms-auto">
+				<!--/* Static (non-interactive) label so it's obvious which vendor
+				     account you're testing/using without opening the profile
+				     dropdown - intentionally separate from the profile menu below,
+				     which is just the person's name. */-->
+				<li th:if="${vendorBusinessName != null}" class="nav-item d-none d-lg-flex align-items-center text-white text-opacity-75 fs-sm me-1" th:text="${vendorBusinessName}">Business Name</li>
 				<li th:replace="~{:: notificationBell(@{/vendor/notifications})}"></li>
 				<li class="nav-item nav-item-dropdown-lg dropdown">
 					<a href="#" class="navbar-nav-link align-items-center rounded p-1" data-bs-toggle="dropdown" aria-expanded="false">

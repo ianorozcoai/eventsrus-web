@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * Mirrors eventsrus-backend's dto.SendMessageRequest (message only), plus
@@ -21,6 +22,9 @@ import lombok.Setter;
 public class InquiryForm {
 
     private String plannerName;
+    // See QuotationRequestForm#targetDate for why this annotation matters -
+    // same bug, same fix, on the storefront's other form.
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate targetDate;
     private String message;
 }

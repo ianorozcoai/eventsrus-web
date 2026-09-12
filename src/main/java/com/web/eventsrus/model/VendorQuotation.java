@@ -17,6 +17,7 @@ public record VendorQuotation(
         long id,
         long eventId,
         String eventName,
+        EventType eventType,
         long vendorUserId,
         String vendorBusinessName,
         String vendorSlug,

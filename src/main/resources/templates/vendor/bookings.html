@@ -104,31 +104,41 @@
 										</td>
 										<td th:text="${#temporals.format(booking.proposedAt(), 'MMM dd, yyyy')}">-</td>
 										<td class="text-end">
-											<div class="d-flex justify-content-end gap-1 flex-wrap">
-												<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
-													<i class="ph-warning-circle me-1"></i>
-													View Reason
+											<!--/* One action menu instead of a growing row of buttons - same
+											     burger-icon pattern used for the planner's quotation actions
+											     (see fragments/common.html topnavbar for the same dropdown
+											     convention). Each item keeps the exact same th:if visibility
+											     rule it had as a standalone button/link, just moved inside. */-->
+											<div class="dropdown">
+												<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+													<i class="ph-list"></i>
 												</button>
-												<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="btn btn-light btn-sm">
-													<i class="ph-image me-1"></i>
-													View Screenshot
-												</a>
-												<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" th:href="${booking.invoiceUrl()}" target="_blank" class="btn btn-light btn-sm">
-													<i class="ph-file-text me-1"></i>
-													View Invoice
-												</a>
-												<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#acknowledgePaymentModal-' + ${booking.id()}">
-													<i class="ph-check-circle me-1"></i>
-													Acknowledge
-												</button>
-												<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#rejectPaymentModal-' + ${booking.id()}">
-													<i class="ph-x-circle me-1"></i>
-													Reject
-												</button>
-												<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
-													<i class="ph-prohibit me-1"></i>
-													Cancel
-												</button>
+												<div class="dropdown-menu dropdown-menu-end">
+													<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
+														<i class="ph-warning-circle me-2"></i>
+														View Reason
+													</button>
+													<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="dropdown-item">
+														<i class="ph-image me-2"></i>
+														View Screenshot
+													</a>
+													<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" th:href="${booking.invoiceUrl()}" target="_blank" class="dropdown-item">
+														<i class="ph-file-text me-2"></i>
+														View Invoice
+													</a>
+													<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#acknowledgePaymentModal-' + ${booking.id()}">
+														<i class="ph-check-circle me-2 text-success"></i>
+														Acknowledge
+													</button>
+													<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#rejectPaymentModal-' + ${booking.id()}">
+														<i class="ph-x-circle me-2 text-danger"></i>
+														Reject
+													</button>
+													<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
+														<i class="ph-prohibit me-2"></i>
+														Cancel
+													</button>
+												</div>
 											</div>
 										</td>
 									</tr>

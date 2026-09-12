@@ -247,6 +247,20 @@ public class BackendClient {
         return get("/api/v1/planners/me/quotations", jwt, new ParameterizedTypeReference<List<VendorQuotation>>() {});
     }
 
+    /** The vendor's side of the exchange - uploading a PDF quote is what moves REQUESTED -> RESPONDED. */
+    public VendorQuotation respondToQuotation(String jwt, Long quotationId, MultipartFile pdf, String message) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addFileIfPresent(body, "pdf", pdf);
+        addIfPresent(body, "message", message);
+        return postMultipart("/api/v1/vendors/me/quotations/" + quotationId + "/respond", jwt, body, VendorQuotation.class);
+    }
+
+    /** The full REQUESTED/RESPONDED/DECLINED timeline for one quotation - both sides of every back-and-forth, not just the latest. */
+    public List<BackendQuotationHistoryEntry> getQuotationHistory(String jwt, Long quotationId) {
+        return get("/api/v1/quotations/" + quotationId + "/history", jwt,
+                new ParameterizedTypeReference<List<BackendQuotationHistoryEntry>>() {});
+    }
+
     public VendorQuotation declineQuotation(String jwt, Long quotationId) {
         return backendRestClient.put()
                 .uri("/api/v1/quotations/" + quotationId + "/decline")

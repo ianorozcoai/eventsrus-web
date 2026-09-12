@@ -3,6 +3,8 @@ package com.web.eventsrus.controller;
 import com.web.eventsrus.admin.AdminSession;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendClient;
+import com.web.eventsrus.model.BusinessType;
+import com.web.eventsrus.model.PhilippineProvinces;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -90,6 +92,11 @@ public class AdminController {
     @GetMapping("/vendors")
     public String vendors(HttpSession session, Model model) {
         model.addAttribute("activePage", "vendors");
+        // Static reference data for the client-side business-type/operating-
+        // area filters below the Vendors table - not a backend call, so
+        // these populate even if the backend itself is unreachable.
+        model.addAttribute("businessTypes", BusinessType.displayOrder());
+        model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);
         String jwt = AdminSession.token(session);
         if (jwt == null) {
             model.addAttribute("backendUnavailable", true);

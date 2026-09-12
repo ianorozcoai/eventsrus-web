@@ -2,6 +2,7 @@ package com.web.eventsrus.controller;
 
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendClient;
+import com.web.eventsrus.backend.BackendQuotationHistoryEntry;
 import com.web.eventsrus.backend.WebSession;
 import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.EventType;
@@ -165,7 +166,15 @@ public class PlannerController {
                 ? List.of()
                 : backendClient.getConversationMessages(jwt, selectedConversation.id());
 
+        // Same "one extra call per row" pre-fetch as VendorController#quotations
+        // - the full timeline is server-rendered per quotation, no separate
+        // client-side fetch for the "Version History" modal.
+        Map<Long, List<BackendQuotationHistoryEntry>> historyByQuotationId = new LinkedHashMap<>();
+        for (VendorQuotation quotation : quotations) {
+            historyByQuotationId.put(quotation.id(), backendClient.getQuotationHistory(jwt, quotation.id()));
+        }
         model.addAttribute("quotations", quotations);
+        model.addAttribute("historyByQuotationId", historyByQuotationId);
         model.addAttribute("bookings", bookings);
         model.addAttribute("conversations", conversations);
         model.addAttribute("selectedConversation", selectedConversation);

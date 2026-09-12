@@ -34,6 +34,11 @@ public class VendorNavBadgeModelAttributes {
         long messages = 0;
         long quotations = 0;
         long bookings = 0;
+        // Shown in the vendor topnavbar next to the first name (see
+        // fragments/common.html) - with dozens of seed/test vendor accounts
+        // around, knowing which business you're actually logged in as at a
+        // glance is otherwise surprisingly easy to lose track of.
+        String vendorBusinessName = null;
 
         HttpSession session = request.getSession(false);
         if (session != null && "VENDOR".equals(WebSession.role(session))) {
@@ -43,6 +48,7 @@ public class VendorNavBadgeModelAttributes {
                 messages = dashboard.newInquiriesCount();
                 quotations = dashboard.newQuotationsCount();
                 bookings = dashboard.bookingsNeedingActionCount();
+                vendorBusinessName = backendClient.getSettings(WebSession.token(session)).businessName();
             } catch (BackendApiException e) {
                 // A badge count failing to load shouldn't break the page
                 // it's decorating - just show no badge (same reasoning as
@@ -54,5 +60,6 @@ public class VendorNavBadgeModelAttributes {
         model.addAttribute("navMessagesCount", messages);
         model.addAttribute("navQuotationsCount", quotations);
         model.addAttribute("navBookingsCount", bookings);
+        model.addAttribute("vendorBusinessName", vendorBusinessName);
     }
 }

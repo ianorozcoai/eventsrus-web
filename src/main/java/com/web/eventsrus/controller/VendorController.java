@@ -29,10 +29,12 @@ import com.web.eventsrus.model.VendorSettingsForm;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
+import com.web.eventsrus.backend.BackendQuotationHistoryEntry;
 import com.web.eventsrus.backend.BackendVendorSettingsResponse;
 import com.web.eventsrus.backend.WebSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -412,13 +414,50 @@ public class VendorController {
 
     @GetMapping("/quotations")
     public String quotations(HttpSession session, Model model) {
-        List<VendorQuotation> quotations = backendClient.getQuotations(WebSession.token(session)).stream()
+        String jwt = WebSession.token(session);
+        List<VendorQuotation> quotations = backendClient.getQuotations(jwt).stream()
                 .sorted(Comparator.comparing(VendorQuotation::createdAt).reversed())
                 .toList();
         model.addAttribute("quotations", quotations);
+        // Pre-fetched per quotation (same "one extra call per row" pattern
+        // already used for leads' conversationIdByEventId) so the "Version
+        // History" modal is just server-rendered data already in scope,
+        // not a client-side fetch.
+        Map<Long, List<BackendQuotationHistoryEntry>> historyByQuotationId = new LinkedHashMap<>();
+        for (VendorQuotation quotation : quotations) {
+            historyByQuotationId.put(quotation.id(), backendClient.getQuotationHistory(jwt, quotation.id()));
+        }
+        model.addAttribute("historyByQuotationId", historyByQuotationId);
         model.addAttribute("activePage", "quotations");
         model.addAttribute("pageTitle", "Quotations");
         return "vendor/quotations";
+    }
+
+    @PostMapping("/quotations/{quotationId}/respond")
+    public String respondToQuotation(
+            @PathVariable Long quotationId, @RequestParam(required = false) MultipartFile pdf,
+            @RequestParam(required = false) String message,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        // Same subscription-required check as acknowledgeBookingPayment above
+        // (mirrors QuotationService#respondWithPdf's own server-side check) -
+        // a friendly message here instead of a confusing failure once the
+        // real call rejects it.
+        if (WebSession.isSubscriptionExpired(session)) {
+            redirectAttributes.addFlashAttribute(
+                    "quotationsError", "Your subscription has ended. Renew your plan to respond to quotations.");
+            return "redirect:/vendor/quotations";
+        }
+        if (pdf == null || pdf.isEmpty()) {
+            redirectAttributes.addFlashAttribute("quotationsError", "A PDF quote is required to respond.");
+            return "redirect:/vendor/quotations";
+        }
+        try {
+            backendClient.respondToQuotation(WebSession.token(session), quotationId, pdf, message);
+            redirectAttributes.addFlashAttribute("quotationResponded", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
+        }
+        return "redirect:/vendor/quotations";
     }
 
     @GetMapping("/calendar")
@@ -567,11 +606,25 @@ public class VendorController {
     }
 
     private void loadStorefront(Model model, String slug, Long eventId, String jwt, HttpSession session) {
+        // A planner who arrived here from one of their own events already
+        // has both of these on hand - pre-filling saves them re-typing
+        // their name and re-picking a date they already set on the event.
+        // Only applies on a fresh page load (not after a failed submission,
+        // where the form is already re-populated with what they typed).
+        String plannerName = WebSession.firstName(session);
+        LocalDate eventDate = eventId != null && jwt != null ? eventDateOrNull(jwt, eventId) : null;
+
         if (!model.containsAttribute("quotationRequestForm")) {
-            model.addAttribute("quotationRequestForm", new QuotationRequestForm());
+            QuotationRequestForm form = new QuotationRequestForm();
+            form.setPlannerName(plannerName);
+            form.setTargetDate(eventDate);
+            model.addAttribute("quotationRequestForm", form);
         }
         if (!model.containsAttribute("inquiryForm")) {
-            model.addAttribute("inquiryForm", new InquiryForm());
+            InquiryForm form = new InquiryForm();
+            form.setPlannerName(plannerName);
+            form.setTargetDate(eventDate);
+            model.addAttribute("inquiryForm", form);
         }
         VendorPublicProfile profile = backendClient.getVendorProfile(jwt, slug, eventId);
         model.addAttribute("profile", profile);
@@ -583,6 +636,16 @@ public class VendorController {
         // see) but the submit buttons are disabled, see the template.
         Long viewerUserId = WebSession.userId(session);
         model.addAttribute("isOwnStorefront", viewerUserId != null && viewerUserId.equals(profile.vendorUserId()));
+    }
+
+    // Best-effort - a missing/inaccessible event just means no date
+    // prefill, never a broken storefront page.
+    private LocalDate eventDateOrNull(String jwt, Long eventId) {
+        try {
+            return backendClient.getEvent(jwt, eventId).eventDate();
+        } catch (BackendApiException e) {
+            return null;
+        }
     }
 
     @PostMapping("/storefront/quotation-request")

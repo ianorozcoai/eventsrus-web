@@ -84,7 +84,7 @@
 											<textarea th:field="*{description}" rows="6" class="form-control" placeholder="Guest count, theme, budget - anything that helps us match you with the right vendors."></textarea>
 										</div>
 
-										<button type="submit" class="btn btn-primary w-100 fw-semibold py-3">
+										<button type="submit" id="intakeSubmitBtn" class="btn btn-primary w-100 fw-semibold py-3">
 											Continue
 										</button>
 										<p class="text-muted fs-sm text-center mt-3 mb-0">By continuing, you agree that payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
@@ -94,6 +94,36 @@
 						</div>
 					</div>
 					<!-- /no event selected -->
+
+					<!--/* Full-page freeze on submit - this is a plain form POST (the
+					     server redirects back to this same page either way, with the
+					     new event selected on success or eventCreationError flashed on
+					     failure), so there's no AJAX success/error branch to wire up
+					     here; the overlay just needs to stay up until the browser
+					     navigates away, and disabling the button stops a second click
+					     (e.g. an impatient double-click) from firing a duplicate
+					     /planner/events POST while the first one is still in flight. */-->
+					<div id="intakeProcessingOverlay" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center" style="background:rgba(255,255,255,.85);z-index:1080;">
+						<div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status"></div>
+						<div class="fw-semibold">Processing&hellip;</div>
+					</div>
+					<script>
+						(function () {
+							var overlay = document.getElementById('intakeProcessingOverlay');
+							var submitBtn = document.getElementById('intakeSubmitBtn');
+							var form = submitBtn ? submitBtn.closest('form') : null;
+							if (!form || !overlay || !submitBtn) {
+								return;
+							}
+							form.addEventListener('submit', function () {
+								overlay.classList.remove('d-none');
+								// Disabling here (inside the submit handler, not before) still
+								// lets this same submit go through - the browser has already
+								// captured it - it just blocks any further click.
+								submitBtn.disabled = true;
+							});
+						})();
+					</script>
 
 
 					<!-- Event workspace -->

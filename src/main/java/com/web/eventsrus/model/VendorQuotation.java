@@ -6,12 +6,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Mirrors eventsrus-backend's {@code QuotationResponse} field-for-field
- * (including vendorBusinessName/vendorSlug, added there this round), plus
- * one stub-only addition: quotedAmount. The real quotation is PDF-only (no
- * structured price field on the backend), but the planner's "Book This"
- * flow needs something to prefill the price with - stands in until the
- * real DTO carries a headline price alongside the PDF, if it ever does.
+ * Mirrors eventsrus-backend's {@code QuotationResponse} field-for-field.
+ * quotedAmount is now a real vendor-entered figure (not a stub) since
+ * Phase 1 of the quotation/booking lifecycle rework - see project memory
+ * quotation-booking-target-state-machine.
  */
 public record VendorQuotation(
         long id,
@@ -25,9 +23,13 @@ public record VendorQuotation(
         LocalDate targetDate,
         String requestMessage,
         QuotationStatus status,
-        String pdfUrl,
+        int version,
         BigDecimal quotedAmount,
+        String pdfUrl,
         Instant respondedAt,
+        Instant acceptedAt,
+        String paymentScreenshotUrl,
+        String paymentRejectionReason,
         Instant createdAt,
         List<Long> packageIds,
         List<String> packageNames,

@@ -442,10 +442,14 @@
 							<!-- Quotations -->
 							<div class="tab-pane fade" th:classappend="${activeTab == 'quotations'} ? 'show active'" id="tab-quotations">
 
-								<div th:if="${bookingSubmitted}" class="alert alert-success alert-dismissible">
+								<div th:if="${quotationAccepted}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									<span th:if="${bookingIncludedScreenshot}">Your booking and payment screenshot have been submitted - the vendor will confirm once they've verified it.</span>
-									<span th:unless="${bookingIncludedScreenshot}">Your booking has been submitted. You can upload a payment screenshot anytime from the Bookings tab.</span>
+									<span th:if="${bookingIncludedScreenshot}">Quote accepted and payment screenshot submitted - the vendor will confirm once they've verified it.</span>
+									<span th:unless="${bookingIncludedScreenshot}">Quote accepted. You can upload a payment screenshot anytime from here once you're ready to pay.</span>
+								</div>
+								<div th:if="${screenshotSubmitted}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Payment screenshot submitted - the vendor will confirm once they've verified it.
 								</div>
 								<div th:if="${quotationDeclined}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -487,7 +491,10 @@
 													<td th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">-</td>
 													<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
 													<td>
-														<span class="badge" th:classappend="${quotation.status().name() == 'RESPONDED'} ? 'bg-success' : (${quotation.status().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-warning')" th:text="${quotation.status()}">STATUS</span>
+														<span class="badge"
+															th:classappend="${quotation.status().name() == 'BOOKED'} ? 'bg-success' : (${quotation.status().name() == 'DECLINED' or quotation.status().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${quotation.status().name() == 'QUOTE_SENT' or quotation.status().name() == 'REVISION_SENT'} ? 'bg-info' : (${quotation.status().name() == 'PENDING_DEPOSIT' or quotation.status().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning')))"
+															th:text="${quotation.status()}">STATUS</span>
+														<span class="fs-sm text-muted ms-1" th:text="'v' + ${quotation.version()}">v1</span>
 													</td>
 													<td>
 														<a th:if="${quotation.pdfUrl() != null}" th:href="${quotation.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
@@ -506,15 +513,23 @@
 																<i class="ph-list"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
-																<button th:if="${quotation.status().name() == 'RESPONDED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#bookQuotationModal-' + ${quotation.id()}">
+																<button th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#acceptQuotationModal-' + ${quotation.id()}">
 																	<i class="ph-check-circle me-2 text-primary"></i>
-																	Book This
+																	Accept Quote
 																</button>
-																<button th:if="${quotation.status().name() == 'RESPONDED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#reviseQuotationModal-' + ${quotation.id()}">
+																<button th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#reviseQuotationModal-' + ${quotation.id()}">
 																	<i class="ph-pencil-simple me-2"></i>
 																	Request Revision
 																</button>
-																<button th:if="${#sets.contains({'REQUESTED','RESPONDED'}, quotation.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#declineQuotationModal-' + ${quotation.id()}">
+																<button th:if="${#sets.contains({'PENDING_DEPOSIT','PAYMENT_REJECTED'}, quotation.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#quotationPaymentScreenshotModal-' + ${quotation.id()}">
+																	<i class="ph-upload-simple me-2 text-primary"></i>
+																	Upload Payment Screenshot
+																</button>
+																<a th:if="${quotation.paymentScreenshotUrl() != null}" th:href="${quotation.paymentScreenshotUrl()}" target="_blank" class="dropdown-item">
+																	<i class="ph-image me-2"></i>
+																	View Payment Screenshot
+																</a>
+																<button th:if="${#sets.contains({'REQUEST_FOR_QUOTE','QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT'}, quotation.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#declineQuotationModal-' + ${quotation.id()}">
 																	<i class="ph-x-circle me-2 text-danger"></i>
 																	Decline
 																</button>
@@ -536,40 +551,27 @@
 									</div>
 								</div>
 
-								<!-- Per-quotation "Book This" modals -->
-								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${quotation.status().name() == 'RESPONDED'}" th:id="'bookQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+								<!-- Per-quotation "Accept Quote" modals - the quote freezes from here
+								     (see backend QuotationStatus javadoc); no Booking record exists yet
+								     at this point - that only happens once the vendor confirms via
+								     QuotationService#acceptBooking. A payment screenshot can be attached
+								     right here, same combined UX this modal always had. -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" th:id="'acceptQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
 									<div class="modal-dialog modal-dialog-centered">
 										<div class="modal-content">
-											<!-- No th:object/th:field here on purpose - bookFromQuotationForm is one
-											     shared (always-empty) model attribute, but this modal is repeated once
-											     per quotation via th:each, and each needs ITS OWN quotation's price/date
-											     prefilled. Plain name attributes still bind fine on submit
-											     (@ModelAttribute BookFromQuotationForm matches by request param name). -->
-											<form th:action="@{/planner/events/{eventId}/quotations/{id}/book(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/accept(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
 												<div class="modal-header">
-													<h5 class="modal-title" th:text="'Book ' + ${quotation.vendorBusinessName()} + '\'s Quotation'">Book This Quotation</h5>
+													<h5 class="modal-title" th:text="'Accept ' + ${quotation.vendorBusinessName()} + '\'s Quotation'">Accept Quotation</h5>
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
-													<div class="mb-3">
-														<label class="form-label">Agreed price</label>
-														<div class="form-control-feedback form-control-feedback-start">
-															<input type="number" step="0.01" min="0" name="price" th:value="${quotation.quotedAmount()}" class="form-control" placeholder="0.00" required>
-															<div class="form-control-feedback-icon">
-																<span class="text-muted">&#8369;</span>
-															</div>
-														</div>
+													<div class="bg-light rounded p-3 mb-3">
+														<div class="fs-sm fw-semibold text-muted mb-1">Quoted amount</div>
+														<p class="mb-0">&#8369;<span th:text="${#numbers.formatDecimal(quotation.quotedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
 													</div>
-													<div class="mb-3">
-														<label class="form-label">Event date</label>
-														<input type="date" name="eventDatetime" th:value="${quotation.targetDate()}" class="form-control" required>
-													</div>
-													<div class="mb-3">
-														<label class="form-label">Agreement details <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-														<textarea name="agreementDetails" rows="3" class="form-control" placeholder="Anything you and the vendor agreed on beyond the quotation."></textarea>
-													</div>
+													<p class="text-muted fs-sm">Accepting locks in this quote. You can pay the deposit now or come back once you're ready.</p>
 													<div class="mb-0">
-														<label class="form-label">Payment screenshot <span class="text-muted fs-sm fw-normal">(Optional - you can also upload this later from Bookings)</span></label>
+														<label class="form-label">Payment screenshot <span class="text-muted fs-sm fw-normal">(Optional - you can also upload this later)</span></label>
 														<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg">
 														<div class="fs-sm text-muted mt-1">PNG or JPEG only. Upload proof of payment now if you've already paid, so the vendor can confirm right away.</div>
 													</div>
@@ -578,20 +580,54 @@
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
 													<button type="submit" class="btn btn-primary">
 														<i class="ph-check-circle me-2"></i>
-														Confirm Booking
+														Accept Quote
 													</button>
 												</div>
 											</form>
 										</div>
 									</div>
 								</div>
-								<!-- /per-quotation modals -->
+								<!-- /per-quotation "Accept Quote" modals -->
+
+								<!-- Per-quotation "Upload Payment Screenshot" modals - standalone,
+								     for a planner who accepted without one and comes back once ready
+								     to pay, or resubmitting after a rejection (see
+								     QuotationService#submitPaymentScreenshot). -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'PENDING_DEPOSIT','PAYMENT_REJECTED'}, quotation.status().name())}" th:id="'quotationPaymentScreenshotModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/payment-screenshot(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Upload Payment Screenshot - ' + ${quotation.vendorBusinessName()}">Upload Payment Screenshot</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<p class="text-danger fs-sm" th:if="${quotation.paymentRejectionReason() != null}">
+														<i class="ph-warning-circle me-1"></i>
+														Previous screenshot was rejected: <span th:text="${quotation.paymentRejectionReason()}">Reason</span>
+													</p>
+													<label class="form-label">Screenshot</label>
+													<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg" required>
+													<div class="fs-sm text-muted mt-1">PNG or JPEG only. The vendor will confirm once they've verified it.</div>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+													<button type="submit" class="btn btn-primary">
+														<i class="ph-upload-simple me-2"></i>
+														Upload
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-quotation "Upload Payment Screenshot" modals -->
 
 								<!-- Per-quotation "Request Revision" modals - sends the quotation back
 								     to the vendor with an updated ask instead of starting a whole new
-								     thread (see QuotationService#requestRevision). Only for RESPONDED
-								     quotations, same visibility as "Book This". -->
-								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${quotation.status().name() == 'RESPONDED'}" th:id="'reviseQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+								     thread (see QuotationService#requestRevision). Only while a sent
+								     quote is still open to negotiation, same visibility as "Accept Quote". -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" th:id="'reviseQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
 									<div class="modal-dialog modal-dialog-centered">
 										<div class="modal-content">
 											<form th:action="@{/planner/events/{eventId}/quotations/{id}/revise(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post">
@@ -627,7 +663,7 @@
 								     rather than a raw JS confirm(), matching every other
 								     destructive action on this page. No reason required (see
 								     QuotationService#declineQuotation). -->
-								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'REQUESTED','RESPONDED'}, quotation.status().name())}" th:id="'declineQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'REQUEST_FOR_QUOTE','QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT'}, quotation.status().name())}" th:id="'declineQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
 									<div class="modal-dialog modal-dialog-centered">
 										<div class="modal-content">
 											<form th:action="@{/planner/events/{eventId}/quotations/{id}/decline(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post">
@@ -651,11 +687,11 @@
 								</div>
 								<!-- /per-quotation "Decline" modals -->
 
-								<!-- Per-quotation "Version History" modals - same
-								     REQUESTED/RESPONDED/DECLINED timeline the vendor
-								     sees (see vendor/quotations.html), so the planner
-								     can also look back at every past PDF and message,
-								     not just the vendor's latest response. -->
+								<!-- Per-quotation "Version History" modals - same full
+								     negotiation-to-booking timeline the vendor sees (see
+								     vendor/quotations.html), so the planner can also look back at
+								     every past PDF, message, amount and package snapshot, not just
+								     the vendor's latest response. -->
 								<div class="modal fade" th:each="quotation : ${quotations}" th:id="'quotationHistoryModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
 									<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
 										<div class="modal-content">
@@ -666,14 +702,26 @@
 											<div class="modal-body">
 												<div th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}" class="d-flex mb-3 pb-3 border-bottom">
 													<div class="flex-shrink-0 me-3">
-														<span class="badge" th:classappend="${historyEntry.toStatus().name() == 'RESPONDED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-warning')" th:text="${historyEntry.toStatus()}">STATUS</span>
+														<span class="badge"
+															th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning')))"
+															th:text="${historyEntry.toStatus()}">STATUS</span>
 													</div>
 													<div class="flex-grow-1">
 														<div class="fs-sm text-muted mb-1">
 															<span th:text="${historyEntry.changedByName()}">Who</span> &middot;
+															<span th:text="'v' + ${historyEntry.version()}">v1</span> &middot;
 															<span th:text="${#temporals.format(historyEntry.createdAt(), 'MMM d, yyyy h:mm a')}">Date</span>
 														</div>
 														<p class="mb-1" th:if="${historyEntry.reason() != null}" th:text="${historyEntry.reason()}">Message/reason</p>
+														<p class="mb-1 fs-sm" th:if="${historyEntry.quotedAmount() != null}">
+															Quoted: &#8369;<span th:text="${#numbers.formatDecimal(historyEntry.quotedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+														</p>
+														<p class="mb-1 fs-sm" th:if="${historyEntry.targetDate() != null}">
+															Target date: <span th:text="${#temporals.format(historyEntry.targetDate(), 'MMM dd, yyyy')}">-</span>
+														</p>
+														<div th:if="${not #lists.isEmpty(historyEntry.packageNames())}" class="mb-1">
+															<span class="badge bg-secondary me-1" th:each="packageName : ${historyEntry.packageNames()}" th:text="${packageName}">Package</span>
+														</div>
 														<a th:if="${historyEntry.pdfUrl() != null}" th:href="${historyEntry.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
 															<i class="ph-file-pdf me-1"></i> View this version's PDF
 														</a>

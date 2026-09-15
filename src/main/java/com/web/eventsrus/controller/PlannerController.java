@@ -47,7 +47,6 @@ import static com.web.eventsrus.model.BusinessType.VENUE;
 import static com.web.eventsrus.model.BusinessType.WARDROBE_STYLISTS_DRESSERS;
 
 import jakarta.servlet.http.HttpSession;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -382,13 +381,19 @@ public class PlannerController {
         return "redirect:/planner/events";
     }
 
-    @PostMapping("/{eventId}/quotations/{quotationId}/book")
-    public String bookFromQuotation(
+    /**
+     * Planner accepts a QUOTE_SENT/REVISION_SENT quote - the quote freezes
+     * from here (see backend QuotationStatus javadoc). A payment screenshot
+     * can be attached right in this same step (optional, same combined UX
+     * the old "Book This" modal had) - the backend auto-resolves to
+     * PENDING_DEPOSIT or PAYMENT_REVIEW depending on whether one was sent.
+     * No Booking record exists yet at this point - that only happens once
+     * the vendor confirms via QuotationService#acceptBooking.
+     */
+    @PostMapping("/{eventId}/quotations/{quotationId}/accept")
+    public String acceptQuote(
             @PathVariable Long eventId,
             @PathVariable Long quotationId,
-            @RequestParam BigDecimal price,
-            @RequestParam LocalDate eventDatetime,
-            @RequestParam(required = false) String agreementDetails,
             @RequestParam(required = false) MultipartFile screenshot,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -398,18 +403,37 @@ public class PlannerController {
             redirectAttributes.addAttribute("tab", "quotations");
             return "redirect:/planner/events";
         }
-        String jwt = WebSession.token(session);
         try {
-            VendorBooking booking = backendClient.bookFromQuotation(
-                    jwt, quotationId, price, eventDatetime.atStartOfDay(MANILA).toInstant(), agreementDetails);
-            boolean includedScreenshot = screenshot != null && !screenshot.isEmpty();
-            if (includedScreenshot) {
-                backendClient.submitPaymentScreenshot(jwt, booking.id(), screenshot);
-            }
-            redirectAttributes.addFlashAttribute("bookingSubmitted", true);
-            redirectAttributes.addFlashAttribute("bookingIncludedScreenshot", includedScreenshot);
+            backendClient.acceptQuote(WebSession.token(session), quotationId, screenshot);
+            redirectAttributes.addFlashAttribute("quotationAccepted", true);
+            redirectAttributes.addFlashAttribute("bookingIncludedScreenshot", screenshot != null && !screenshot.isEmpty());
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+        }
+        redirectAttributes.addAttribute("eventId", eventId);
+        redirectAttributes.addAttribute("tab", "quotations");
+        return "redirect:/planner/events";
+    }
+
+    /** Standalone upload - for a planner who accepted without a screenshot and comes back once ready to pay, or resubmitting after a rejection. */
+    @PostMapping("/{eventId}/quotations/{quotationId}/payment-screenshot")
+    public String submitQuotationPaymentScreenshot(
+            @PathVariable Long eventId,
+            @PathVariable Long quotationId,
+            @RequestParam(required = false) MultipartFile screenshot,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (screenshot == null || screenshot.isEmpty()) {
+            redirectAttributes.addFlashAttribute("bookingsError", "A payment screenshot is required.");
+        } else if (!isPngOrJpeg(screenshot)) {
+            redirectAttributes.addFlashAttribute("bookingsError", "Only PNG or JPEG images are accepted for payment screenshots.");
+        } else {
+            try {
+                backendClient.submitQuotationPaymentScreenshot(WebSession.token(session), quotationId, screenshot);
+                redirectAttributes.addFlashAttribute("screenshotSubmitted", true);
+            } catch (BackendApiException e) {
+                redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+            }
         }
         redirectAttributes.addAttribute("eventId", eventId);
         redirectAttributes.addAttribute("tab", "quotations");

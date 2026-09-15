@@ -26,6 +26,7 @@ import com.web.eventsrus.model.VendorPublicProfile;
 import com.web.eventsrus.model.VendorQuotation;
 import com.web.eventsrus.model.Notification;
 import com.web.eventsrus.model.VendorReview;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -247,15 +248,17 @@ public class BackendClient {
         return get("/api/v1/planners/me/quotations", jwt, new ParameterizedTypeReference<List<VendorQuotation>>() {});
     }
 
-    /** The vendor's side of the exchange - uploading a PDF quote is what moves REQUESTED -> RESPONDED. */
-    public VendorQuotation respondToQuotation(String jwt, Long quotationId, MultipartFile pdf, String message) {
+    /** The vendor's side of the exchange - uploading a PDF quote is what moves the quotation to QUOTE_SENT/REVISION_SENT. */
+    public VendorQuotation respondToQuotation(
+            String jwt, Long quotationId, MultipartFile pdf, String message, BigDecimal quotedAmount) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         addFileIfPresent(body, "pdf", pdf);
         addIfPresent(body, "message", message);
+        body.add("quotedAmount", quotedAmount.toString());
         return postMultipart("/api/v1/vendors/me/quotations/" + quotationId + "/respond", jwt, body, VendorQuotation.class);
     }
 
-    /** The full REQUESTED/RESPONDED/DECLINED timeline for one quotation - both sides of every back-and-forth, not just the latest. */
+    /** The full negotiation-to-booking timeline for one quotation - every version of every back-and-forth, not just the latest. */
     public List<BackendQuotationHistoryEntry> getQuotationHistory(String jwt, Long quotationId) {
         return get("/api/v1/quotations/" + quotationId + "/history", jwt,
                 new ParameterizedTypeReference<List<BackendQuotationHistoryEntry>>() {});
@@ -276,6 +279,57 @@ public class BackendClient {
         body.put("message", message);
         body.put("packageIds", packageIds);
         return postJson("/api/v1/quotations/" + quotationId + "/revise", jwt, body, VendorQuotation.class);
+    }
+
+    /**
+     * Planner accepts a QUOTE_SENT/REVISION_SENT quote - screenshot is
+     * optional (same combined UX the old "Book This" modal had). See
+     * backend QuotationService#acceptQuote for the auto-resolve-to-
+     * PENDING_DEPOSIT-or-PAYMENT_REVIEW behavior.
+     */
+    public VendorQuotation acceptQuote(String jwt, Long quotationId, MultipartFile screenshot) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addFileIfPresent(body, "screenshot", screenshot);
+        return postMultipart("/api/v1/quotations/" + quotationId + "/accept", jwt, body, VendorQuotation.class);
+    }
+
+    /** Standalone upload - for a planner who accepted without a screenshot and comes back once ready to pay, or resubmitting after a rejection. */
+    public VendorQuotation submitQuotationPaymentScreenshot(String jwt, Long quotationId, MultipartFile screenshot) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addFileIfPresent(body, "screenshot", screenshot);
+        return postMultipart("/api/v1/quotations/" + quotationId + "/payment-screenshot", jwt, body, VendorQuotation.class);
+    }
+
+    public VendorQuotation rejectQuotationPayment(String jwt, Long quotationId, String reason) {
+        return postJson("/api/v1/quotations/" + quotationId + "/reject-payment", jwt, Map.of("reason", reason),
+                VendorQuotation.class);
+    }
+
+    /** Vendor verifies the payment and confirms the booking - creates the actual Booking (see backend QuotationService#acceptBooking). */
+    public VendorQuotation acceptBooking(
+            String jwt, Long quotationId, String confirmationMessage, String paymentType, MultipartFile invoice) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addIfPresent(body, "confirmationMessage", confirmationMessage);
+        addIfPresent(body, "paymentType", paymentType);
+        addFileIfPresent(body, "invoice", invoice);
+        return postMultipart("/api/v1/quotations/" + quotationId + "/accept-booking", jwt, body, VendorQuotation.class);
+    }
+
+    /** A vendor starting a brand-new quote directly from a chat thread - see backend QuotationService#createFromChat. */
+    public VendorQuotation createQuoteFromChat(
+            String jwt, Long eventId, LocalDate targetDate, String message, List<Long> packageIds, MultipartFile pdf,
+            BigDecimal quotedAmount) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        if (targetDate != null) {
+            body.add("targetDate", targetDate.toString());
+        }
+        addIfPresent(body, "message", message);
+        if (packageIds != null) {
+            packageIds.forEach(id -> body.add("packageIds", id));
+        }
+        addFileIfPresent(body, "pdf", pdf);
+        body.add("quotedAmount", quotedAmount.toString());
+        return postMultipart("/api/v1/events/" + eventId + "/vendor-quotations", jwt, body, VendorQuotation.class);
     }
 
     // --- Events (planner) ---

@@ -6,6 +6,7 @@ import com.web.eventsrus.model.EventType;
 import com.web.eventsrus.model.InquiryForm;
 import com.web.eventsrus.model.LegalDocumentType;
 import com.web.eventsrus.model.PackageType;
+import com.web.eventsrus.model.PaymentType;
 import com.web.eventsrus.model.PhilippineProvinces;
 import com.web.eventsrus.model.QuotationRequestForm;
 import com.web.eventsrus.model.SupportTicket;
@@ -34,6 +35,7 @@ import com.web.eventsrus.backend.BackendVendorSettingsResponse;
 import com.web.eventsrus.backend.WebSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -383,13 +385,59 @@ public class VendorController {
                         .sorted(Comparator.comparing(VendorConversationMessage::createdAt))
                         .toList();
 
+        // Gates the "Create a quote" button in the template - a second
+        // independent quotation thread for the same (event, vendor) pair
+        // would just be confusing to track (see backend
+        // QuotationService#createFromChat, which enforces this same rule
+        // server-side too).
+        boolean hasQuotationForSelectedEvent = selected != null
+                && backendClient.getQuotations(jwt).stream().anyMatch(q -> q.eventId() == selected.eventId());
+
         model.addAttribute("conversations", conversations);
         model.addAttribute("selectedConversation", selected);
         model.addAttribute("thread", thread);
+        model.addAttribute("hasQuotationForSelectedEvent", hasQuotationForSelectedEvent);
         model.addAttribute("vendorUserId", WebSession.userId(session));
         model.addAttribute("activePage", "messages");
         model.addAttribute("pageTitle", "Messages");
         return "vendor/messages";
+    }
+
+    /**
+     * A vendor starting a brand-new quote directly from a chat thread - for
+     * when negotiation happened in conversation with no prior request from
+     * the storefront. Refused server-side (see backend
+     * QuotationService#createFromChat) if a quotation already exists for
+     * this event+vendor - the template only shows this button when
+     * hasQuotationForSelectedEvent is false, this is the backstop.
+     */
+    @PostMapping("/messages/{conversationId}/create-quote")
+    public String createQuoteFromChat(
+            @PathVariable Long conversationId, @RequestParam(required = false) LocalDate targetDate,
+            @RequestParam(required = false) String message, @RequestParam(required = false) List<Long> packageIds,
+            @RequestParam(required = false) MultipartFile pdf, @RequestParam BigDecimal quotedAmount,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        if (WebSession.isSubscriptionExpired(session)) {
+            redirectAttributes.addFlashAttribute(
+                    "messagesError", "Your subscription has ended. Renew your plan to send a quote.");
+            return "redirect:/vendor/messages?conversationId=" + conversationId;
+        }
+        if (pdf == null || pdf.isEmpty()) {
+            redirectAttributes.addFlashAttribute("messagesError", "A PDF quote is required.");
+            return "redirect:/vendor/messages?conversationId=" + conversationId;
+        }
+        String jwt = WebSession.token(session);
+        try {
+            VendorConversation conversation = backendClient.getConversations(jwt).stream()
+                    .filter(c -> c.id() == conversationId)
+                    .findFirst()
+                    .orElseThrow(() -> new BackendApiException("Conversation not found", 404));
+            backendClient.createQuoteFromChat(jwt, conversation.eventId(), targetDate, message, packageIds, pdf, quotedAmount);
+            redirectAttributes.addFlashAttribute("quoteCreatedFromChat", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("messagesError", e.getMessage());
+        }
+        return "redirect:/vendor/messages?conversationId=" + conversationId;
     }
 
     @PostMapping("/messages/{conversationId}/reply")
@@ -436,7 +484,7 @@ public class VendorController {
     @PostMapping("/quotations/{quotationId}/respond")
     public String respondToQuotation(
             @PathVariable Long quotationId, @RequestParam(required = false) MultipartFile pdf,
-            @RequestParam(required = false) String message,
+            @RequestParam(required = false) String message, @RequestParam(required = false) BigDecimal quotedAmount,
             HttpSession session, RedirectAttributes redirectAttributes) {
         // Same subscription-required check as acknowledgeBookingPayment above
         // (mirrors QuotationService#respondWithPdf's own server-side check) -
@@ -451,9 +499,55 @@ public class VendorController {
             redirectAttributes.addFlashAttribute("quotationsError", "A PDF quote is required to respond.");
             return "redirect:/vendor/quotations";
         }
+        if (quotedAmount == null) {
+            redirectAttributes.addFlashAttribute("quotationsError", "A quoted amount is required to respond.");
+            return "redirect:/vendor/quotations";
+        }
         try {
-            backendClient.respondToQuotation(WebSession.token(session), quotationId, pdf, message);
+            backendClient.respondToQuotation(WebSession.token(session), quotationId, pdf, message, quotedAmount);
             redirectAttributes.addFlashAttribute("quotationResponded", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
+        }
+        return "redirect:/vendor/quotations";
+    }
+
+    @PostMapping("/quotations/{quotationId}/reject-payment")
+    public String rejectQuotationPayment(
+            @PathVariable Long quotationId, @RequestParam String reason, HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (reason == null || reason.isBlank()) {
+            redirectAttributes.addFlashAttribute("quotationsError", "A rejection reason is required.");
+            return "redirect:/vendor/quotations";
+        }
+        try {
+            backendClient.rejectQuotationPayment(WebSession.token(session), quotationId, reason);
+            redirectAttributes.addFlashAttribute("paymentRejected", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
+        }
+        return "redirect:/vendor/quotations";
+    }
+
+    @PostMapping("/quotations/{quotationId}/accept-booking")
+    public String acceptBooking(
+            @PathVariable Long quotationId, @RequestParam(required = false) String confirmationMessage,
+            @RequestParam PaymentType paymentType, @RequestParam(required = false) MultipartFile invoice,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        if (WebSession.isSubscriptionExpired(session)) {
+            redirectAttributes.addFlashAttribute(
+                    "quotationsError", "Your subscription has ended. Renew your plan to confirm bookings.");
+            return "redirect:/vendor/quotations";
+        }
+        if (invoice == null || invoice.isEmpty()) {
+            redirectAttributes.addFlashAttribute("quotationsError",
+                    "An invoice or receipt document is required to confirm this booking.");
+            return "redirect:/vendor/quotations";
+        }
+        try {
+            backendClient.acceptBooking(
+                    WebSession.token(session), quotationId, confirmationMessage, paymentType.name(), invoice);
+            redirectAttributes.addFlashAttribute("bookingAccepted", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
         }

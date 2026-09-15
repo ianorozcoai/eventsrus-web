@@ -104,6 +104,18 @@
 										<div class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Planner name</div>
 										<div class="text-muted fs-sm" th:text="${selectedConversation.eventName()}">Event</div>
 									</div>
+									<!--/* Lets negotiation-in-chat lead straight to a real quote with no
+									     prior storefront request (see backend
+									     QuotationService#createFromChat) - only offered when there's no
+									     quotation for this event+vendor yet; a second independent thread
+									     would just be confusing to track, so once one exists this points
+									     at the real revision flow instead. */-->
+									<button th:if="${not hasQuotationForSelectedEvent}" type="button" class="btn btn-primary btn-sm ms-auto" data-bs-toggle="modal" data-bs-target="#createQuoteModal">
+										<i class="ph-file-plus me-1"></i> Create a Quote
+									</button>
+									<a th:if="${hasQuotationForSelectedEvent}" th:href="@{/vendor/quotations}" class="btn btn-light btn-sm ms-auto">
+										<i class="ph-file-text me-1"></i> View Quotation
+									</a>
 								</div>
 
 								<div class="flex-grow-1 overflow-auto p-3">
@@ -111,6 +123,11 @@
 									<div th:if="${replySent}" class="alert alert-success alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 										Your reply has been sent.
+									</div>
+
+									<div th:if="${quoteCreatedFromChat}" class="alert alert-success alert-dismissible">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										Quote sent to the planner - manage it from here on in Quotations.
 									</div>
 
 									<th:block th:each="message, iter : ${thread}">
@@ -152,6 +169,45 @@
 
 							</div>
 							<!-- /thread -->
+
+							<!-- "Create a Quote" modal - see backend QuotationService#createFromChat.
+							     Only rendered when there's a selected conversation with no quotation
+							     yet for its event (the button that opens it is gated the same way). -->
+							<div class="modal fade" th:if="${selectedConversation != null and not hasQuotationForSelectedEvent}" id="createQuoteModal" tabindex="-1" aria-hidden="true">
+								<div class="modal-dialog modal-dialog-centered">
+									<div class="modal-content">
+										<form th:action="@{/vendor/messages/{id}/create-quote(id=${selectedConversation.id()})}" method="post" enctype="multipart/form-data">
+											<div class="modal-header">
+												<h5 class="modal-title" th:text="'Create a Quote - ' + ${selectedConversation.eventName()}">Create a Quote</h5>
+												<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+											</div>
+											<div class="modal-body">
+												<p class="text-muted fs-sm">Based on what you discussed here - after this, manage any changes from Quotations.</p>
+
+												<label class="form-label">Quote PDF</label>
+												<input type="file" name="pdf" class="form-control mb-3" accept=".pdf" required>
+
+												<label class="form-label">Quoted Amount (&#8369;)</label>
+												<input type="number" name="quotedAmount" class="form-control mb-3" min="0" step="0.01" placeholder="e.g. 50000" required>
+
+												<label class="form-label">Target date <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+												<input type="date" name="targetDate" class="form-control mb-3">
+
+												<label class="form-label">Message <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+												<textarea name="message" rows="2" class="form-control" placeholder="Summarize what this quote covers..."></textarea>
+											</div>
+											<div class="modal-footer">
+												<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+												<button type="submit" class="btn btn-primary">
+													<i class="ph-file-plus me-2"></i>
+													Send Quote
+												</button>
+											</div>
+										</form>
+									</div>
+								</div>
+							</div>
+							<!-- /"Create a Quote" modal -->
 
 						</div>
 					</div>

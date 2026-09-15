@@ -59,35 +59,54 @@ class VendorControllerQuotationRespondTest {
 
         mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf)
                         .param("message", "Here's the revised quote")
+                        .param("quotedAmount", "50000")
                         .session(activeSession()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/vendor/quotations"))
                 .andExpect(flash().attribute("quotationResponded", true));
 
-        verify(backendClient).respondToQuotation(eq("a.jwt"), eq(42L), any(), eq("Here's the revised quote"));
+        verify(backendClient).respondToQuotation(
+                eq("a.jwt"), eq(42L), any(), eq("Here's the revised quote"), eq(new java.math.BigDecimal("50000")));
     }
 
     @Test
     void aMessageIsOptional() throws Exception {
         MockMultipartFile pdf = new MockMultipartFile("pdf", "quote.pdf", "application/pdf", "content".getBytes());
 
-        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf).session(activeSession()))
+        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf)
+                        .param("quotedAmount", "50000")
+                        .session(activeSession()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attribute("quotationResponded", true));
 
-        verify(backendClient).respondToQuotation(eq("a.jwt"), eq(42L), any(), eq((String) null));
+        verify(backendClient).respondToQuotation(
+                eq("a.jwt"), eq(42L), any(), eq((String) null), eq(new java.math.BigDecimal("50000")));
     }
 
     @Test
     void rejectsAnEmptyFileWithoutCallingTheBackend() throws Exception {
         MockMultipartFile emptyPdf = new MockMultipartFile("pdf", "quote.pdf", "application/pdf", new byte[0]);
 
-        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(emptyPdf).session(activeSession()))
+        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(emptyPdf)
+                        .param("quotedAmount", "50000")
+                        .session(activeSession()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/vendor/quotations"))
                 .andExpect(flash().attributeExists("quotationsError"));
 
-        verify(backendClient, never()).respondToQuotation(any(), any(), any(), any());
+        verify(backendClient, never()).respondToQuotation(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void rejectsAMissingQuotedAmountWithoutCallingTheBackend() throws Exception {
+        MockMultipartFile pdf = new MockMultipartFile("pdf", "quote.pdf", "application/pdf", "content".getBytes());
+
+        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf).session(activeSession()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/vendor/quotations"))
+                .andExpect(flash().attributeExists("quotationsError"));
+
+        verify(backendClient, never()).respondToQuotation(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -96,21 +115,25 @@ class VendorControllerQuotationRespondTest {
         session.setAttribute(WebSession.SUBSCRIPTION_EXPIRED, true);
         MockMultipartFile pdf = new MockMultipartFile("pdf", "quote.pdf", "application/pdf", "content".getBytes());
 
-        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf).session(session))
+        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf)
+                        .param("quotedAmount", "50000")
+                        .session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/vendor/quotations"))
                 .andExpect(flash().attributeExists("quotationsError"));
 
-        verify(backendClient, never()).respondToQuotation(any(), any(), any(), any());
+        verify(backendClient, never()).respondToQuotation(any(), any(), any(), any(), any());
     }
 
     @Test
     void surfacesABackendFailureAsAFlashError() throws Exception {
         MockMultipartFile pdf = new MockMultipartFile("pdf", "quote.pdf", "application/pdf", "content".getBytes());
-        when(backendClient.respondToQuotation(eq("a.jwt"), eq(42L), any(), any()))
+        when(backendClient.respondToQuotation(eq("a.jwt"), eq(42L), any(), any(), any()))
                 .thenThrow(new BackendApiException("Vendor subscription is not active", 402));
 
-        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf).session(activeSession()))
+        mockMvc.perform(multipart("/vendor/quotations/42/respond").file(pdf)
+                        .param("quotedAmount", "50000")
+                        .session(activeSession()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/vendor/quotations"))
                 .andExpect(flash().attribute("quotationsError", "Vendor subscription is not active"));

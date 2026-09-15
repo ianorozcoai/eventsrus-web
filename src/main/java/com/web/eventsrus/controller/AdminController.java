@@ -180,4 +180,41 @@ public class AdminController {
         }
         return "redirect:/admin/admins";
     }
+
+    @GetMapping("/settings")
+    public String settings(HttpSession session, Model model) {
+        model.addAttribute("activePage", "settings");
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("settings", List.of());
+            return "admin/settings";
+        }
+        try {
+            model.addAttribute("backendUnavailable", false);
+            model.addAttribute("settings", backendClient.listSystemSettings(jwt));
+        } catch (BackendApiException e) {
+            model.addAttribute("backendUnavailable", true);
+            model.addAttribute("settings", List.of());
+        }
+        return "admin/settings";
+    }
+
+    @PostMapping("/settings/{key}")
+    public String updateSetting(
+            @PathVariable String key, @RequestParam String value,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("settingsError", "Not connected to eventsrus-backend right now.");
+            return "redirect:/admin/settings";
+        }
+        try {
+            backendClient.updateSystemSetting(jwt, key, value);
+            redirectAttributes.addFlashAttribute("settingUpdated", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("settingsError", e.getMessage());
+        }
+        return "redirect:/admin/settings";
+    }
 }

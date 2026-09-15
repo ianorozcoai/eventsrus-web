@@ -620,6 +620,14 @@ public class BackendClient {
                 BackendVendorVerificationDocuments.class);
     }
 
+    public List<BackendSystemSetting> listSystemSettings(String adminJwt) {
+        return get("/api/v1/admin/settings", adminJwt, new ParameterizedTypeReference<List<BackendSystemSetting>>() {});
+    }
+
+    public BackendSystemSetting updateSystemSetting(String adminJwt, String key, String value) {
+        return putJson("/api/v1/admin/settings/" + key, adminJwt, Map.of("value", value), BackendSystemSetting.class);
+    }
+
     // --- Planner's own profile (any logged-in user - a vendor has one too, just reached from a different page) ---
 
     public PlannerProfileForm getProfile(String jwt) {

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('System Settings - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('settings')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">System Settings</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${settingUpdated}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Setting updated.
+					</div>
+
+					<div th:if="${settingsError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${settingsError}">Error</span>
+					</div>
+
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<div class="row" th:unless="${backendUnavailable}">
+						<div class="col-lg-8">
+
+							<div class="card" th:each="setting : ${settings}">
+								<div class="card-body">
+									<h6 class="mb-1" th:text="${setting.label()}">Setting label</h6>
+									<p class="text-muted fs-sm mb-3" th:text="${setting.description()}">Setting description</p>
+
+									<form th:action="@{'/admin/settings/' + ${setting.key()}}" method="post" class="d-flex align-items-center gap-2">
+										<input type="number" name="value" class="form-control" style="max-width:160px;"
+											   th:value="${setting.value()}" min="0" step="1" required>
+										<button type="submit" class="btn btn-primary">Save</button>
+									</form>
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

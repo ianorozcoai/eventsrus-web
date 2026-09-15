@@ -38,6 +38,11 @@ public class NavController {
         return "terms";
     }
 
+    @GetMapping("/privacy")
+    public String privacy() {
+        return "privacy";
+    }
+
     // PlannerController owns the real page logic at /planner/events (class-level
     // @RequestMapping there, so it can't itself expose a plain /planner/dashboard
     // path) - this just gives the literal URL asked for in the login flow.

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+	<!--/* Shared by terms.html and privacy.html - both otherwise plain,
+	     single-card legal pages with no need for the landing page's full
+	     multi-column footer, but Contact Us info belongs here too. */-->
+	<div th:fragment="legalFooter" class="navbar navbar-sm navbar-footer border-top flex-column align-items-start py-3">
+		<div class="container-fluid">
+			<div class="d-flex flex-wrap gap-4 mb-2">
+				<span class="text-muted fs-sm"><i class="ph-map-pin me-1"></i> 917B Grass Residences Tower 1, Nueva Vizcaya St., Quezon City, Philippines 1104</span>
+				<a href="tel:+639075116813" class="text-muted fs-sm text-decoration-none"><i class="ph-phone me-1"></i> 0907 511 6813</a>
+				<a href="mailto:support@eventsrus.app" class="text-muted fs-sm text-decoration-none"><i class="ph-envelope me-1"></i> support@eventsrus.app</a>
+			</div>
+			<div class="d-flex align-items-center gap-3">
+				<span class="text-muted fs-sm">&copy; 2026 EventsRUs</span>
+				<a th:href="@{/terms}" class="text-muted fs-sm text-decoration-none">Terms &amp; Agreement</a>
+				<a th:href="@{/privacy}" class="text-muted fs-sm text-decoration-none">Privacy Policy</a>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

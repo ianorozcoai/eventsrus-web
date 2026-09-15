@@ -25,7 +25,7 @@
 <body>
 
 	<!-- Main navbar -->
-	<div class="navbar navbar-dark navbar-static py-2">
+	<div class="navbar navbar-dark navbar-static py-2" style="background:#000;">
 		<div class="container-fluid">
 			<div class="navbar-brand">
 				<a th:href="@{/}" class="d-inline-flex align-items-center text-white text-decoration-none">
@@ -33,6 +33,7 @@
 					<span class="d-none d-sm-inline-block fw-bold fs-lg ms-2 text-white">EventsRUs</span>
 				</a>
 			</div>
+			<a th:href="@{/privacy}" class="text-white-50 text-decoration-none fs-sm">Privacy Policy</a>
 		</div>
 	</div>
 	<!-- /main navbar -->
@@ -53,31 +54,59 @@
 					<div class="row justify-content-center">
 						<div class="col-lg-8">
 
-							<div class="alert alert-warning">
-								<i class="ph-warning me-2"></i>
-								<strong>Draft.</strong> This is placeholder text for development purposes and has not been reviewed by counsel. Do not treat this as final legal language before real launch.
-							</div>
-
 							<div class="card border-0 shadow-sm">
 								<div class="card-body p-4 p-md-5">
 
 									<h4 class="fw-bold mb-1">EventsRUs Terms &amp; Agreement</h4>
-									<p class="text-muted fs-sm mb-4">Last updated: 2026-09-03</p>
+									<p class="text-muted fs-sm mb-4">Last updated: September 16, 2026</p>
+
+									<p class="text-muted">Welcome to EventsRUs. These Terms &amp; Agreement ("Terms") govern your access to and use of the EventsRUs website and platform (the "Platform"), operated in the Philippines. By creating an account or otherwise using the Platform, you agree to these Terms. If you don't agree, please don't use the Platform.</p>
 
 									<h6 class="fw-semibold mt-4">1. What EventsRUs is</h6>
-									<p class="text-muted">EventsRUs is a directory and marketplace that connects event planners with independent vendors. We help planners discover vendors and help vendors list their services - we are not an event planning company, a vendor, or a party to any agreement made between a planner and a vendor.</p>
+									<p class="text-muted">EventsRUs is a directory and marketplace that connects event planners ("Planners") with independent event vendors ("Vendors") - venues, caterers, photographers, entertainers, and other suppliers. We provide the tools to discover vendors, request and negotiate quotations, book services, and confirm payment between the two parties. EventsRUs itself is not an event planning company, not a vendor, and not a party to any agreement a Planner and a Vendor reach with each other.</p>
 
-									<h6 class="fw-semibold mt-4">2. Payments are between the planner and the vendor</h6>
-									<p class="text-muted">All payment transactions - deposits, balances, refunds, or any other exchange of money for services or products - happen strictly between the planner and the vendor. EventsRUs does not collect, hold, process, or guarantee any payment made through the platform. Any payment methods or instructions a vendor posts (including QR codes) are provided by that vendor for the planner's convenience only.</p>
+									<h6 class="fw-semibold mt-4">2. Accounts and eligibility</h6>
+									<p class="text-muted">You must be at least 18 years old to create an account. Accounts are created and signed into using Google Sign-In; you're responsible for keeping that Google account secure and for all activity under your EventsRUs account. Each person keeps a single identity on the Platform - once your account is set up as a Planner or a Vendor, you continue as that same identity (a Vendor account can complete vendor onboarding, but a single email doesn't get separate independent Planner and Vendor accounts). Provide accurate information when you register and when you update your profile.</p>
 
-									<h6 class="fw-semibold mt-4">3. Vendor responsibility for posted information</h6>
-									<p class="text-muted">Vendors are solely responsible for the accuracy of the business information, pricing, policies, and payment methods they post on EventsRUs. Vendor-uploaded payment methods are held for review and only shown on a vendor's public storefront once approved - approval indicates the submission was reviewed, not that EventsRUs guarantees or endorses the destination account behind it.</p>
+									<h6 class="fw-semibold mt-4">3. Requesting quotations, negotiating, and booking</h6>
+									<p class="text-muted">A Planner may request a quotation from a Vendor's storefront, or a Vendor may send one directly from an existing conversation. A Vendor's quotation - including the quoted amount, PDF, and any message - and every later revision are kept on record and remain visible to both parties as version history; nothing is silently overwritten. Either party may decline a quotation before it's accepted. Accepting a quotation locks it - it can no longer be revised, and any further change to a confirmed booking's scope or price is handled as a separate change request, not by editing the original quotation.</p>
 
-									<h6 class="fw-semibold mt-4">4. No guarantee of transactions</h6>
-									<p class="text-muted">EventsRUs does not guarantee that any booking, payment, or agreement between a planner and a vendor will be honored by either party. Planners and vendors are encouraged to verify each other's details independently before exchanging any payment.</p>
+									<h6 class="fw-semibold mt-4">4. Payments are between the Planner and the Vendor</h6>
+									<p class="text-muted">All payment transactions for event services - deposits, balances, refunds, or any other exchange of money - happen strictly between the Planner and the Vendor, using whatever payment method the Vendor has posted (such as a bank transfer or e-wallet QR code). EventsRUs does not collect, hold, process, or guarantee any such payment. To help both sides keep a record of what was agreed and paid, the Platform lets a Planner submit proof of payment and a Vendor confirm receipt and attach an invoice before a booking is treated as confirmed - this confirmation step is for the parties' mutual record-keeping and does not make EventsRUs a party to the payment, a payment processor, or an escrow or guarantor of funds.</p>
+									<p class="text-muted">Vendor subscription fees for using EventsRUs itself (if applicable to a Vendor's plan) are billed separately through our payment processor, PayPal, and are governed by PayPal's own terms in addition to these Terms.</p>
 
-									<h6 class="fw-semibold mt-4">5. Changes to these terms</h6>
-									<p class="text-muted mb-0">We may update these terms from time to time. Continued use of EventsRUs after an update constitutes acceptance of the revised terms.</p>
+									<h6 class="fw-semibold mt-4">5. Vendor responsibilities</h6>
+									<p class="text-muted">Vendors are solely responsible for the accuracy of the business information, pricing, packages, availability, and payment methods they post, and for delivering the services they agree to provide. Vendor-uploaded payment methods and identity/verification documents are held for review and only shown publicly (or marked Verified) once reviewed - that review indicates the submission was checked, not that EventsRUs guarantees, endorses, or is responsible for the Vendor's business, the destination account behind a posted payment method, or the quality of services rendered.</p>
+
+									<h6 class="fw-semibold mt-4">6. Planner responsibilities</h6>
+									<p class="text-muted">Planners are responsible for the accuracy of the event details and payment proof they submit, and for paying Vendors directly according to whatever was agreed between them. Submitting a payment screenshot is a representation to the Vendor that the payment was actually made - misrepresenting payment is a serious misuse of the Platform.</p>
+
+									<h6 class="fw-semibold mt-4">7. Reviews</h6>
+									<p class="text-muted">A Planner may leave a rating and review for a Vendor once they've had a completed booking together. Reviews must reflect a genuine experience with that Vendor - fabricated, incentivized, or retaliatory reviews are prohibited. EventsRUs may hide a review that violates this section, but reviewing content in general is not pre-moderated before it's published.</p>
+
+									<h6 class="fw-semibold mt-4">8. No guarantee of transactions</h6>
+									<p class="text-muted">EventsRUs does not guarantee that any quotation, booking, payment, or agreement between a Planner and a Vendor will be honored by either party, or that a Vendor's services will meet a Planner's expectations. Planners and Vendors are encouraged to verify each other's details independently and to communicate clearly before exchanging any payment or making firm commitments.</p>
+
+									<h6 class="fw-semibold mt-4">9. Prohibited conduct</h6>
+									<p class="text-muted">You agree not to: impersonate another person or business; post false, misleading, or fraudulent listings, quotations, payment proof, or reviews; use the Platform to solicit or complete transactions unrelated to event planning; upload content you don't have the right to share, or that is unlawful, obscene, or infringing; attempt to circumvent the Platform's security, verification, or payment-confirmation features; or use automated means to scrape or access the Platform outside normal use.</p>
+
+									<h6 class="fw-semibold mt-4">10. Content you submit</h6>
+									<p class="text-muted">You keep ownership of the content you upload (business listings, package photos, quotation PDFs, messages, reviews, and similar). By submitting it, you grant EventsRUs a license to host, store, reproduce, and display that content as needed to operate the Platform - for example, showing your storefront to Planners, or a quotation PDF to the Planner it was sent to.</p>
+
+									<h6 class="fw-semibold mt-4">11. Disclaimers and limitation of liability</h6>
+									<p class="text-muted">The Platform is provided "as is" without warranties of any kind, to the fullest extent the law allows. EventsRUs is not liable for any dispute, loss, or damage arising from a transaction, agreement, or interaction between a Planner and a Vendor, or from a Vendor's failure to deliver services or a Planner's failure to pay. To the fullest extent permitted by law, EventsRUs' total liability for any claim relating to the Platform is limited to the amount (if any) you paid us directly in the twelve months before the claim arose.</p>
+
+									<h6 class="fw-semibold mt-4">12. Suspension and termination</h6>
+									<p class="text-muted">We may suspend or terminate an account that violates these Terms, engages in fraud, or otherwise misuses the Platform. You may stop using the Platform and request account deletion at any time - see our <a th:href="@{/privacy}">Privacy Policy</a> for how to do that.</p>
+
+									<h6 class="fw-semibold mt-4">13. Governing law</h6>
+									<p class="text-muted">These Terms are governed by the laws of the Republic of the Philippines. Any dispute arising from these Terms or your use of the Platform will be subject to the exclusive jurisdiction of the proper courts of Quezon City, Philippines.</p>
+
+									<h6 class="fw-semibold mt-4">14. Changes to these terms</h6>
+									<p class="text-muted">We may update these Terms from time to time; the "Last updated" date above will reflect the most recent revision. Continued use of EventsRUs after an update constitutes acceptance of the revised Terms.</p>
+
+									<h6 class="fw-semibold mt-4">15. Contact us</h6>
+									<p class="text-muted mb-0">Questions about these Terms can be sent to <a href="mailto:support@eventsrus.app">support@eventsrus.app</a>, or by mail to 917B Grass Residences Tower 1, Nueva Vizcaya St., Quezon City, Philippines 1104.</p>
 
 								</div>
 							</div>
@@ -90,11 +119,7 @@
 
 
 				<!-- Footer -->
-				<div class="navbar navbar-sm navbar-footer border-top">
-					<div class="container-fluid">
-						<span>&copy; 2026 EventsRUs</span>
-					</div>
-				</div>
+				<div th:replace="~{fragments/legal-footer :: legalFooter}"></div>
 				<!-- /footer -->
 
 			</div>

@@ -12,48 +12,171 @@
 
 	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
 
-	<!-- The two role choices, shared by the static page below and the pop-up
-	     modal - big icon-first "pick a card" cards instead of plain buttons,
-	     colored to match the brand (blue = planner, the logo's own orange =
-	     vendor) so the choice itself feels like part of the brand, not a
-	     generic form control. -->
+	<!--/* monday.com / cal.com direction: light, airy hero with a real
+	     "app preview" card (not a photo) as the visual, small trust-icon
+	     line, 3-step how-it-works cards, alternating feature rows using the
+	     actual downloaded photos as supporting imagery (not the hero),
+	     a compact feature-tile grid, one dark full-bleed band for contrast,
+	     and a clean multi-column footer with only real destinations - no
+	     fabricated customer logos or testimonials. All layout here is plain
+	     flow (flex/grid) on purpose, no position:absolute height tricks -
+	     the previous version broke exactly there. */-->
 	<style>
-		.role-cards {
-			display: flex;
-			gap: 1.25rem;
-			flex-wrap: wrap;
-			justify-content: center;
+		:root {
+			--ink: #14162b;
+			--muted: #5b6472;
+			--line: #e7eaf1;
+			--tint: #f6f8fc;
+			--blue: #0c83ff;
+			--orange: #f8512d;
+			--green: #00c875;
+			--yellow: #e7a600;
+			--purple: #a25ddc;
 		}
+		/* all.min.css is the dashboard app-shell's stylesheet (borrowed here
+		     only for its buttons/badges/icons) - it sets html/body to
+		     height:100%+overflow:hidden+display:flex, since the real
+		     dashboard scrolls internally inside .content-wrapper instead.
+		     This is a plain scrolling marketing page, not that shell, so
+		     undo it here - without this the whole page freezes after more
+		     than one viewport's worth of content. No !important: same
+		     specificity as the theme's own rule, so this plain override
+		     already wins on source order alone (this <style> loads after
+		     that stylesheet) - and staying non-!important means it still
+		     loses to Bootstrap's own inline overflow:hidden while the
+		     role-picker modal is open, so background-scroll-lock there
+		     keeps working exactly as it should. */
+		html, body { height: auto; overflow: visible; display: block; }
+		body { background: #fff; font-family: "Inter", system-ui, sans-serif; color: var(--ink); }
+		h1, h2, h3 { letter-spacing: -.02em; text-wrap: balance; font-weight: 800; }
+		.text-muted-2 { color: var(--muted); }
+		.pill-btn { border-radius: 100px; font-weight: 700; padding: .8rem 1.9rem; white-space: nowrap; }
+		.section { padding: 5.5rem 1.5rem; }
+		.section--tint { background: var(--tint); }
+		.eyebrow {
+			display: inline-block; text-transform: uppercase; letter-spacing: .08em;
+			font-size: .72rem; font-weight: 800; border-radius: 100px; padding: .35rem .9rem;
+		}
+
+		/* Header */
+		.landing-header {
+			position: fixed; top: 0; left: 0; right: 0; z-index: 1030;
+			background: #000;
+			padding: .9rem 0;
+		}
+		.landing-header .brand-mark { width: 28px; height: 28px; font-size: .85rem; }
+		.landing-header .brand-name { color: #fff; }
+		.landing-header .nav-link-item { color: rgba(255,255,255,.85); }
+		.landing-header .nav-link-item:hover { color: #fff; }
+		/* Below ~420px, "EventsRUs" + the pill button no longer both fit on
+		     one line (neither shrinks below its own content width) - the logo
+		     mark alone still reads as the brand, so drop the text there. */
+		@media (max-width: 420px) {
+			.landing-header .brand-name { display: none; }
+			.landing-header .pill-btn { padding: .6rem 1.25rem; font-size: .85rem; }
+		}
+
+		/* Hero */
+		.hero { padding: 9.5rem 1.5rem 4rem; background: linear-gradient(180deg, var(--tint), #fff 65%); }
+		.hero h1 { font-size: clamp(2rem, 4vw, 2.9rem); line-height: 1.15; }
+		.hero p.lead { color: var(--muted); font-size: 1.1rem; max-width: 480px; }
+		.hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1.75rem; }
+		.trust-line { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 2.25rem; font-size: .85rem; color: var(--muted); font-weight: 600; }
+		.trust-line span { display: inline-flex; align-items: center; gap: .4rem; }
+		.trust-line i { color: var(--green); }
+
+		/* "App preview" card - the hero's real visual, plain flow, no
+		     absolute positioning at all so it can never collapse its parent. */
+		.preview-card {
+			background: #fff; border: 1px solid var(--line); border-radius: 20px;
+			box-shadow: 0 30px 60px -20px rgba(20,22,43,.18);
+			padding: 1.25rem; max-width: 460px; margin-left: auto;
+		}
+		.preview-card__row {
+			display: flex; align-items: center; gap: .9rem;
+			padding: .8rem .5rem; border-radius: 12px;
+		}
+		.preview-card__row + .preview-card__row { border-top: 1px solid var(--line); }
+		.preview-card__avatar {
+			width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+			display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff;
+		}
+		.preview-card__title { font-weight: 700; font-size: .92rem; }
+		.preview-card__sub { font-size: .78rem; color: var(--muted); }
+		.preview-card__amount { font-weight: 800; font-size: .95rem; margin-left: auto; text-align: right; }
+		.preview-card__badge { font-size: .68rem; padding: .2rem .55rem; }
+		.preview-float {
+			background: #fff; border: 1px solid var(--line); border-radius: 14px;
+			box-shadow: 0 16px 30px -12px rgba(20,22,43,.2);
+			padding: .7rem 1rem; display: flex; align-items: center; gap: .6rem;
+			font-size: .82rem; font-weight: 700; margin-top: -1.5rem; margin-left: 1.5rem;
+			position: relative; z-index: 1; width: fit-content;
+		}
+
+		/* 3-step how it works */
+		.step-card {
+			background: #fff; border: 1px solid var(--line); border-radius: 18px;
+			padding: 1.75rem; height: 100%;
+		}
+		.step-num {
+			display: inline-flex; align-items: center; justify-content: center;
+			width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: #fff;
+			font-weight: 800; font-size: .85rem; margin-bottom: 1rem;
+		}
+
+		/* Feature rows (planner / vendor) */
+		.feature-list { list-style: none; padding: 0; margin: 1.5rem 0 2rem; }
+		.feature-list li { display: flex; align-items: flex-start; gap: .9rem; margin-bottom: 1.1rem; }
+		.feature-list li p { margin: 0; color: var(--muted); font-size: .93rem; }
+		.feature-list li strong { display: block; font-size: 1rem; margin-bottom: .15rem; }
+		.icon-badge {
+			width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+			display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff;
+		}
+		.feature-photo { border-radius: 20px; width: 100%; height: 320px; object-fit: cover; box-shadow: 0 20px 45px -15px rgba(20,20,43,.25); }
+
+		/* Compact feature-tile grid */
+		.tile {
+			background: #fff; border: 1px solid var(--line); border-radius: 16px;
+			padding: 1.25rem; text-align: center; height: 100%;
+		}
+		.tile .icon-badge { margin: 0 auto .75rem; }
+		.tile div.label { font-weight: 700; font-size: .85rem; }
+
+		/* Dark band */
+		.dark-band { background: var(--ink); color: #fff; padding: 5rem 1.5rem; }
+		.dark-band .text-muted-2 { color: rgba(255,255,255,.6); }
+		.dark-item i { font-size: 1.4rem; color: #fff; margin-bottom: .75rem; display: block; }
+
+		/* Final CTA */
+		.final-cta {
+			background: linear-gradient(135deg, var(--blue), #0959b0);
+			color: #fff; text-align: center; padding: 4.5rem 1.5rem;
+			border-radius: 28px; margin: 0 1.5rem;
+		}
+
+		/* Footer */
+		.landing-footer { background: var(--tint); padding: 3.5rem 1.5rem 2rem; }
+		.landing-footer h6 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 800; }
+		.landing-footer a { color: var(--ink); text-decoration: none; font-size: .9rem; }
+		.landing-footer a:hover { color: var(--blue); }
+
+		/* Role-picker cards - shared by the modal only */
+		.role-cards { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
 		.role-card {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			text-align: center;
-			width: 240px;
-			padding: 2rem 1.5rem;
-			border: 2px solid #e9ecef;
-			border-radius: 20px;
-			text-decoration: none;
-			background: #fff;
+			display: flex; flex-direction: column; align-items: center; text-align: center;
+			width: 240px; padding: 2rem 1.5rem; border: 2px solid #e9ecef; border-radius: 20px;
+			text-decoration: none; background: #fff;
 			transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 		}
 		.role-card:hover, .role-card:focus-visible {
-			transform: translateY(-6px);
-			box-shadow: 0 16px 32px rgba(20, 20, 43, .12);
-			text-decoration: none;
+			transform: translateY(-6px); box-shadow: 0 16px 32px rgba(20, 20, 43, .12); text-decoration: none;
 		}
 		.role-card--planner:hover { border-color: #0c83ff; }
 		.role-card--vendor:hover { border-color: #f8512d; }
 		.role-card__icon {
-			width: 84px;
-			height: 84px;
-			border-radius: 50%;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			font-size: 40px;
-			margin-bottom: 1.1rem;
-			transition: transform .25s ease;
+			width: 84px; height: 84px; border-radius: 50%; display: flex; align-items: center;
+			justify-content: center; font-size: 40px; margin-bottom: 1.1rem; transition: transform .25s ease;
 		}
 		.role-card:hover .role-card__icon { transform: scale(1.1) rotate(-6deg); }
 		.role-card--planner .role-card__icon { background: rgba(12, 131, 255, .12); color: #0c83ff; }
@@ -63,36 +186,343 @@
 	</style>
 </head>
 
-<body class="bg-body">
+<body>
 
-	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3 text-center">
-
-		<!-- logo.svg carries its own solid white backdrop, so it needs a
-		     deliberate rounded/shadowed card here on this gray page - the
-		     copy inside the modal below doesn't need this, it's already on
-		     the modal's own white surface. -->
-		<span class="d-inline-block bg-white rounded-4 shadow-sm p-3 mb-3">
-			<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:280px;max-width:100%;height:auto;display:block;">
-		</span>
-		<p class="text-muted mb-4">Plan an event, or grow your business as a vendor.</p>
-
-		<div class="role-cards">
-			<a th:href="@{/planner/}" class="role-card role-card--planner">
-				<span class="role-card__icon"><i class="ph-confetti"></i></span>
-				<span class="role-card__title">I'm Planning an Event</span>
-				<span class="role-card__subtitle">Find and book trusted vendors for your celebration</span>
-			</a>
-			<a th:href="@{/vendor/}" class="role-card role-card--vendor">
-				<span class="role-card__icon"><i class="ph-storefront"></i></span>
-				<span class="role-card__title">I'm a Vendor</span>
-				<span class="role-card__subtitle">Grow your business and get more bookings</span>
-			</a>
+	<!-- Header - always visible. "Get Started" reopens the same role-picker
+	     modal shown on arrival, so closing it is never a dead end. -->
+	<header class="landing-header">
+		<div class="container d-flex align-items-center justify-content-between">
+			<span class="d-inline-flex align-items-center text-decoration-none">
+				<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold brand-mark text-white">E</span>
+				<span class="fw-bold fs-lg ms-2 brand-name">EventsRUs</span>
+			</span>
+			<div class="d-none d-md-flex align-items-center gap-4">
+				<a href="#how-it-works" class="nav-link-item text-decoration-none fw-semibold fs-sm">How it works</a>
+				<a href="#for-planners" class="nav-link-item text-decoration-none fw-semibold fs-sm">For Planners</a>
+				<a href="#for-vendors" class="nav-link-item text-decoration-none fw-semibold fs-sm">For Vendors</a>
+				<a href="#contact" class="nav-link-item text-decoration-none fw-semibold fs-sm">Contact Us</a>
+			</div>
+			<button type="button" class="btn btn-primary pill-btn" data-bs-toggle="modal" data-bs-target="#rolePickerModal">
+				Get Started
+			</button>
 		</div>
+	</header>
 
+	<!-- Hero -->
+	<section class="hero">
+		<div class="container">
+			<div class="row align-items-center g-5">
+				<div class="col-lg-6">
+					<span class="eyebrow" style="background:rgba(12,131,255,.1);color:var(--blue);">Built to help Filipinos plan their memorable events</span>
+					<h1 class="mt-3 mb-3">Plan your event with confidence.</h1>
+					<p class="lead">Whether it's a wedding, a debut, or your child's birthday - EventsRUs matches you with trusted, verified vendors near you, so you can plan the big day without the guesswork or the chasing.</p>
+					<div class="hero-ctas">
+						<a th:href="@{/planner/}" class="btn btn-primary pill-btn">
+							Start Planning - It's Free
+						</a>
+						<a href="#how-it-works" class="btn btn-outline-secondary pill-btn">See how it works</a>
+					</div>
+					<div class="trust-line">
+						<span><i class="ph-seal-check"></i> Verified vendors</span>
+						<span><i class="ph-lock-key"></i> Payment confirmation both sides</span>
+						<span><i class="ph-star"></i> Real reviews</span>
+					</div>
+				</div>
+				<div class="col-lg-6">
+					<!-- A real-shaped preview of a planner's own event view, built
+					     with the app's own badge/card styling - not a stock photo,
+					     an honest stand-in for "here's what you'll actually use"
+					     from the planner's side: their vendor matches and quotes
+					     for one event, not a vendor's own business pipeline. -->
+					<div class="preview-card">
+						<div class="d-flex align-items-center justify-content-between mb-2 px-2">
+							<span class="fw-bold fs-sm">Ian's Wedding &middot; Vendor Matches</span>
+							<span class="badge bg-primary rounded-pill">3 found</span>
+						</div>
+						<div class="preview-card__row">
+							<span class="preview-card__avatar" style="background:var(--blue);"><i class="ph-flower-lotus"></i></span>
+							<div>
+								<div class="preview-card__title">Rubie Joy Floral Services</div>
+								<div class="preview-card__sub">Floral Services &middot; Cavite</div>
+							</div>
+							<div class="preview-card__amount">
+								<span class="badge bg-success preview-card__badge mb-1 d-block">VERIFIED</span>
+								&#8369;35,000
+							</div>
+						</div>
+						<div class="preview-card__row">
+							<span class="preview-card__avatar" style="background:var(--orange);"><i class="ph-camera"></i></span>
+							<div>
+								<div class="preview-card__title">Fiesta Feast Catering</div>
+								<div class="preview-card__sub">Catering &middot; Laguna</div>
+							</div>
+							<div class="preview-card__amount">
+								<span class="badge bg-info preview-card__badge mb-1 d-block">QUOTE SENT</span>
+								&#8369;18,500
+							</div>
+						</div>
+						<div class="preview-card__row">
+							<span class="preview-card__avatar" style="background:var(--purple);"><i class="ph-confetti"></i></span>
+							<div>
+								<div class="preview-card__title">Sunset Events Co.</div>
+								<div class="preview-card__sub">Event Styling &middot; Batangas</div>
+							</div>
+							<div class="preview-card__amount">
+								<span class="badge bg-warning preview-card__badge mb-1 d-block">TOP VENDOR</span>
+								&mdash;
+							</div>
+						</div>
+					</div>
+					<div class="preview-float">
+						<i class="ph-check-circle text-success"></i> Payment confirmed by vendor
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- How it works -->
+	<section class="section" id="how-it-works">
+		<div class="container">
+			<div class="text-center mb-5">
+				<span class="eyebrow" style="background:var(--tint);color:var(--muted);">How it works for planners</span>
+				<h2 class="mt-3 mb-0">From first idea to booked and paid</h2>
+			</div>
+			<div class="row g-4">
+				<div class="col-md-4">
+					<div class="step-card">
+						<span class="step-num">1</span>
+						<h3 class="fs-5 fw-bold mb-2">Tell us about your event</h3>
+						<p class="text-muted-2 fs-sm mb-0">Wedding, debut, birthday - describe it once and get matched with the right vendors near you, instantly.</p>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="step-card">
+						<span class="step-num">2</span>
+						<h3 class="fs-5 fw-bold mb-2">Request, negotiate, and quote</h3>
+						<p class="text-muted-2 fs-sm mb-0">Ask for a quote, request changes, get a revised one - every version stays on record, nothing gets lost.</p>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="step-card">
+						<span class="step-num">3</span>
+						<h3 class="fs-5 fw-bold mb-2">Book and pay with confidence</h3>
+						<p class="text-muted-2 fs-sm mb-0">Accept the quote, submit proof of payment, and the vendor confirms and invoices before it's ever final.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- For Planners -->
+	<section class="section section--tint" id="for-planners">
+		<div class="container">
+			<div class="row align-items-center g-5">
+				<div class="col-lg-6">
+					<span class="eyebrow" style="background:rgba(12,131,255,.12);color:var(--blue);">For Planners</span>
+					<h2 class="mt-3 mb-0">Everything for your event, in one place.</h2>
+					<ul class="feature-list">
+						<li>
+							<span class="icon-badge" style="background:var(--blue);"><i class="ph-magic-wand"></i></span>
+							<p><strong>Smart vendor matches</strong>The moment you create your event, we recommend the right suppliers for it.</p>
+						</li>
+						<li>
+							<span class="icon-badge" style="background:var(--blue);"><i class="ph-chat-circle-text"></i></span>
+							<p><strong>Real negotiation</strong>Ask for changes, get a revised quote - every version stays on record.</p>
+						</li>
+						<li>
+							<span class="icon-badge" style="background:var(--blue);"><i class="ph-shield-check"></i></span>
+							<p><strong>Pay with confidence</strong>The vendor confirms and invoices before your booking is ever final.</p>
+						</li>
+					</ul>
+					<a th:href="@{/planner/}" class="btn btn-primary pill-btn">I'm Planning an Event</a>
+				</div>
+				<div class="col-lg-6">
+					<img th:src="@{/assets/images/wedding.jpg}" alt="Planner celebrating a wedding" class="feature-photo">
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- For Vendors -->
+	<section class="section" id="for-vendors">
+		<div class="container">
+			<div class="row align-items-center g-5">
+				<div class="col-lg-6 order-lg-2">
+					<span class="eyebrow" style="background:rgba(248,81,45,.12);color:var(--orange);">For Vendors</span>
+					<h2 class="mt-3 mb-0">More leads. More bookings. Less busywork.</h2>
+					<ul class="feature-list">
+						<li>
+							<span class="icon-badge" style="background:var(--orange);"><i class="ph-magnifying-glass"></i></span>
+							<p><strong>Get discovered</strong>Planners actively searching for what you offer get matched to your storefront.</p>
+						</li>
+						<li>
+							<span class="icon-badge" style="background:var(--orange);"><i class="ph-file-text"></i></span>
+							<p><strong>Look professional</strong>Send versioned quotes instead of chasing chat threads for your next client.</p>
+						</li>
+						<li>
+							<span class="icon-badge" style="background:var(--orange);"><i class="ph-chart-line-up"></i></span>
+							<p><strong>Run your business from one dashboard</strong>Packages, bookings, leads, and messages, all in one place.</p>
+						</li>
+					</ul>
+					<div class="d-flex flex-wrap gap-2">
+						<a th:href="@{/vendor/}" class="btn pill-btn text-white" style="background:var(--orange);">I'm a Vendor</a>
+						<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn btn-outline-secondary pill-btn">
+							<i class="ph-calendar-plus me-1"></i> Book a Demo
+						</a>
+					</div>
+				</div>
+				<div class="col-lg-6 order-lg-1">
+					<img th:src="@{/assets/images/sales.jpg}" alt="Vendor closing a deal with a client" class="feature-photo">
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Compact feature grid -->
+	<section class="section section--tint">
+		<div class="container">
+			<div class="text-center mb-5">
+				<h2 class="mb-0">...and so much more</h2>
+			</div>
+			<div class="row g-3">
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--purple);"><i class="ph-sparkle"></i></span><div class="label">AI Events Coordinator</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--blue);"><i class="ph-clock-counter-clockwise"></i></span><div class="label">Full Quote History</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--green);"><i class="ph-bell"></i></span><div class="label">Real-time Notifications</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--yellow);"><i class="ph-star"></i></span><div class="label">Verified Reviews</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--orange);"><i class="ph-chat-circle-dots"></i></span><div class="label">Direct Messaging</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--blue);"><i class="ph-storefront"></i></span><div class="label">Vendor Storefronts</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--green);"><i class="ph-users-three"></i></span><div class="label">Referral Program</div></div>
+				</div>
+				<div class="col-6 col-md-3">
+					<div class="tile"><span class="icon-badge" style="background:var(--purple);"><i class="ph-lifebuoy"></i></span><div class="label">Real Support Team</div></div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Dark band -->
+	<section class="dark-band">
+		<div class="container">
+			<div class="row g-4 text-center">
+				<div class="col-6 col-md-3 dark-item">
+					<i class="ph-identification-card"></i>
+					<div class="fw-bold">ID-verified vendors</div>
+					<div class="text-muted-2 fs-sm">Every Verified badge means a real ID check.</div>
+				</div>
+				<div class="col-6 col-md-3 dark-item">
+					<i class="ph-arrows-left-right"></i>
+					<div class="fw-bold">Two-way confirmation</div>
+					<div class="text-muted-2 fs-sm">Payment is verified by the vendor, not just claimed.</div>
+				</div>
+				<div class="col-6 col-md-3 dark-item">
+					<i class="ph-lightning"></i>
+					<div class="fw-bold">Nothing gets missed</div>
+					<div class="text-muted-2 fs-sm">Real-time alerts for leads, quotes, and messages.</div>
+				</div>
+				<div class="col-6 col-md-3 dark-item">
+					<i class="ph-hand-coins"></i>
+					<div class="fw-bold">Free to join</div>
+					<div class="text-muted-2 fs-sm">No cost to create an account on either side.</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Contact Us -->
+	<section class="section section--tint" id="contact">
+		<div class="container">
+			<div class="text-center mb-5">
+				<span class="eyebrow" style="background:#fff;color:var(--muted);">Contact Us</span>
+				<h2 class="mt-3 mb-0">We'd love to hear from you</h2>
+			</div>
+			<div class="row g-4 justify-content-center text-center">
+				<div class="col-md-4">
+					<span class="icon-badge mx-auto" style="background:var(--blue);"><i class="ph-map-pin"></i></span>
+					<div class="fw-bold mt-3 mb-1">Address</div>
+					<p class="text-muted-2 fs-sm mb-0">917B Grass Residences Tower 1<br>Nueva Vizcaya St., Quezon City<br>Philippines 1104</p>
+				</div>
+				<div class="col-md-4">
+					<span class="icon-badge mx-auto" style="background:var(--green);"><i class="ph-phone"></i></span>
+					<div class="fw-bold mt-3 mb-1">Mobile</div>
+					<p class="text-muted-2 fs-sm mb-0"><a href="tel:+639075116813" class="text-decoration-none" style="color:inherit;">0907 511 6813</a></p>
+				</div>
+				<div class="col-md-4">
+					<span class="icon-badge mx-auto" style="background:var(--orange);"><i class="ph-envelope"></i></span>
+					<div class="fw-bold mt-3 mb-1">Email</div>
+					<p class="text-muted-2 fs-sm mb-0"><a href="mailto:support@eventsrus.app" class="text-decoration-none" style="color:inherit;">support@eventsrus.app</a></p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Final CTA -->
+	<div class="mt-5 mb-5">
+		<section class="final-cta">
+			<h2 class="mb-2">Ready to get started?</h2>
+			<p class="mb-4" style="color:rgba(255,255,255,.85);">Free to join, whether you're planning an event or growing your business.</p>
+			<button type="button" class="btn btn-light pill-btn" data-bs-toggle="modal" data-bs-target="#rolePickerModal">
+				Get Started
+			</button>
+		</section>
 	</div>
 
-	<!-- Same choice, as a pop-up shown on arrival - dismissible, since the
-	     cards above are always there behind it either way. -->
+	<!-- Footer -->
+	<footer class="landing-footer">
+		<div class="container">
+			<div class="row g-4 mb-4">
+				<div class="col-12 col-md-4">
+					<span class="d-inline-flex align-items-center mb-2">
+						<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold text-white brand-mark">E</span>
+						<span class="fw-bold ms-2">EventsRUs</span>
+					</span>
+					<p class="text-muted-2 fs-sm">Where events get planned and vendors get booked.</p>
+				</div>
+				<div class="col-6 col-md-2">
+					<h6>Planners</h6>
+					<a th:href="@{/planner/}" class="d-block mb-2">Get Started</a>
+					<a href="#for-planners" class="d-block mb-2">Why EventsRUs</a>
+				</div>
+				<div class="col-6 col-md-2">
+					<h6>Vendors</h6>
+					<a th:href="@{/vendor/}" class="d-block mb-2">Get Started</a>
+					<a href="#for-vendors" class="d-block mb-2">Why EventsRUs</a>
+				</div>
+				<div class="col-6 col-md-2">
+					<h6>Company</h6>
+					<a href="#contact" class="d-block mb-2">Contact Us</a>
+					<a th:href="@{/terms}" class="d-block mb-2">Terms &amp; Agreement</a>
+					<a th:href="@{/privacy}" class="d-block mb-2">Privacy Policy</a>
+				</div>
+				<div class="col-6 col-md-2">
+					<h6>Contact</h6>
+					<p class="text-muted-2 fs-sm mb-2">917B Grass Residences Tower 1<br>Nueva Vizcaya St., Quezon City<br>Philippines 1104</p>
+					<a href="tel:+639075116813" class="d-block mb-1">0907 511 6813</a>
+					<a href="mailto:support@eventsrus.app" class="d-block">support@eventsrus.app</a>
+				</div>
+			</div>
+			<div class="border-top pt-3" style="border-color:var(--line) !important;">
+				<p class="text-muted-2 fs-sm mb-0">&copy; 2026 EventsRUs. All rights reserved.</p>
+			</div>
+		</div>
+	</footer>
+
+	<!-- Role-picker pop-up - shown on arrival, dismissible with the landing
+	     page above always there behind it, reopened anytime via "Get
+	     Started". -->
 	<div class="modal fade" id="rolePickerModal" tabindex="-1">
 		<div class="modal-dialog modal-dialog-centered modal-lg">
 			<div class="modal-content">
@@ -120,7 +550,14 @@
 
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-			new bootstrap.Modal(document.getElementById('rolePickerModal')).show();
+			// Wait a beat before the pop-up appears, rather than greeting a
+			// brand-new visitor with it instantly - gives them a moment to
+			// see the page itself first. The modal already has Bootstrap's
+			// "fade" class, so .show() after the delay still eases in
+			// smoothly (opacity + a slight rise), not an abrupt snap-open.
+			setTimeout(function () {
+				new bootstrap.Modal(document.getElementById('rolePickerModal')).show();
+			}, 5000);
 		});
 	</script>
 

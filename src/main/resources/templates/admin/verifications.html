@@ -43,7 +43,7 @@
 						</div>
 
 						<div class="table-responsive">
-							<table class="table table-hover">
+							<table id="verificationsTable" class="table table-hover w-100">
 								<thead>
 									<tr>
 										<th>Business</th>
@@ -79,9 +79,6 @@
 											</a>
 										</td>
 									</tr>
-									<tr th:if="${#lists.isEmpty(vendors)}">
-										<td colspan="6" class="text-center text-muted py-4">No vendors have onboarded yet.</td>
-									</tr>
 								</tbody>
 							</table>
 						</div>
@@ -105,6 +102,19 @@
 
 	</div>
 	<!-- /page content -->
+
+	<!--/* DataTables (self-hosted, not a CDN - same convention as admin/planners.html
+	     and admin/vendors.html) gives client-side pagination (20 rows/page),
+	     search and sorting without any backend paging protocol. */-->
+	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			$('#verificationsTable').DataTable({ pageLength: 20 });
+		});
+	</script>
 
 </body>
 </html>

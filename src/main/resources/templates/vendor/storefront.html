@@ -112,7 +112,7 @@
 									<div class="row g-3">
 										<div class="col-6 col-md-4" th:each="img : ${profile.galleryImages()}">
 											<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${img.caption()}">
-												<img th:src="${img.imageUrl()}" alt="Gallery photo" class="rounded w-100" style="height:130px;object-fit:cover;">
+												<img th:src="${img.imageUrl()}" alt="Gallery photo" class="rounded w-100" style="height:130px;object-fit:cover;" loading="lazy">
 											</a>
 										</div>
 									</div>
@@ -155,7 +155,7 @@
 												<div class="d-flex flex-wrap gap-2 mt-2" th:if="${not #lists.isEmpty(pkg.images())}">
 													<a href="#" class="lightbox-trigger" th:each="img : ${pkg.images()}"
 														th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
-														<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded border" style="width:56px;height:56px;object-fit:cover;">
+														<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded border" style="width:56px;height:56px;object-fit:cover;" loading="lazy">
 													</a>
 												</div>
 
@@ -182,7 +182,7 @@
 																<div class="row g-3">
 																	<div class="col-6 col-md-4" th:each="img : ${pkg.images()}">
 																		<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
-																			<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded w-100" style="height:110px;object-fit:cover;">
+																			<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded w-100" style="height:110px;object-fit:cover;" loading="lazy">
 																		</a>
 																	</div>
 																</div>
@@ -307,7 +307,7 @@
 												<a href="#" class="d-block text-decoration-none lightbox-trigger"
 													th:attr="data-lightbox-src=${doc.url()},data-lightbox-caption=${doc.label() != null ? doc.label() : doc.documentType().getLabel()}">
 													<img th:src="${doc.url()}" alt="Legal document" class="img-fluid rounded border mb-2"
-														style="max-height:160px;width:100%;object-fit:cover;"
+														style="max-height:160px;width:100%;object-fit:cover;" loading="lazy"
 														onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
 													<div class="d-none align-items-center justify-content-center bg-light rounded mb-2" style="height:130px;">
 														<i class="ph-file-text ph-2x text-muted"></i>
@@ -373,7 +373,7 @@
 											<div class="border rounded p-3 text-center h-100">
 												<a href="#" class="d-block mb-2 lightbox-trigger" th:if="${method.qrImageUrl() != null}"
 													th:attr="data-lightbox-src=${method.qrImageUrl()},data-lightbox-caption=${method.label()}">
-													<img th:src="${method.qrImageUrl()}" alt="QR code" class="rounded mx-auto d-block border" style="width:90px;height:90px;object-fit:cover;">
+													<img th:src="${method.qrImageUrl()}" alt="QR code" class="rounded mx-auto d-block border" style="width:90px;height:90px;object-fit:cover;" loading="lazy">
 												</a>
 												<div class="d-flex align-items-center justify-content-center bg-light rounded mb-2 mx-auto" style="width:90px;height:90px;" th:if="${method.qrImageUrl() == null}">
 													<i class="ph-qr-code ph-2x text-muted"></i>

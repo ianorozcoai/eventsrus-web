@@ -58,12 +58,14 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -175,6 +177,14 @@ public class PlannerController {
         model.addAttribute("quotations", quotations);
         model.addAttribute("historyByQuotationId", historyByQuotationId);
         model.addAttribute("bookings", bookings);
+        // Unseen-since-last-visit badges for this event's own Quotations/
+        // Bookings tabs (see backend BadgeService) - read-only here; the
+        // tabs themselves mark seen via JS the moment the planner actually
+        // clicks one (see the shown.bs.tab wiring at the bottom of this
+        // page), since both tabs' content is already sitting in this same
+        // server-rendered page rather than a separate navigation.
+        model.addAttribute("quotationsUnseenCount", backendClient.getUnseenQuotationsCountForEvent(jwt, selected.id()));
+        model.addAttribute("bookingsUnseenCount", backendClient.getUnseenBookingsCountForEvent(jwt, selected.id()));
         model.addAttribute("conversations", conversations);
         model.addAttribute("selectedConversation", selectedConversation);
         model.addAttribute("thread", thread);
@@ -394,6 +404,8 @@ public class PlannerController {
     public String acceptQuote(
             @PathVariable Long eventId,
             @PathVariable Long quotationId,
+            @RequestParam(required = false) Integer acceptedVersion,
+            @RequestParam(required = false) String message,
             @RequestParam(required = false) MultipartFile screenshot,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
@@ -404,7 +416,7 @@ public class PlannerController {
             return "redirect:/planner/events";
         }
         try {
-            backendClient.acceptQuote(WebSession.token(session), quotationId, screenshot);
+            backendClient.acceptQuote(WebSession.token(session), quotationId, acceptedVersion, message, screenshot);
             redirectAttributes.addFlashAttribute("quotationAccepted", true);
             redirectAttributes.addFlashAttribute("bookingIncludedScreenshot", screenshot != null && !screenshot.isEmpty());
         } catch (BackendApiException e) {
@@ -438,6 +450,26 @@ public class PlannerController {
         redirectAttributes.addAttribute("eventId", eventId);
         redirectAttributes.addAttribute("tab", "quotations");
         return "redirect:/planner/events";
+    }
+
+    // Fired by JS (see planner/events.html's shown.bs.tab wiring) the moment
+    // the planner actually clicks the Quotations/Bookings tab for this
+    // event - not tied to the page's own initial load, since both tabs'
+    // content is already sitting in this same server-rendered page (see
+    // events() above) rather than a separate navigation the way it can be
+    // for the vendor's own /vendor/quotations and /vendor/bookings pages.
+    @PostMapping("/{eventId}/quotations/mark-seen")
+    @ResponseBody
+    public ResponseEntity<Void> markQuotationsTabSeen(@PathVariable Long eventId, HttpSession session) {
+        backendClient.markEventQuotationsSeen(WebSession.token(session), eventId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{eventId}/bookings/mark-seen")
+    @ResponseBody
+    public ResponseEntity<Void> markBookingsTabSeen(@PathVariable Long eventId, HttpSession session) {
+        backendClient.markEventBookingsSeen(WebSession.token(session), eventId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/{eventId}/quotations/{quotationId}/decline")

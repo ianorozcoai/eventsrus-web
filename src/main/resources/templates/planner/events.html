@@ -152,15 +152,17 @@
 								</a>
 							</li>
 							<li class="nav-item">
-								<a href="#tab-quotations" class="nav-link" th:classappend="${activeTab == 'quotations'} ? 'active'" data-bs-toggle="tab">
+								<a href="#tab-quotations" id="quotationsTabLink" class="nav-link" th:classappend="${activeTab == 'quotations'} ? 'active'" data-bs-toggle="tab" th:attr="data-event-id=${selectedEvent.id()}">
 									<i class="ph-file-text me-2"></i>
 									Quotations
+									<span class="badge bg-danger rounded-pill ms-1" id="quotationsTabBadge" th:if="${quotationsUnseenCount > 0}" th:text="${quotationsUnseenCount}">0</span>
 								</a>
 							</li>
 							<li class="nav-item">
-								<a href="#tab-bookings" class="nav-link" th:classappend="${activeTab == 'bookings'} ? 'active'" data-bs-toggle="tab">
+								<a href="#tab-bookings" id="bookingsTabLink" class="nav-link" th:classappend="${activeTab == 'bookings'} ? 'active'" data-bs-toggle="tab" th:attr="data-event-id=${selectedEvent.id()}">
 									<i class="ph-calendar-check me-2"></i>
 									Bookings
+									<span class="badge bg-danger rounded-pill ms-1" id="bookingsTabBadge" th:if="${bookingsUnseenCount > 0}" th:text="${bookingsUnseenCount}">0</span>
 								</a>
 							</li>
 						</ul>
@@ -497,7 +499,8 @@
 														<span class="fs-sm text-muted ms-1" th:text="'v' + ${quotation.version()}">v1</span>
 													</td>
 													<td>
-														<a th:if="${quotation.pdfUrl() != null}" th:href="${quotation.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
+														<a th:if="${quotation.pdfUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${quotation.pdfUrl()},data-lightbox-caption='Quote v' + ${quotation.version()} + ' - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()}">
 															<i class="ph-file-pdf me-1"></i> View
 														</a>
 														<span th:if="${quotation.pdfUrl() == null}" class="text-muted fs-sm">Not sent yet</span>
@@ -509,7 +512,16 @@
 														     rows). Each item keeps the exact same th:if visibility
 														     rule it had as a standalone button, just moved inside. */-->
 														<div class="dropdown">
-															<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+															<!--/* .table-responsive sets overflow-x:auto, which (per the
+															     CSS overflow spec) forces overflow-y to compute to auto
+															     too - so this menu's default absolute-positioned Popper
+															     was visually clipped by that ancestor's own scroll box,
+															     not just mispositioned. data-bs-boundary alone only fixes
+															     Popper's collision math, not the ancestor's real CSS
+															     clipping - popper-config's strategy:"fixed" is what
+															     actually escapes it, since a fixed-position element isn't
+															     clipped by a scrolling ancestor's overflow box. */-->
+															<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
 																<i class="ph-list"></i>
 															</button>
 															<div class="dropdown-menu dropdown-menu-end">
@@ -525,7 +537,8 @@
 																	<i class="ph-upload-simple me-2 text-primary"></i>
 																	Upload Payment Screenshot
 																</button>
-																<a th:if="${quotation.paymentScreenshotUrl() != null}" th:href="${quotation.paymentScreenshotUrl()}" target="_blank" class="dropdown-item">
+																<a th:if="${quotation.paymentScreenshotUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+																	th:attr="data-lightbox-src=${quotation.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${quotation.vendorBusinessName()}">
 																	<i class="ph-image me-2"></i>
 																	View Payment Screenshot
 																</a>
@@ -555,32 +568,73 @@
 								     (see backend QuotationStatus javadoc); no Booking record exists yet
 								     at this point - that only happens once the vendor confirms via
 								     QuotationService#acceptBooking. A payment screenshot can be attached
-								     right here, same combined UX this modal always had. -->
+								     right here, same combined UX this modal always had.
+								     A planner isn't limited to the LATEST sent version - she might still
+								     prefer an earlier offer (a lower price, different inclusions), so
+								     every QUOTE_SENT/REVISION_SENT version from this quotation's own
+								     history (already loaded for the History modal - see
+								     historyByQuotationId) is offered as a radio choice here, defaulting
+								     to the current/latest one. The chosen radio's amount/date/PDF are
+								     stashed as data-* attributes so the confirmation step below can read
+								     them without a round trip - see the accept-quote-review script at
+								     the bottom of this page. -->
 								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" th:id="'acceptQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
-									<div class="modal-dialog modal-dialog-centered">
+									<div class="modal-dialog modal-dialog-centered modal-lg">
 										<div class="modal-content">
-											<form th:action="@{/planner/events/{eventId}/quotations/{id}/accept(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/accept(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data" class="accept-quote-form">
 												<div class="modal-header">
 													<h5 class="modal-title" th:text="'Accept ' + ${quotation.vendorBusinessName()} + '\'s Quotation'">Accept Quotation</h5>
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
-													<div class="bg-light rounded p-3 mb-3">
-														<div class="fs-sm fw-semibold text-muted mb-1">Quoted amount</div>
-														<p class="mb-0">&#8369;<span th:text="${#numbers.formatDecimal(quotation.quotedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span></p>
+													<label class="form-label">Which version would you like to accept?</label>
+													<div class="border rounded p-3 mb-2"
+														th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}"
+														th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, historyEntry.toStatus().name())}">
+														<div class="form-check">
+															<input class="form-check-input accept-version-radio" type="radio" name="acceptedVersion"
+																th:id="'acceptVersion-' + ${quotation.id()} + '-' + ${historyEntry.version()}"
+																th:value="${historyEntry.version()}"
+																th:checked="${historyEntry.version() == quotation.version()}"
+																th:attr="data-amount=${historyEntry.quotedAmount()},data-target-date=${historyEntry.targetDate() != null ? #temporals.format(historyEntry.targetDate(), 'MMM dd, yyyy') : ''},data-pdf-url=${historyEntry.pdfUrl()}"
+																required>
+															<label class="form-check-label w-100" th:for="'acceptVersion-' + ${quotation.id()} + '-' + ${historyEntry.version()}">
+																<div class="d-flex justify-content-between align-items-center">
+																	<span class="fw-semibold">
+																		Version <span th:text="${historyEntry.version()}">1</span>
+																		<span class="badge bg-secondary ms-1" th:text="${historyEntry.toStatus()}">STATUS</span>
+																	</span>
+																	<span class="fw-bold">&#8369;<span th:text="${#numbers.formatDecimal(historyEntry.quotedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span></span>
+																</div>
+																<div class="fs-sm text-muted" th:if="${historyEntry.targetDate() != null}">
+																	Target date: <span th:text="${#temporals.format(historyEntry.targetDate(), 'MMM dd, yyyy')}">-</span>
+																</div>
+															</label>
+														</div>
+														<a th:if="${historyEntry.pdfUrl() != null}" href="#" class="fs-sm ms-4 lightbox-trigger"
+															th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()}">
+															<i class="ph-file-pdf me-1"></i> View this version's PDF
+														</a>
 													</div>
-													<p class="text-muted fs-sm">Accepting locks in this quote. You can pay the deposit now or come back once you're ready.</p>
+
+													<p class="text-muted fs-sm mt-3">Accepting locks in the version you choose above. You can pay the deposit now or come back once you're ready.</p>
+
+													<div class="mb-3">
+														<label class="form-label">Message to the vendor <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<textarea name="message" rows="2" class="form-control" placeholder="Anything you'd like the vendor to know..."></textarea>
+													</div>
+
 													<div class="mb-0">
 														<label class="form-label">Payment screenshot <span class="text-muted fs-sm fw-normal">(Optional - you can also upload this later)</span></label>
-														<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg">
+														<input type="file" name="screenshot" class="form-control accept-quote-screenshot-input" accept="image/png,image/jpeg">
 														<div class="fs-sm text-muted mt-1">PNG or JPEG only. Upload proof of payment now if you've already paid, so the vendor can confirm right away.</div>
 													</div>
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-													<button type="submit" class="btn btn-primary">
+													<button type="button" class="btn btn-primary accept-quote-review-btn">
 														<i class="ph-check-circle me-2"></i>
-														Accept Quote
+														Review &amp; Accept Quote
 													</button>
 												</div>
 											</form>
@@ -588,6 +642,67 @@
 									</div>
 								</div>
 								<!-- /per-quotation "Accept Quote" modals -->
+
+								<!-- Shared "confirm before accepting" modal - one instance reused by
+								     every quotation's Accept modal above (populated via JS right before
+								     showing, see the accept-quote-review script at the bottom of this
+								     page), so the planner sees exactly what she's about to lock in
+								     (amount, target date, the PDF she picked, her own message, and a
+								     preview of her payment screenshot if she attached one) before the
+								     real form submit happens. -->
+								<div class="modal fade" id="acceptQuoteConfirmModal" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<div class="modal-header">
+												<h5 class="modal-title">Confirm Accepting This Quote</h5>
+												<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+											</div>
+											<div class="modal-body">
+												<p class="text-muted fs-sm">Please review before confirming - this locks in the quote.</p>
+												<div class="bg-light rounded p-3 mb-3">
+													<div class="d-flex justify-content-between mb-2">
+														<span class="fs-sm fw-semibold text-muted">Version</span>
+														<span id="acceptQuoteConfirmVersion" class="fw-semibold">-</span>
+													</div>
+													<div class="d-flex justify-content-between mb-2">
+														<span class="fs-sm fw-semibold text-muted">Amount you're agreeing to pay</span>
+														<span id="acceptQuoteConfirmAmount" class="fw-bold">-</span>
+													</div>
+													<div class="d-flex justify-content-between mb-2">
+														<span class="fs-sm fw-semibold text-muted">Target date</span>
+														<span id="acceptQuoteConfirmDate">-</span>
+													</div>
+													<div class="mb-0">
+														<span class="fs-sm fw-semibold text-muted d-block mb-1">Quote PDF</span>
+														<a href="#" id="acceptQuoteConfirmPdfLink" class="fs-sm lightbox-trigger">
+															<i class="ph-file-pdf me-1"></i> View selected PDF
+														</a>
+														<span id="acceptQuoteConfirmNoPdf" class="fs-sm text-muted d-none">No PDF on this version.</span>
+													</div>
+												</div>
+
+												<div class="mb-3">
+													<div class="fs-sm fw-semibold text-muted mb-1">Your message to the vendor</div>
+													<p id="acceptQuoteConfirmMessage" class="mb-0 fst-italic text-muted">No message added.</p>
+												</div>
+
+												<div class="mb-0">
+													<div class="fs-sm fw-semibold text-muted mb-1">Payment screenshot</div>
+													<img id="acceptQuoteConfirmScreenshot" src="" alt="Payment screenshot preview" class="img-fluid rounded border d-none" style="max-height:180px;">
+													<p id="acceptQuoteConfirmNoScreenshot" class="text-muted fs-sm mb-0">No screenshot uploaded - you can add one later.</p>
+												</div>
+											</div>
+											<div class="modal-footer">
+												<button type="button" class="btn btn-light" id="acceptQuoteConfirmBackBtn">Back</button>
+												<button type="button" class="btn btn-primary" id="acceptQuoteConfirmSubmitBtn">
+													<i class="ph-check-circle me-2"></i>
+													Confirm &amp; Accept Quote
+												</button>
+											</div>
+										</div>
+									</div>
+								</div>
+								<!-- /shared accept-quote confirmation modal -->
 
 								<!-- Per-quotation "Upload Payment Screenshot" modals - standalone,
 								     for a planner who accepted without one and comes back once ready
@@ -612,7 +727,7 @@
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-													<button type="submit" class="btn btn-primary">
+													<button type="button" class="btn btn-primary quotation-screenshot-review-btn">
 														<i class="ph-upload-simple me-2"></i>
 														Upload
 													</button>
@@ -648,7 +763,7 @@
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-													<button type="submit" class="btn btn-outline-secondary">
+													<button type="button" class="btn btn-outline-secondary revise-quotation-review-btn">
 														<i class="ph-pencil-simple me-2"></i>
 														Send Revision Request
 													</button>
@@ -713,17 +828,46 @@
 															<span th:text="${#temporals.format(historyEntry.createdAt(), 'MMM d, yyyy h:mm a')}">Date</span>
 														</div>
 														<p class="mb-1" th:if="${historyEntry.reason() != null}" th:text="${historyEntry.reason()}">Message/reason</p>
-														<p class="mb-1 fs-sm" th:if="${historyEntry.quotedAmount() != null}">
+														<!--/* BOOKED only ever means "vendor confirmed after reviewing
+														     payment" - the amount/date were already shown in full back
+														     at QUOTE_ACCEPTED, so repeating them here just adds noise;
+														     only the confirmation message (above) and the invoice
+														     (below) are this transition's own new information. */-->
+														<p class="mb-1 fs-sm" th:if="${historyEntry.quotedAmount() != null and historyEntry.toStatus().name() != 'BOOKED'}">
 															Quoted: &#8369;<span th:text="${#numbers.formatDecimal(historyEntry.quotedAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
 														</p>
-														<p class="mb-1 fs-sm" th:if="${historyEntry.targetDate() != null}">
+														<p class="mb-1 fs-sm" th:if="${historyEntry.targetDate() != null and historyEntry.toStatus().name() != 'BOOKED'}">
 															Target date: <span th:text="${#temporals.format(historyEntry.targetDate(), 'MMM dd, yyyy')}">-</span>
 														</p>
-														<div th:if="${not #lists.isEmpty(historyEntry.packageNames())}" class="mb-1">
+														<!--/* Packages only mean something on the original ask
+														     (REQUEST_FOR_QUOTE) - a revision request only ever
+														     resubmits a target date and a message, never a new
+														     package selection (see VendorController#respondToQuotation's
+														     Respond modal, which hides this same section for the
+														     identical reason), and QUOTE_SENT/REVISION_SENT are the
+														     vendor's reply, which doesn't carry package data of its
+														     own either. Showing stale packages there would misread as
+														     "these are what's being discussed now". */-->
+														<div th:if="${not #lists.isEmpty(historyEntry.packageNames()) and not #sets.contains({'QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT','QUOTE_ACCEPTED','BOOKED'}, historyEntry.toStatus().name())}" class="mb-1">
 															<span class="badge bg-secondary me-1" th:each="packageName : ${historyEntry.packageNames()}" th:text="${packageName}">Package</span>
 														</div>
-														<a th:if="${historyEntry.pdfUrl() != null}" th:href="${historyEntry.pdfUrl()}" target="_blank" class="btn btn-light btn-sm">
-															<i class="ph-file-pdf me-1"></i> View this version's PDF
+														<!--/* One-off lightbox group per history row (see the same
+														     pattern and reasoning on vendor/quotations.html's copy of
+														     this History modal) - the lightbox only shows Prev/Next
+														     when a group has more than one member, so a group of
+														     exactly one keeps this to just this row's own file. */-->
+														<a th:if="${historyEntry.pdfUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${historyEntry.toStatus()},data-lightbox-group='history-' + ${historyEntry.id()}">
+															<i class="ph-file-pdf me-1"></i>
+															<span th:text="${historyEntry.toStatus().name() == 'QUOTE_ACCEPTED'} ? 'View Accepted Quote' : 'View this version\'s PDF'">View this version's PDF</span>
+														</a>
+														<a th:if="${historyEntry.paymentScreenshotUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${historyEntry.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()}">
+															<i class="ph-image me-1"></i> View Payment
+														</a>
+														<a th:if="${historyEntry.invoiceUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${historyEntry.invoiceUrl()},data-lightbox-caption='Invoice - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()}">
+															<i class="ph-file-text me-1"></i> View Invoice
 														</a>
 													</div>
 												</div>
@@ -804,35 +948,50 @@
 															th:text="${booking.status()}">STATUS</span>
 													</td>
 													<td class="text-end">
-														<div class="d-flex justify-content-end gap-1 flex-wrap">
-															<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
-																<i class="ph-warning-circle me-1"></i>
-																View Reason
+														<!--/* One action menu instead of a growing row of buttons -
+														     same burger-icon pattern used on vendor/bookings.html
+														     and vendor/quotations.html. Each item keeps the exact
+														     same th:if visibility rule it had as a standalone
+														     button/link, just moved inside; data-bs-boundary/
+														     popper-config keeps it from being clipped by this
+														     table's scroll container (see fragments/common.html
+														     topnavbar for the same dropdown convention). */-->
+														<div class="dropdown">
+															<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+																<i class="ph-list"></i>
 															</button>
-															<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="btn btn-light btn-sm">
-																<i class="ph-image me-1"></i>
-																View Screenshot
-															</a>
-															<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" th:href="${booking.invoiceUrl()}" target="_blank" class="btn btn-light btn-sm">
-																<i class="ph-file-text me-1"></i>
-																View Invoice
-															</a>
-															<button th:if="${#sets.contains({'AWAITING_PAYMENT','PAYMENT_REJECTED'}, booking.status().name())}" type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#uploadScreenshotModal-' + ${booking.id()}">
-																<i class="ph-upload-simple me-1"></i>
-																Upload Payment Screenshot
-															</button>
-															<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
-																<i class="ph-prohibit me-1"></i>
-																Cancel
-															</button>
-															<button th:if="${booking.canReview()}" type="button" class="btn btn-warning text-dark btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#reviewModal-' + ${booking.id()}">
-																<i class="ph-star me-1"></i>
-																Leave a Review
-															</button>
-															<button th:if="${booking.reviewId() != null}" type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" th:attr="data-bs-target='#reviewModal-' + ${booking.id()}">
-																<i class="ph-pencil-simple me-1"></i>
-																Edit Review
-															</button>
+															<div class="dropdown-menu dropdown-menu-end">
+																<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
+																	<i class="ph-warning-circle me-2"></i>
+																	View Reason
+																</button>
+																<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+																	th:attr="data-lightbox-src=${booking.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${booking.vendorBusinessName()}">
+																	<i class="ph-image me-2"></i>
+																	View Screenshot
+																</a>
+																<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+																	th:attr="data-lightbox-src=${booking.invoiceUrl()},data-lightbox-caption='Invoice - ' + ${booking.vendorBusinessName()}">
+																	<i class="ph-file-text me-2"></i>
+																	View Invoice
+																</a>
+																<button th:if="${#sets.contains({'AWAITING_PAYMENT','PAYMENT_REJECTED'}, booking.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#uploadScreenshotModal-' + ${booking.id()}">
+																	<i class="ph-upload-simple me-2"></i>
+																	Upload Payment Screenshot
+																</button>
+																<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
+																	<i class="ph-prohibit me-2"></i>
+																	Cancel
+																</button>
+																<button th:if="${booking.canReview()}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#reviewModal-' + ${booking.id()}">
+																	<i class="ph-star me-2"></i>
+																	Leave a Review
+																</button>
+																<button th:if="${booking.reviewId() != null}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#reviewModal-' + ${booking.id()}">
+																	<i class="ph-pencil-simple me-2"></i>
+																	Edit Review
+																</button>
+															</div>
 														</div>
 													</td>
 												</tr>
@@ -862,7 +1021,7 @@
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-													<button type="submit" class="btn btn-primary">
+													<button type="button" class="btn btn-primary booking-screenshot-review-btn">
 														<i class="ph-upload-simple me-2"></i>
 														Upload
 													</button>
@@ -890,7 +1049,7 @@
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Never mind</button>
-													<button type="submit" class="btn btn-outline-danger">
+													<button type="button" class="btn btn-outline-danger cancel-booking-review-btn">
 														<i class="ph-prohibit me-2"></i>
 														Cancel Booking
 													</button>
@@ -916,7 +1075,8 @@
 												<div th:if="${booking.paymentScreenshotUrl() != null}">
 													<label class="form-label">Screenshot you submitted</label>
 													<div>
-														<a th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="btn btn-light btn-sm">
+														<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${booking.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${booking.vendorBusinessName()}">
 															<i class="ph-image me-1"></i>
 															View attached screenshot
 														</a>
@@ -966,8 +1126,9 @@
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-													<button type="submit" class="btn btn-primary"
-														th:text="${booking.reviewId() != null} ? 'Update Review' : 'Post Review'">Post Review</button>
+													<button type="button" class="btn btn-primary review-review-btn"
+														th:text="${booking.reviewId() != null} ? 'Update Review' : 'Post Review'"
+														th:attr="data-confirm-label=${booking.reviewId() != null ? 'Update Review' : 'Post Review'}">Post Review</button>
 												</div>
 											</form>
 										</div>
@@ -1373,6 +1534,226 @@
 		});
 	</script>
 	<!-- /review modal star picker -->
+
+	<!-- Accept Quote: review-before-submit - clicking "Review & Accept Quote"
+	     doesn't submit anything yet; it reads the chosen version's stashed
+	     data-* attributes (see the radio inputs above) plus the message
+	     textarea and any selected screenshot file, populates the shared
+	     acceptQuoteConfirmModal with all of it (including a client-side
+	     FileReader preview of the screenshot, since it hasn't been uploaded
+	     anywhere yet), and only does the REAL form submit once she clicks
+	     "Confirm & Accept Quote" there. "Back" returns to the original
+	     modal without losing what she'd filled in (it's the same <form>
+	     the whole time, never cloned or recreated). -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var confirmModalEl = document.getElementById('acceptQuoteConfirmModal');
+			if (!confirmModalEl) {
+				return;
+			}
+			var confirmModal = new bootstrap.Modal(confirmModalEl);
+			var activeForm = null;
+			var activeAcceptModal = null;
+
+			function peso(amount) {
+				var n = Number(amount);
+				return isNaN(n) ? '-' : '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+			}
+
+			document.querySelectorAll('.accept-quote-review-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					var form = btn.closest('form');
+					var selected = form.querySelector('.accept-version-radio:checked');
+					if (!selected) {
+						return;
+					}
+					activeForm = form;
+					var acceptModalEl = btn.closest('.modal');
+					activeAcceptModal = bootstrap.Modal.getOrCreateInstance(acceptModalEl);
+
+					document.getElementById('acceptQuoteConfirmVersion').textContent = 'v' + selected.value;
+					document.getElementById('acceptQuoteConfirmAmount').textContent = peso(selected.getAttribute('data-amount'));
+					document.getElementById('acceptQuoteConfirmDate').textContent = selected.getAttribute('data-target-date') || 'Not specified';
+
+					var pdfUrl = selected.getAttribute('data-pdf-url');
+					var pdfLink = document.getElementById('acceptQuoteConfirmPdfLink');
+					var noPdf = document.getElementById('acceptQuoteConfirmNoPdf');
+					if (pdfUrl) {
+						pdfLink.setAttribute('data-lightbox-src', pdfUrl);
+						pdfLink.setAttribute('data-lightbox-caption', 'v' + selected.value);
+						pdfLink.classList.remove('d-none');
+						noPdf.classList.add('d-none');
+					} else {
+						pdfLink.classList.add('d-none');
+						noPdf.classList.remove('d-none');
+					}
+
+					var message = form.querySelector('textarea[name="message"]').value.trim();
+					document.getElementById('acceptQuoteConfirmMessage').textContent = message || 'No message added.';
+
+					var screenshotInput = form.querySelector('.accept-quote-screenshot-input');
+					var screenshotImg = document.getElementById('acceptQuoteConfirmScreenshot');
+					var noScreenshot = document.getElementById('acceptQuoteConfirmNoScreenshot');
+					if (screenshotInput && screenshotInput.files && screenshotInput.files[0]) {
+						var reader = new FileReader();
+						reader.onload = function (e) {
+							screenshotImg.src = e.target.result;
+							screenshotImg.classList.remove('d-none');
+							noScreenshot.classList.add('d-none');
+						};
+						reader.readAsDataURL(screenshotInput.files[0]);
+					} else {
+						screenshotImg.classList.add('d-none');
+						screenshotImg.src = '';
+						noScreenshot.classList.remove('d-none');
+					}
+
+					activeAcceptModal.hide();
+					confirmModal.show();
+				});
+			});
+
+			document.getElementById('acceptQuoteConfirmBackBtn').addEventListener('click', function () {
+				confirmModal.hide();
+				if (activeAcceptModal) {
+					activeAcceptModal.show();
+				}
+			});
+
+			document.getElementById('acceptQuoteConfirmSubmitBtn').addEventListener('click', function () {
+				if (!activeForm) {
+					return;
+				}
+				window.showPageSpinner('Accepting quote…');
+				HTMLFormElement.prototype.submit.call(activeForm);
+			});
+		});
+	</script>
+	<!-- /accept quote review & confirm -->
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
+	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
+	<div th:replace="~{fragments/common :: genericConfirmModal}"></div>
+
+	<!-- Review-before-submit for the remaining planner-side quotation/booking
+	     actions that don't already have their own dedicated confirm modal
+	     (Accept Quote above has its own, richer one). -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			window.armConfirmSubmitButtons('.quotation-screenshot-review-btn', function (btn, form) {
+				var file = form.querySelector('[name="screenshot"]').files[0];
+				var rows = [];
+				if (file) {
+					rows.push({ label: 'Screenshot', file: file });
+				}
+				return {
+					title: 'Upload Payment Screenshot',
+					intro: 'The vendor will confirm once they’ve verified it.',
+					rows: rows,
+					confirmLabel: 'Upload',
+					confirmClass: 'btn-primary',
+					confirmIcon: 'ph-upload-simple'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.revise-quotation-review-btn', function (btn, form) {
+				var rows = [];
+				var dateInput = form.querySelector('[name="targetDate"]');
+				if (dateInput && dateInput.value) {
+					var parsed = new Date(dateInput.value + 'T00:00:00');
+					rows.push({ label: 'Target date', value: parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) });
+				}
+				rows.push({ label: 'What would you like changed?', value: form.querySelector('[name="message"]').value.trim() });
+				return {
+					title: 'Send Revision Request',
+					intro: 'This sends the quotation back to the vendor for an updated quote.',
+					rows: rows,
+					confirmLabel: 'Send Revision Request',
+					confirmClass: 'btn-outline-secondary',
+					confirmIcon: 'ph-pencil-simple'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.booking-screenshot-review-btn', function (btn, form) {
+				var file = form.querySelector('[name="screenshot"]').files[0];
+				var rows = [];
+				if (file) {
+					rows.push({ label: 'Screenshot', file: file });
+				}
+				return {
+					title: 'Upload Payment Screenshot',
+					intro: 'The vendor will confirm once they’ve verified it.',
+					rows: rows,
+					confirmLabel: 'Upload',
+					confirmClass: 'btn-primary',
+					confirmIcon: 'ph-upload-simple'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.cancel-booking-review-btn', function (btn, form) {
+				return {
+					title: 'Cancel Booking',
+					intro: 'This marks the booking as CANCELLED and notifies the vendor. This can’t be undone.',
+					rows: [{ label: 'Reason', value: form.querySelector('[name="reason"]').value.trim() }],
+					confirmLabel: 'Cancel Booking',
+					confirmClass: 'btn-outline-danger',
+					confirmIcon: 'ph-prohibit'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.review-review-btn', function (btn, form) {
+				var ratingInput = form.querySelector('.review-rating-input');
+				var hint = form.querySelector('.review-rating-hint');
+				if (!ratingInput.value) {
+					hint.classList.remove('d-none');
+					return null;
+				}
+				hint.classList.add('d-none');
+				return {
+					title: 'Post Review',
+					rows: [
+						{ label: 'Rating', value: ratingInput.value + ' / 5' },
+						{ label: 'Your review', value: form.querySelector('[name="comment"]').value.trim() }
+					],
+					confirmLabel: btn.getAttribute('data-confirm-label') || 'Post Review',
+					confirmClass: 'btn-primary',
+					confirmIcon: 'ph-star'
+				};
+			});
+		});
+	</script>
+
+	<!-- Quotations/Bookings tab "unseen" badges - marks seen (and clears
+	     the badge immediately, no reload) the moment the planner actually
+	     clicks one of these tabs, or on load if it's already the active tab
+	     (e.g. a redirect back here with tab=quotations after an action).
+	     See PlannerController#markQuotationsTabSeen/markBookingsTabSeen and
+	     backend BadgeService. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			function wireTabSeen(linkId, badgeId, markSeenPath) {
+				var link = document.getElementById(linkId);
+				if (!link) {
+					return;
+				}
+				var eventId = link.getAttribute('data-event-id');
+				function markSeen() {
+					var badge = document.getElementById(badgeId);
+					if (badge) {
+						badge.remove();
+					}
+					fetch('/planner/events/' + eventId + '/' + markSeenPath + '/mark-seen', { method: 'POST' }).catch(function () {});
+				}
+				link.addEventListener('shown.bs.tab', markSeen);
+				if (link.classList.contains('active')) {
+					markSeen();
+				}
+			}
+
+			wireTabSeen('quotationsTabLink', 'quotationsTabBadge', 'quotations');
+			wireTabSeen('bookingsTabLink', 'bookingsTabBadge', 'bookings');
+		});
+	</script>
 
 </body>
 </html>

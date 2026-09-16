@@ -65,6 +65,19 @@
 										<button type="button" class="btn btn-flat-secondary btn-icon btn-sm rounded-pill ms-auto" data-bs-toggle="modal" th:attr="data-bs-target='#editPackageModal-' + ${pkg.id()}" title="Edit package">
 											<i class="ph-pencil-simple"></i>
 										</button>
+										<!--/* Discontinue/Reactivate - a soft hide, not a delete: see
+										     backend VendorPackageService#setActive and
+										     VendorDirectoryService's isActive() storefront filter. The
+										     package, its photos, and its booking history all stay intact;
+										     only its storefront visibility flips. Confirmed first via the
+										     shared confirmActionModal (same pattern as the photo/document/
+										     payment-method delete buttons on this and other pages). */-->
+										<button type="button" class="btn btn-flat-secondary btn-icon btn-sm rounded-pill ms-1 package-active-toggle-btn"
+											th:classappend="${pkg.active()} ? 'text-danger' : 'text-success'"
+											th:attr="data-package-id=${pkg.id()},data-active=${pkg.active()},data-package-name=${pkg.name()}"
+											th:title="${pkg.active()} ? 'Discontinue package' : 'Reactivate package'">
+											<i th:classappend="${pkg.active()} ? 'ph-x' : 'ph-arrow-counter-clockwise'"></i>
+										</button>
 									</div>
 									<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
 									<p class="text-muted fs-sm mb-3" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
@@ -638,6 +651,53 @@
 		});
 	</script>
 	<!-- /package photo delete -->
+
+
+	<!-- Discontinue/Reactivate a package - confirm first (see fragments/common.html's
+	     confirmActionModal), then AJAX, same reasoning as the photo delete
+	     button above. Hides (or restores) the package on the storefront
+	     without deleting it - see VendorController#setPackageActive. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.package-active-toggle-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') {
+						return;
+					}
+					var packageId = btn.getAttribute('data-package-id');
+					var packageName = btn.getAttribute('data-package-name');
+					var currentlyActive = btn.getAttribute('data-active') === 'true';
+					var newActive = !currentlyActive;
+					var message = currentlyActive
+						? 'Discontinue "' + packageName + '"? It will be hidden from your storefront right away, but you can reactivate it anytime.'
+						: 'Reactivate "' + packageName + '"? It will show up on your storefront again.';
+
+					window.confirmAction(message, function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner(currentlyActive ? 'Discontinuing…' : 'Reactivating…');
+						fetch('/vendor/packages/' + packageId + '/active', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+							body: new URLSearchParams({ active: newActive })
+						})
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) {
+									throw new Error(result.body.error || 'Could not update this package. Please try again.');
+								}
+								window.location.href = '/vendor/packages';
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+		});
+	</script>
+	<!-- /discontinue/reactivate package -->
 
 
 	<div th:replace="~{fragments/common :: confirmActionModal}"></div>

@@ -171,6 +171,30 @@ public class BackendClient {
         return get("/api/v1/vendors/me/dashboard", jwt, VendorDashboard.class);
     }
 
+    // Fired by VendorController when it renders the vendor's own Quotations/
+    // Bookings pages - the "seen it" moment for the sidebar nav badges (see
+    // backend BadgeService). Deliberately not a side effect of
+    // getQuotations()/getBookings() below, since other pages (e.g. Messages'
+    // "does this event already have a quotation?" check) call those too, in
+    // passing, and must never silently clear a badge nobody actually looked at.
+    public void markVendorQuotationsSeen(String jwt) {
+        backendRestClient.put()
+                .uri("/api/v1/vendors/me/quotations/mark-seen")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
+    public void markVendorBookingsSeen(String jwt) {
+        backendRestClient.put()
+                .uri("/api/v1/vendors/me/bookings/mark-seen")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
     // --- Leads ---
 
     public List<VendorLead> getLeads(String jwt) {
@@ -287,8 +311,13 @@ public class BackendClient {
      * backend QuotationService#acceptQuote for the auto-resolve-to-
      * PENDING_DEPOSIT-or-PAYMENT_REVIEW behavior.
      */
-    public VendorQuotation acceptQuote(String jwt, Long quotationId, MultipartFile screenshot) {
+    public VendorQuotation acceptQuote(
+            String jwt, Long quotationId, Integer acceptedVersion, String message, MultipartFile screenshot) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        if (acceptedVersion != null) {
+            body.add("acceptedVersion", acceptedVersion);
+        }
+        addIfPresent(body, "message", message);
         addFileIfPresent(body, "screenshot", screenshot);
         return postMultipart("/api/v1/quotations/" + quotationId + "/accept", jwt, body, VendorQuotation.class);
     }
@@ -364,6 +393,39 @@ public class BackendClient {
         return putJson("/api/v1/events/" + eventId + "/save", jwt, Map.of("name", name), PlannerEvent.class);
     }
 
+    // --- Event tab badges (planner's per-event Quotations/Bookings tabs -
+    // see backend BadgeService) ---
+
+    public long getUnseenQuotationsCountForEvent(String jwt, Long eventId) {
+        Map<String, Long> body = get("/api/v1/events/" + eventId + "/quotations/unseen-count", jwt,
+                new ParameterizedTypeReference<Map<String, Long>>() {});
+        return body.getOrDefault("count", 0L);
+    }
+
+    public long getUnseenBookingsCountForEvent(String jwt, Long eventId) {
+        Map<String, Long> body = get("/api/v1/events/" + eventId + "/bookings/unseen-count", jwt,
+                new ParameterizedTypeReference<Map<String, Long>>() {});
+        return body.getOrDefault("count", 0L);
+    }
+
+    public void markEventQuotationsSeen(String jwt, Long eventId) {
+        backendRestClient.put()
+                .uri("/api/v1/events/" + eventId + "/quotations/mark-seen")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
+    public void markEventBookingsSeen(String jwt, Long eventId) {
+        backendRestClient.put()
+                .uri("/api/v1/events/" + eventId + "/bookings/mark-seen")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
     // --- Calendar ---
 
     public List<VendorCalendarEntry> getCalendar(String jwt) {
@@ -405,6 +467,11 @@ public class BackendClient {
 
     public void deletePackageImage(String jwt, Long packageId, Long imageId) {
         delete("/api/v1/vendors/me/packages/" + packageId + "/images/" + imageId, jwt);
+    }
+
+    /** Discontinuing (active=false) hides the package from the storefront without deleting it - reactivating (active=true) brings it right back. */
+    public VendorPackageItem setPackageActive(String jwt, Long packageId, boolean active) {
+        return putJson("/api/v1/vendors/me/packages/" + packageId + "/active", jwt, Map.of("active", active), VendorPackageItem.class);
     }
 
     // --- Settings ---

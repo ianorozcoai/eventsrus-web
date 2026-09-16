@@ -39,6 +39,13 @@ public class VendorNavBadgeModelAttributes {
         // around, knowing which business you're actually logged in as at a
         // glance is otherwise surprisingly easy to lose track of.
         String vendorBusinessName = null;
+        // The profile-dropdown name itself, for a vendor, should read as the
+        // storefront's "Owner name" (a business-profile field the vendor
+        // sets in Settings, e.g. "Juan Dela Cruz") - not whichever Google
+        // account happens to be signed in, which is often a developer/admin
+        // account testing a seeded business. AuthModelAttributes#currentUserFullName
+        // stays the fallback used for planners (no owner-name concept there).
+        String vendorOwnerName = null;
 
         HttpSession session = request.getSession(false);
         if (session != null && "VENDOR".equals(WebSession.role(session))) {
@@ -46,9 +53,16 @@ public class VendorNavBadgeModelAttributes {
                 var dashboard = backendClient.getDashboard(WebSession.token(session));
                 leads = dashboard.newLeadsCount();
                 messages = dashboard.newInquiriesCount();
-                quotations = dashboard.newQuotationsCount();
-                bookings = dashboard.bookingsNeedingActionCount();
-                vendorBusinessName = backendClient.getSettings(WebSession.token(session)).businessName();
+                // Unseen-since-last-visit (see backend BadgeService), not
+                // "needs a response" - a badge here should also reflect the
+                // vendor's own actions (e.g. just confirmed a booking
+                // themselves) and pending planner-proposed amendments, which
+                // a pure open-status count would miss entirely.
+                quotations = dashboard.quotationsUnseenCount();
+                bookings = dashboard.bookingsUnseenCount();
+                var settings = backendClient.getSettings(WebSession.token(session));
+                vendorBusinessName = settings.businessName();
+                vendorOwnerName = settings.ownerName();
             } catch (BackendApiException e) {
                 // A badge count failing to load shouldn't break the page
                 // it's decorating - just show no badge (same reasoning as
@@ -61,5 +75,6 @@ public class VendorNavBadgeModelAttributes {
         model.addAttribute("navQuotationsCount", quotations);
         model.addAttribute("navBookingsCount", bookings);
         model.addAttribute("vendorBusinessName", vendorBusinessName);
+        model.addAttribute("vendorOwnerName", vendorOwnerName);
     }
 }

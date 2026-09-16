@@ -12,5 +12,7 @@ public record VendorDashboard(
         long upcomingEventsCount,
         BigDecimal totalIncome,
         long cancellationsCount,
-        boolean hasPackages) {
+        boolean hasPackages,
+        long quotationsUnseenCount,
+        long bookingsUnseenCount) {
 }

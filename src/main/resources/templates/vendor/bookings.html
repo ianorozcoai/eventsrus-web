@@ -110,7 +110,7 @@
 											     convention). Each item keeps the exact same th:if visibility
 											     rule it had as a standalone button/link, just moved inside. */-->
 											<div class="dropdown">
-												<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+												<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
 													<i class="ph-list"></i>
 												</button>
 												<div class="dropdown-menu dropdown-menu-end">
@@ -118,11 +118,13 @@
 														<i class="ph-warning-circle me-2"></i>
 														View Reason
 													</button>
-													<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="dropdown-item">
+													<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+														th:attr="data-lightbox-src=${booking.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${booking.eventName()}">
 														<i class="ph-image me-2"></i>
 														View Screenshot
 													</a>
-													<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" th:href="${booking.invoiceUrl()}" target="_blank" class="dropdown-item">
+													<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+														th:attr="data-lightbox-src=${booking.invoiceUrl()},data-lightbox-caption='Invoice - ' + ${booking.eventName()}">
 														<i class="ph-file-text me-2"></i>
 														View Invoice
 													</a>
@@ -166,7 +168,7 @@
 										</div>
 										<div class="modal-footer">
 											<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-											<button type="submit" class="btn btn-success">
+											<button type="button" class="btn btn-success acknowledge-payment-review-btn">
 												<i class="ph-check-circle me-2"></i>
 												Confirm &amp; Upload Invoice
 											</button>
@@ -193,7 +195,7 @@
 										</div>
 										<div class="modal-footer">
 											<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-											<button type="submit" class="btn btn-danger">
+											<button type="button" class="btn btn-danger reject-payment-review-btn">
 												<i class="ph-x-circle me-2"></i>
 												Reject Payment
 											</button>
@@ -221,7 +223,7 @@
 										</div>
 										<div class="modal-footer">
 											<button type="button" class="btn btn-light" data-bs-dismiss="modal">Never mind</button>
-											<button type="submit" class="btn btn-outline-danger">
+											<button type="button" class="btn btn-outline-danger cancel-booking-review-btn">
 												<i class="ph-prohibit me-2"></i>
 												Cancel Booking
 											</button>
@@ -247,7 +249,8 @@
 										<div th:if="${booking.paymentScreenshotUrl() != null}">
 											<label class="form-label">Screenshot they submitted</label>
 											<div>
-												<a th:href="${booking.paymentScreenshotUrl()}" target="_blank" class="btn btn-light btn-sm">
+												<a href="#" class="btn btn-light btn-sm lightbox-trigger"
+													th:attr="data-lightbox-src=${booking.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${booking.eventName()}">
 													<i class="ph-image me-1"></i>
 													View attached screenshot
 												</a>
@@ -304,6 +307,55 @@
 			if (document.getElementById('bookingsTable')) {
 				$('#bookingsTable').DataTable({ pageLength: 20 });
 			}
+		});
+	</script>
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
+	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
+	<div th:replace="~{fragments/common :: genericConfirmModal}"></div>
+
+	<!-- Review-before-submit for the three per-booking action modals above -
+	     each converts its old type="submit" button into a review step via
+	     the shared genericConfirmModal (see fragments/common.html). -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			window.armConfirmSubmitButtons('.acknowledge-payment-review-btn', function (btn, form) {
+				var invoiceFile = form.querySelector('[name="invoice"]').files[0];
+				var rows = [];
+				if (invoiceFile) {
+					rows.push({ label: 'Invoice / Receipt', file: invoiceFile });
+				}
+				return {
+					title: 'Acknowledge Payment',
+					intro: 'Confirming this marks the booking as BOOKED - the planner will be notified right away.',
+					rows: rows,
+					confirmLabel: 'Confirm & Upload Invoice',
+					confirmClass: 'btn-success',
+					confirmIcon: 'ph-check-circle'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.reject-payment-review-btn', function (btn, form) {
+				return {
+					title: 'Reject Payment',
+					intro: 'The planner will be notified and asked to resubmit a payment screenshot.',
+					rows: [{ label: 'Reason', value: form.querySelector('[name="reason"]').value.trim() }],
+					confirmLabel: 'Reject Payment',
+					confirmClass: 'btn-danger',
+					confirmIcon: 'ph-x-circle'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.cancel-booking-review-btn', function (btn, form) {
+				return {
+					title: 'Cancel Booking',
+					intro: "This marks the booking as CANCELLED and notifies the planner. This can't be undone.",
+					rows: [{ label: 'Reason', value: form.querySelector('[name="reason"]').value.trim() }],
+					confirmLabel: 'Cancel Booking',
+					confirmClass: 'btn-outline-danger',
+					confirmIcon: 'ph-prohibit'
+				};
+			});
 		});
 	</script>
 

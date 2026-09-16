@@ -19,4 +19,6 @@ public record BackendQuotationHistoryEntry(
         BigDecimal quotedAmount,
         LocalDate targetDate,
         List<String> packageNames,
+        String paymentScreenshotUrl,
+        String invoiceUrl,
         Instant createdAt) {}

@@ -228,12 +228,17 @@ public class VendorController {
 
     @GetMapping("/bookings")
     public String bookings(HttpSession session, Model model) {
-        List<VendorBooking> bookings = backendClient.getBookings(WebSession.token(session)).stream()
+        String jwt = WebSession.token(session);
+        List<VendorBooking> bookings = backendClient.getBookings(jwt).stream()
                 .sorted(Comparator.comparing(VendorBooking::eventDatetime))
                 .toList();
         model.addAttribute("bookings", bookings);
         model.addAttribute("activePage", "bookings");
         model.addAttribute("pageTitle", "Bookings");
+        // Actually visiting this page is the "seen it" moment for the
+        // sidebar's Bookings badge (see VendorNavBadgeModelAttributes /
+        // backend BadgeService).
+        backendClient.markVendorBookingsSeen(jwt);
         return "vendor/bookings";
     }
 
@@ -478,6 +483,10 @@ public class VendorController {
         model.addAttribute("historyByQuotationId", historyByQuotationId);
         model.addAttribute("activePage", "quotations");
         model.addAttribute("pageTitle", "Quotations");
+        // Actually visiting this page is the "seen it" moment for the
+        // sidebar's Quotations badge (see VendorNavBadgeModelAttributes /
+        // backend BadgeService).
+        backendClient.markVendorQuotationsSeen(jwt);
         return "vendor/quotations";
     }
 
@@ -556,8 +565,12 @@ public class VendorController {
 
     @GetMapping("/calendar")
     public String calendar(HttpSession session, Model model) {
+        // An INQUIRY entry (a conversation with no booking yet) has no
+        // confirmed date at all - eventDatetime is null - so this needs
+        // nullsLast or sorting throws the moment any inquiry is mixed in
+        // with dated entries (which is the common case for an active vendor).
         List<VendorCalendarEntry> entries = backendClient.getCalendar(WebSession.token(session)).stream()
-                .sorted(Comparator.comparing(VendorCalendarEntry::eventDatetime))
+                .sorted(Comparator.comparing(VendorCalendarEntry::eventDatetime, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
         model.addAttribute("entries", entries);
         model.addAttribute("calendarEventsJson", toFullCalendarEventsJson(entries));
@@ -569,17 +582,22 @@ public class VendorController {
     /** Converts calendar entries into the JSON array FullCalendar's {@code events} option expects. */
     private String toFullCalendarEventsJson(List<VendorCalendarEntry> entries) {
         List<Map<String, Object>> events = entries.stream()
+                // FullCalendar's own date-grid view has nothing to plot an
+                // INQUIRY (no confirmed date yet) against - and calling
+                // .toString() on a null eventDatetime below would otherwise
+                // throw for every one of them. They still show in the plain
+                // list view (the "entries" model attribute), just not here.
+                .filter(entry -> entry.eventDatetime() != null)
                 .map(entry -> {
                     Map<String, Object> event = new LinkedHashMap<>();
                     event.put("title", entry.eventName());
                     event.put("start", entry.eventDatetime().toString());
                     event.put("display", "block");
-                    event.put("color", switch (entry.status()) {
-                        case "BOOKED" -> "#198754";
-                        case "INQUIRY" -> "#ffc107";
-                        case "CANCELLED" -> "#dc3545";
-                        default -> "#6c757d";
-                    });
+                    // Same two-color scheme as the list view's badges (see
+                    // vendor/calendar.html's legend) - green once a booking is
+                    // actually confirmed, violet for everything short of that
+                    // (an inquiry or a quotation at any pre-booked stage).
+                    event.put("color", entry.status().equals("BOOKED") ? "#059669" : "#8e70c1");
                     return event;
                 })
                 .toList();
@@ -672,6 +690,25 @@ public class VendorController {
         }
     }
 
+    // AJAX (JSON), not a redirect - same reasoning as deletePackageImage
+    // above: called via fetch() after the vendor confirms in the shared
+    // confirmation modal (see packages.html), which then reloads the page
+    // itself. Discontinuing (active=false) only hides the package from the
+    // storefront (see backend VendorDirectoryService's isActive() filter) -
+    // it's never deleted, so reactivating (active=true) brings it right back
+    // with all its photos and history intact.
+    @PostMapping("/packages/{packageId}/active")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> setPackageActive(
+            @PathVariable Long packageId, @RequestParam boolean active, HttpSession session) {
+        try {
+            backendClient.setPackageActive(WebSession.token(session), packageId, active);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // Public storefront - what a planner sees when they open "View My Page"
     // (the vendor's own page) or click "View Storefront" from a planner
     // event's Overview tab (a specific slugged vendor - see
@@ -705,7 +742,7 @@ public class VendorController {
         // their name and re-picking a date they already set on the event.
         // Only applies on a fresh page load (not after a failed submission,
         // where the form is already re-populated with what they typed).
-        String plannerName = WebSession.firstName(session);
+        String plannerName = WebSession.fullName(session);
         LocalDate eventDate = eventId != null && jwt != null ? eventDateOrNull(jwt, eventId) : null;
 
         if (!model.containsAttribute("quotationRequestForm")) {

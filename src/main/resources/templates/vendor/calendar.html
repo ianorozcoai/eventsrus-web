@@ -41,22 +41,45 @@
 				<!-- Content area -->
 				<div class="content">
 
-					<!-- Tabs -->
-					<ul class="nav nav-tabs mb-3">
-						<li class="nav-item">
-							<a href="#tab-all-events" class="nav-link active" data-bs-toggle="tab">
-								<i class="ph-list-bullets me-2"></i>
-								All Events
-							</a>
-						</li>
-						<li class="nav-item">
-							<a href="#tab-calendar-view" class="nav-link" data-bs-toggle="tab">
-								<i class="ph-calendar-blank me-2"></i>
-								Calendar
-							</a>
-						</li>
-					</ul>
-					<!-- /tabs -->
+					<!-- Tabs + legend -->
+					<div class="d-flex align-items-center flex-wrap gap-3 mb-3">
+						<ul class="nav nav-tabs flex-grow-1 mb-0 border-bottom-0">
+							<li class="nav-item">
+								<a href="#tab-all-events" class="nav-link active" data-bs-toggle="tab">
+									<i class="ph-list-bullets me-2"></i>
+									All Events
+								</a>
+							</li>
+							<li class="nav-item">
+								<a href="#tab-calendar-view" class="nav-link" data-bs-toggle="tab">
+									<i class="ph-calendar-blank me-2"></i>
+									Calendar
+								</a>
+							</li>
+						</ul>
+						<!--/* Same two colors everywhere an event date shows up on this
+						     page (list badges below and the FullCalendar view - see
+						     VendorController#toFullCalendarEventsJson) - green once a
+						     booking is actually confirmed, violet for anything still
+						     short of that (an inquiry, or a quotation at any stage from
+						     the initial request through payment review). */-->
+						<div class="d-flex align-items-center gap-3 fs-sm text-muted">
+							<span><span class="legend-swatch bg-success"></span>Booked</span>
+							<span><span class="legend-swatch bg-purple"></span>Pending / In Progress</span>
+						</div>
+					</div>
+					<div class="border-bottom mb-3"></div>
+					<!-- /tabs + legend -->
+
+					<style>
+						.legend-swatch {
+							display: inline-block;
+							width: .625rem;
+							height: .625rem;
+							border-radius: 50%;
+							margin-right: .375rem;
+						}
+					</style>
 
 					<div class="tab-content">
 
@@ -84,7 +107,7 @@
 												<td th:text="${entry.eventName()}">Event</td>
 												<td th:text="${entry.plannerName()}">Planner</td>
 												<td>
-													<span class="badge" th:classappend="${entry.status() == 'BOOKED'} ? 'bg-success' : (${entry.status() == 'INQUIRY'} ? 'bg-warning' : 'bg-danger')" th:text="${entry.status()}">STATUS</span>
+													<span class="badge" th:classappend="${entry.status() == 'BOOKED'} ? 'bg-success' : 'bg-purple'" th:text="${entry.status()}">STATUS</span>
 												</td>
 											</tr>
 										</tbody>

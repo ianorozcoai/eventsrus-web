@@ -82,7 +82,7 @@
 							<i class="ph-user-circle ph-2x"></i>
 							<span class="status-indicator bg-success"></span>
 						</div>
-						<span class="d-none d-lg-inline-block mx-lg-2" th:text="${currentUserFirstName}">Vendor</span>
+						<span class="d-none d-lg-inline-block mx-lg-2" th:text="${vendorOwnerName ?: currentUserFullName}">Vendor</span>
 					</a>
 
 					<div class="dropdown-menu dropdown-menu-end">
@@ -323,21 +323,27 @@
 		<span th:if="${pkg.pricingType() != null and pkg.pricingType().name() == 'QUOTE'}" class="badge bg-warning text-dark">Request for Quotation</span>
 	</span>
 
-	<!--/* Image lightbox - shared by every page that shows real uploaded
-	     images/documents as clickable previews (vendor/storefront.html,
-	     vendor/settings.html): opens any .lightbox-trigger in-page
-	     (Bootstrap's own fade for open/close, a quick opacity cross-fade of
-	     its own for prev/next) instead of a new tab, with left/right
-	     arrow-key and button navigation across every trigger currently in
-	     the DOM - callers on the same page share one continuous browsing
-	     session regardless of which section a photo came from.
+	<!--/* Image/PDF lightbox - shared by every page that shows real uploaded
+	     images or documents as clickable previews (vendor/storefront.html,
+	     vendor/settings.html, planner/events.html and vendor/quotations.html's
+	     quotation PDFs): opens any .lightbox-trigger in-page (Bootstrap's own
+	     fade for open/close, a quick opacity cross-fade of its own for
+	     prev/next) instead of a new tab, with left/right arrow-key and
+	     button navigation.
 	     A trigger is a plain <a href="#" class="lightbox-trigger"
-	     data-lightbox-src="..." data-lightbox-caption="...">. The modal
-	     always tries to show the src as an image first; if it fails to
-	     load (a PDF upload, most often - browsers can't render one inside
-	     an <img>), it automatically falls back to showing the same src in
-	     an <iframe> instead, so PDFs open in this same popup too, not a
-	     new tab. Include with th:replace="~{fragments/common ::
+	     data-lightbox-src="..." data-lightbox-caption="...">. By default,
+	     navigation cycles through every trigger on the page - callers like
+	     the storefront gallery want one continuous browsing session
+	     regardless of which section a photo came from. Add
+	     data-lightbox-group="some-id" to scope navigation to only the
+	     triggers sharing that same group instead - e.g. a quotation's own
+	     PDF versions, so Next/Prev on one quotation's quote never wanders
+	     into a different quotation's or a different vendor's.
+	     The modal always tries to show the src as an image first; if it
+	     fails to load (a PDF upload, most often - browsers can't render one
+	     inside an <img>), it automatically falls back to showing the same
+	     src in an <iframe> instead, so PDFs open in this same popup too,
+	     not a new tab. Include with th:replace="~{fragments/common ::
 	     imageLightbox}" once per page (it wires up all triggers globally,
 	     so it doesn't matter which section on the page includes it). */-->
 	<th:block th:fragment="imageLightbox">
@@ -365,8 +371,13 @@
 				var currentIndex = -1;
 				var modalEl, bsModal, imageEl, frameEl, captionEl, prevBtn, nextBtn;
 
-				function refreshTriggers() {
-					triggers = Array.prototype.slice.call(document.querySelectorAll('.lightbox-trigger'));
+				// No group - every trigger on the page (the original,
+				// storefront-gallery behavior). A group - only triggers
+				// sharing that same data-lightbox-group value, so Next/Prev
+				// stays scoped to (for example) one quotation's own versions.
+				function refreshTriggers(group) {
+					var all = Array.prototype.slice.call(document.querySelectorAll('.lightbox-trigger'));
+					triggers = group ? all.filter(function (t) { return t.getAttribute('data-lightbox-group') === group; }) : all;
 				}
 
 				function show(index) {
@@ -448,7 +459,7 @@
 						}
 						e.stopPropagation();
 						e.preventDefault();
-						refreshTriggers();
+						refreshTriggers(trigger.getAttribute('data-lightbox-group'));
 						show(triggers.indexOf(trigger));
 						bsModal.show();
 					}, true);
@@ -538,6 +549,297 @@
 			};
 			window.hidePageSpinner = function () {
 				document.getElementById('fullPageSpinner').classList.add('d-none');
+			};
+		</script>
+	</th:block>
+
+	<!--/* Review-before-sending confirmation for a vendor about to submit a
+	     real quotation (a real amount + PDF a planner will see right away) -
+	     shared by vendor/quotations.html's Respond modal and
+	     vendor/messages.html's Create a Quote modal, since both submit the
+	     same three fields (a PDF named "pdf", an amount named
+	     "quotedAmount", an optional message named "message") inside a
+	     plain multipart form. Include once per page with th:replace="~
+	     {fragments/common :: quoteReviewConfirmModal}", then call
+	     window.armQuoteReviewButtons(buttonSelector, getTargetDateText)
+	     from that page's own script once its form(s) exist - getTargetDateText
+	     is a function(button, form) returning the date text to show, since
+	     Respond's target date is a fixed read-only value but Create a
+	     Quote's is a live editable date input, and the two pages have no
+	     other way to agree on how to read it.
+	     The PDF preview opens the shared imageLightbox on a local
+	     blob: URL (see URL.createObjectURL below) - the file hasn't been
+	     uploaded anywhere yet, so there's no server URL to show it from,
+	     but the browser can still render the exact bytes about to be sent
+	     from an in-memory object URL. imageLightbox must also be included
+	     on the same page for this to work. */-->
+	<th:block th:fragment="quoteReviewConfirmModal">
+		<div class="modal fade" id="quoteReviewConfirmModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">Confirm Before Sending</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<p class="text-muted fs-sm">Please review before sending - the planner will see this right away.</p>
+						<div class="bg-light rounded p-3 mb-3">
+							<div class="d-flex justify-content-between mb-2">
+								<span class="fs-sm fw-semibold text-muted">Quoted amount</span>
+								<span id="quoteReviewConfirmAmount" class="fw-bold">-</span>
+							</div>
+							<div class="d-flex justify-content-between mb-2">
+								<span class="fs-sm fw-semibold text-muted">Target date</span>
+								<span id="quoteReviewConfirmDate">-</span>
+							</div>
+							<div class="mb-0">
+								<span class="fs-sm fw-semibold text-muted d-block mb-1">Quote PDF</span>
+								<a href="#" id="quoteReviewConfirmPdfLink" class="fs-sm lightbox-trigger">
+									<i class="ph-file-pdf me-1"></i> <span id="quoteReviewConfirmPdfName">-</span>
+								</a>
+								<span id="quoteReviewConfirmNoPdf" class="fs-sm text-danger d-none">No PDF selected.</span>
+							</div>
+						</div>
+						<div class="mb-0">
+							<div class="fs-sm fw-semibold text-muted mb-1">Your message</div>
+							<p id="quoteReviewConfirmMessage" class="mb-0 fst-italic text-muted">No message added.</p>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-light" id="quoteReviewConfirmBackBtn">Back</button>
+						<button type="button" class="btn btn-primary" id="quoteReviewConfirmSubmitBtn">
+							<i class="ph-upload-simple me-2"></i>
+							Confirm &amp; Send Quote
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			window.armQuoteReviewButtons = function (buttonSelector, getTargetDateText) {
+				var confirmModalEl = document.getElementById('quoteReviewConfirmModal');
+				var confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
+				var activeForm = null;
+				var activeSourceModal = null;
+				var pdfObjectUrl = null;
+
+				document.querySelectorAll(buttonSelector).forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						var form = btn.closest('form');
+						var pdfInput = form.querySelector('input[name="pdf"]');
+						var amountInput = form.querySelector('input[name="quotedAmount"]');
+						var messageInput = form.querySelector('textarea[name="message"]');
+
+						// Native required-field validation surfaces this
+						// instead of silently opening a confirmation with
+						// missing data (this button is type="button", not
+						// type="submit", so the browser never checks
+						// validity on its own).
+						if (!form.reportValidity()) {
+							return;
+						}
+
+						activeForm = form;
+						activeSourceModal = bootstrap.Modal.getOrCreateInstance(btn.closest('.modal'));
+
+						var amount = Number(amountInput.value);
+						document.getElementById('quoteReviewConfirmAmount').textContent =
+							isNaN(amount) ? '-' : '₱' + amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+						document.getElementById('quoteReviewConfirmDate').textContent = getTargetDateText(btn, form) || 'Not specified';
+
+						var pdfFile = pdfInput.files[0];
+						var pdfLink = document.getElementById('quoteReviewConfirmPdfLink');
+						var noPdf = document.getElementById('quoteReviewConfirmNoPdf');
+						if (pdfFile) {
+							if (pdfObjectUrl) {
+								URL.revokeObjectURL(pdfObjectUrl);
+							}
+							pdfObjectUrl = URL.createObjectURL(pdfFile);
+							pdfLink.setAttribute('data-lightbox-src', pdfObjectUrl);
+							pdfLink.setAttribute('data-lightbox-caption', pdfFile.name);
+							document.getElementById('quoteReviewConfirmPdfName').textContent = pdfFile.name;
+							pdfLink.classList.remove('d-none');
+							noPdf.classList.add('d-none');
+						} else {
+							pdfLink.classList.add('d-none');
+							noPdf.classList.remove('d-none');
+						}
+
+						var message = messageInput ? messageInput.value.trim() : '';
+						document.getElementById('quoteReviewConfirmMessage').textContent = message || 'No message added.';
+
+						activeSourceModal.hide();
+						confirmModal.show();
+					});
+				});
+
+				document.getElementById('quoteReviewConfirmBackBtn').addEventListener('click', function () {
+					confirmModal.hide();
+					if (activeSourceModal) {
+						activeSourceModal.show();
+					}
+				});
+
+				document.getElementById('quoteReviewConfirmSubmitBtn').addEventListener('click', function () {
+					if (!activeForm) {
+						return;
+					}
+					window.showPageSpinner('Sending quote…');
+					HTMLFormElement.prototype.submit.call(activeForm);
+				});
+			};
+		</script>
+	</th:block>
+
+	<!--/* Generic review-before-submit confirmation - for every OTHER vendor
+	     response tied to a quotation or a booking that isn't already
+	     covered by quoteReviewConfirmModal above (Accept Booking, Reject
+	     Payment on either the quotation or the old Booking flow, Cancel
+	     Booking, Acknowledge Payment). Each of those has a different mix of
+	     fields (a reason, a payment-type choice, an invoice upload, ...),
+	     so rather than one more rigid fixed-field modal, this one renders
+	     whatever label/value rows the caller hands it. Include once per
+	     page with th:replace="~{fragments/common :: genericConfirmModal}",
+	     then call window.armConfirmSubmitButtons(buttonSelector, buildSummary)
+	     once per distinct action on that page - buildSummary is a
+	     function(button, form) returning { title, intro, rows, confirmLabel,
+	     confirmClass, confirmIcon }, where each row is either
+	     { label, value } (plain text) or { label, file } (a File object,
+	     shown as a lightbox-openable preview on a local blob: URL, same
+	     idea as quoteReviewConfirmModal's own PDF preview - imageLightbox
+	     must also be included on the page for that to work). Safe to call
+	     this function more than once on the same page (once per action
+	     type) - the modal's own Back/Confirm button listeners only ever
+	     get wired up the first time. */-->
+	<th:block th:fragment="genericConfirmModal">
+		<div class="modal fade" id="genericConfirmSubmitModal" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="genericConfirmSubmitTitle">Confirm</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body">
+						<p id="genericConfirmSubmitIntro" class="text-muted fs-sm"></p>
+						<div class="bg-light rounded p-3 mb-0" id="genericConfirmSubmitRows"></div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-light" id="genericConfirmSubmitBackBtn">Back</button>
+						<button type="button" class="btn btn-primary" id="genericConfirmSubmitBtn">Confirm</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script>
+			window.armConfirmSubmitButtons = function (buttonSelector, buildSummary) {
+				var confirmModalEl = document.getElementById('genericConfirmSubmitModal');
+				var confirmModal = bootstrap.Modal.getOrCreateInstance(confirmModalEl);
+
+				if (!confirmModalEl.dataset.wired) {
+					confirmModalEl.dataset.wired = '1';
+					window._confirmSubmitState = { activeForm: null, activeSourceModal: null, activeObjectUrls: [] };
+
+					document.getElementById('genericConfirmSubmitBackBtn').addEventListener('click', function () {
+						confirmModal.hide();
+						if (window._confirmSubmitState.activeSourceModal) {
+							window._confirmSubmitState.activeSourceModal.show();
+						}
+					});
+
+					document.getElementById('genericConfirmSubmitBtn').addEventListener('click', function () {
+						var state = window._confirmSubmitState;
+						if (!state.activeForm) {
+							return;
+						}
+						window.showPageSpinner('Submitting…');
+						HTMLFormElement.prototype.submit.call(state.activeForm);
+					});
+				}
+
+				document.querySelectorAll(buttonSelector).forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						var form = btn.closest('form');
+						// Native required-field validation, since this button
+						// is type="button" (never checked by the browser on
+						// its own) - surfaces a missing reason/file/etc.
+						// instead of silently opening a confirmation for an
+						// incomplete submission.
+						if (!form.reportValidity()) {
+							return;
+						}
+
+						var summary = buildSummary(btn, form);
+						if (!summary) {
+							// buildSummary vetoed this submission (e.g. custom
+							// validation beyond what reportValidity() covers,
+							// like a hidden required rating input) - it's
+							// already responsible for surfacing why.
+							return;
+						}
+						var state = window._confirmSubmitState;
+						state.activeForm = form;
+						state.activeSourceModal = bootstrap.Modal.getOrCreateInstance(btn.closest('.modal'));
+
+						document.getElementById('genericConfirmSubmitTitle').textContent = summary.title || 'Confirm';
+						var introEl = document.getElementById('genericConfirmSubmitIntro');
+						if (summary.intro) {
+							introEl.textContent = summary.intro;
+							introEl.classList.remove('d-none');
+						} else {
+							introEl.classList.add('d-none');
+						}
+
+						state.activeObjectUrls.forEach(function (u) { URL.revokeObjectURL(u); });
+						state.activeObjectUrls = [];
+
+						var rowsEl = document.getElementById('genericConfirmSubmitRows');
+						rowsEl.textContent = '';
+						(summary.rows || []).forEach(function (row) {
+							var rowDiv = document.createElement('div');
+							if (row.file) {
+								rowDiv.className = 'mb-2';
+								var labelEl = document.createElement('span');
+								labelEl.className = 'fs-sm fw-semibold text-muted d-block mb-1';
+								labelEl.textContent = row.label;
+								var link = document.createElement('a');
+								link.href = '#';
+								link.className = 'fs-sm lightbox-trigger';
+								var objectUrl = URL.createObjectURL(row.file);
+								state.activeObjectUrls.push(objectUrl);
+								link.setAttribute('data-lightbox-src', objectUrl);
+								link.setAttribute('data-lightbox-caption', row.file.name);
+								var icon = document.createElement('i');
+								icon.className = 'ph-file-pdf me-1';
+								link.appendChild(icon);
+								link.appendChild(document.createTextNode(' ' + row.file.name));
+								rowDiv.appendChild(labelEl);
+								rowDiv.appendChild(link);
+							} else {
+								rowDiv.className = 'd-flex justify-content-between align-items-start mb-2';
+								var l = document.createElement('span');
+								l.className = 'fs-sm fw-semibold text-muted';
+								l.textContent = row.label;
+								var v = document.createElement('span');
+								v.className = 'fw-semibold text-end ms-3';
+								v.textContent = row.value;
+								rowDiv.appendChild(l);
+								rowDiv.appendChild(v);
+							}
+							rowsEl.appendChild(rowDiv);
+						});
+
+						var confirmBtn = document.getElementById('genericConfirmSubmitBtn');
+						confirmBtn.textContent = '';
+						var confirmIcon = document.createElement('i');
+						confirmIcon.className = (summary.confirmIcon || 'ph-check-circle') + ' me-2';
+						confirmBtn.appendChild(confirmIcon);
+						confirmBtn.appendChild(document.createTextNode(summary.confirmLabel || 'Confirm'));
+						confirmBtn.className = 'btn ' + (summary.confirmClass || 'btn-primary');
+
+						state.activeSourceModal.hide();
+						confirmModal.show();
+					});
+				});
 			};
 		</script>
 	</th:block>

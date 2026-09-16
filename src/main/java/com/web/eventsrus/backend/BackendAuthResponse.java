@@ -11,6 +11,7 @@ public record BackendAuthResponse(
         String role,
         String signupIntent,
         String firstName,
+        String lastName,
         String email,
         String plan,
         Instant planExpiresAt) {}

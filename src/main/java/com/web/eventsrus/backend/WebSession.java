@@ -13,6 +13,7 @@ public final class WebSession {
     public static final String USER_ID = "auth.userId";
     public static final String EMAIL = "auth.email";
     public static final String FIRST_NAME = "auth.firstName";
+    public static final String LAST_NAME = "auth.lastName";
     public static final String ROLE = "auth.role";
     // Which door this account is permanently locked to (planner or vendor) -
     // distinct from ROLE, which still flows PLANNER -> VENDOR once
@@ -62,6 +63,17 @@ public final class WebSession {
         return session == null ? null : (String) session.getAttribute(FIRST_NAME);
     }
 
+    public static String lastName(HttpSession session) {
+        return session == null ? null : (String) session.getAttribute(LAST_NAME);
+    }
+
+    /** First + last name combined with a space - null/blank last name (or session) falls back to just the first name. */
+    public static String fullName(HttpSession session) {
+        String first = firstName(session);
+        String last = lastName(session);
+        return (last == null || last.isBlank()) ? first : first + " " + last;
+    }
+
     public static String email(HttpSession session) {
         return session == null ? null : (String) session.getAttribute(EMAIL);
     }
@@ -82,6 +94,7 @@ public final class WebSession {
         session.setAttribute(USER_ID, auth.id());
         session.setAttribute(EMAIL, auth.email());
         session.setAttribute(FIRST_NAME, auth.firstName());
+        session.setAttribute(LAST_NAME, auth.lastName());
         session.setAttribute(ROLE, auth.role());
         session.setAttribute(SIGNUP_INTENT, auth.signupIntent());
         storeSubscription(session, auth.plan(), auth.planExpiresAt(), false, auth.plan() == null);

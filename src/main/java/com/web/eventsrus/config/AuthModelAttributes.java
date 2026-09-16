@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 /**
- * Exposes the logged-in user's real first name/role to every view, so
+ * Exposes the logged-in user's real full name/role to every view, so
  * fragments/common.html and fragments/planner-shell.html's topnavbars can
  * show who's actually logged in instead of the old hardcoded "Ian Orozco" /
  * "Ivs Phil" placeholders. Null on pages with no session at all - same
@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class AuthModelAttributes {
 
-    @ModelAttribute("currentUserFirstName")
-    public String currentUserFirstName(HttpServletRequest request) {
-        return WebSession.firstName(request.getSession(false));
+    @ModelAttribute("currentUserFullName")
+    public String currentUserFullName(HttpServletRequest request) {
+        return WebSession.fullName(request.getSession(false));
     }
 
     @ModelAttribute("currentUserRole")

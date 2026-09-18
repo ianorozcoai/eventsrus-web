@@ -32,7 +32,8 @@ public class VendorSubscriptionWebController {
     public String view(HttpServletRequest request, HttpSession session, Model model) {
         String jwt = WebSession.token(session);
         BackendSubscriptionStatus status = backendClient.getSubscriptionStatus(jwt);
-        WebSession.storeSubscription(session, status.plan(), status.expiresAt(), status.expiringSoon(), status.expired());
+        WebSession.storeSubscription(session, status.plan(), status.expiresAt(), status.expiringSoon(), status.expired(),
+                status.inGracePeriod(), status.graceEndsAt());
 
         model.addAttribute("status", status);
         model.addAttribute("history", backendClient.getBillingHistory(jwt));

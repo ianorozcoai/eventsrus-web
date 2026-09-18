@@ -233,6 +233,7 @@ public class VendorController {
                 .sorted(Comparator.comparing(VendorBooking::eventDatetime))
                 .toList();
         model.addAttribute("bookings", bookings);
+        model.addAttribute("currentUserId", WebSession.userId(session));
         model.addAttribute("activePage", "bookings");
         model.addAttribute("pageTitle", "Bookings");
         // Actually visiting this page is the "seen it" moment for the
@@ -593,11 +594,14 @@ public class VendorController {
                     event.put("title", entry.eventName());
                     event.put("start", entry.eventDatetime().toString());
                     event.put("display", "block");
-                    // Same two-color scheme as the list view's badges (see
+                    // Same three-color scheme as the list view's badges (see
                     // vendor/calendar.html's legend) - green once a booking is
-                    // actually confirmed, violet for everything short of that
-                    // (an inquiry or a quotation at any pre-booked stage).
-                    event.put("color", entry.status().equals("BOOKED") ? "#059669" : "#8e70c1");
+                    // actually confirmed, red once cancelled (this theme's own
+                    // bg-danger, matching the Bookings/Quotations tabs'
+                    // CANCELLED badge), violet for everything still short of
+                    // either (an inquiry or a quotation at any pre-booked stage).
+                    event.put("color", entry.status().equals("BOOKED") ? "#059669"
+                            : entry.status().equals("CANCELLED") ? "#ef4444" : "#8e70c1");
                     return event;
                 })
                 .toList();
@@ -667,6 +671,42 @@ public class VendorController {
         }
         try {
             backendClient.addPackageImage(WebSession.token(session), packageId, image, caption);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Immediate upload (no queue-until-Save-Changes, unlike package photos) -
+    // the vendor's profile always already exists by the time they reach
+    // Settings, so there's no "brand new, not-yet-persisted parent" case to
+    // work around here. Dropzone posts one file per request; the page
+    // reloads back into the Gallery tab (see settings.html) once its queue
+    // finishes so the grid below always reflects the real, saved state.
+    @PostMapping("/settings/gallery")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addGalleryPhoto(
+            @RequestParam(required = false) MultipartFile image, @RequestParam(required = false) String caption,
+            HttpSession session) {
+        if (image == null || image.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Choose a photo to upload."));
+        }
+        try {
+            backendClient.addGalleryPhoto(WebSession.token(session), image, caption);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // AJAX (JSON), not a redirect - same reasoning as deletePackageImage
+    // below: called via fetch() after the vendor confirms in the shared
+    // confirmation modal, which then reloads the page itself.
+    @PostMapping("/settings/gallery/{photoId}/delete")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteGalleryPhoto(@PathVariable Long photoId, HttpSession session) {
+        try {
+            backendClient.deleteGalleryPhoto(WebSession.token(session), photoId);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (BackendApiException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -888,6 +928,7 @@ public class VendorController {
         }
         model.addAttribute("legalDocuments", backendClient.getLegalDocuments(jwt));
         model.addAttribute("documentTypes", LegalDocumentType.values());
+        model.addAttribute("galleryPhotos", backendClient.getGalleryPhotos(jwt));
         model.addAttribute("businessTypes", BusinessType.displayOrder());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
         model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);

@@ -75,6 +75,7 @@ public class AdminVerificationController {
         }
         try {
             model.addAttribute("documents", backendClient.getVendorVerificationDocuments(jwt, userId));
+            model.addAttribute("existingReferral", backendClient.getVendorReferral(jwt, userId));
         } catch (BackendApiException e) {
             model.addAttribute("loadError", e.getMessage());
         }
@@ -123,6 +124,31 @@ public class AdminVerificationController {
             redirectAttributes.addFlashAttribute("topVendorUpdated", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("verificationError", e.getMessage());
+        }
+        return "redirect:/admin/verifications/" + userId;
+    }
+
+    /**
+     * Support-desk fix for a referral that was never attributed at signup
+     * (e.g. the referred vendor forgot to use the link, or typed the code
+     * wrong) - see BackendClient#tagVendorReferral. Unlike normal onboarding
+     * attribution, a mistake here (unknown code, already-attributed vendor,
+     * self-referral) is a real error the admin sees.
+     */
+    @PostMapping("/{userId}/referral")
+    public String tagReferral(
+            @PathVariable Long userId, @RequestParam String referrerCode, @RequestParam String status,
+            @RequestParam(required = false) java.math.BigDecimal commissionAmount,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = requireBackendToken(session, redirectAttributes);
+        if (jwt == null) {
+            return "redirect:/admin/verifications/" + userId;
+        }
+        try {
+            backendClient.tagVendorReferral(jwt, userId, referrerCode, status, commissionAmount);
+            redirectAttributes.addFlashAttribute("referralTagged", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("referralError", e.getMessage());
         }
         return "redirect:/admin/verifications/" + userId;
     }

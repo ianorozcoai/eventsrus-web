@@ -273,13 +273,18 @@
 	<!--/* Paywall pop-up - shown once per login (PaywallModelAttributes flips
 	     WebSession.PAYWALL_SHOWN the first time these attributes come back
 	     false, on any page other than /vendor/subscription itself), starting
-	     app.subscription-warning-days (30) before the subscription ends, and
-	     pinned open (no dismiss, no backdrop click-through) once it has
-	     actually expired so a lapsed vendor can't just click past it. The
-	     model attributes are added globally (see PaywallModelAttributes), so
-	     this is a plain drop-in include on any vendor-shell page. */-->
+	     app.subscription-warning-days (30) before the subscription ends. Three
+	     mutually-exclusive states (see VendorPlanService#EffectivePlan):
+	     expiringSoon (still active, dismissible), inGracePeriod (already past
+	     the expiry date but still fully working - see
+	     SystemSettingKey.SUBSCRIPTION_GRACE_PERIOD_DAYS - dismissible since
+	     nothing's actually disabled yet), and expired (grace period itself
+	     has also lapsed - pinned open, no dismiss, no backdrop click-through,
+	     since a vendor in this state really is locked out). The model
+	     attributes are added globally (see PaywallModelAttributes), so this
+	     is a plain drop-in include on any vendor-shell page. */-->
 	<th:block th:fragment="paywallModal">
-		<div th:if="${(paywallExpiringSoon or paywallExpired) and not paywallAlreadyShown}"
+		<div th:if="${(paywallExpiringSoon or paywallInGracePeriod or paywallExpired) and not paywallAlreadyShown}"
 			class="modal fade" id="paywallModal" tabindex="-1"
 			th:attr="data-bs-backdrop=${paywallExpired} ? 'static' : true, data-bs-keyboard=${!paywallExpired}">
 			<div class="modal-dialog modal-dialog-centered">
@@ -287,12 +292,18 @@
 					<div class="modal-body text-center p-4">
 						<i class="ph-crown-simple text-warning" style="font-size:3rem;"></i>
 						<h5 class="mt-3" th:if="${paywallExpired}">Your subscription has ended</h5>
-						<h5 class="mt-3" th:unless="${paywallExpired}">Your subscription is ending soon</h5>
+						<h5 class="mt-3" th:if="${paywallInGracePeriod}">Your subscription has expired</h5>
+						<h5 class="mt-3" th:if="${paywallExpiringSoon}">Your subscription is ending soon</h5>
 						<p class="text-muted" th:if="${paywallExpired}">
 							Quotations, chatting with planners, and bookings are disabled until you renew.
 							Planners can no longer find you in search either. Renew to restore full access.
 						</p>
-						<p class="text-muted" th:unless="${paywallExpired}">
+						<p class="text-muted" th:if="${paywallInGracePeriod}">
+							You still have full access and stay recommended to planners, but only until
+							<span th:text="${#temporals.format(paywallGraceEndsAt, 'MMM dd, yyyy')}">-</span>.
+							Renew now to avoid losing access and disappearing from search.
+						</p>
+						<p class="text-muted" th:if="${paywallExpiringSoon}">
 							Renew your PRO plan before it ends so quotations, chat, and bookings keep working
 							without interruption.
 						</p>
@@ -304,7 +315,7 @@
 				</div>
 			</div>
 		</div>
-		<script th:if="${(paywallExpiringSoon or paywallExpired) and not paywallAlreadyShown}">
+		<script th:if="${(paywallExpiringSoon or paywallInGracePeriod or paywallExpired) and not paywallAlreadyShown}">
 			document.addEventListener('DOMContentLoaded', function () {
 				new bootstrap.Modal(document.getElementById('paywallModal')).show();
 			});

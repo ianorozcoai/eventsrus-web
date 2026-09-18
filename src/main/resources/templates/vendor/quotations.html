@@ -64,7 +64,8 @@
 					<!--/* Shared status-badge color mapping, reused on the table and in the
 					     Version History modal below - see enums.QuotationStatus javadoc
 					     (backend) for what each status means:
-					     BOOKED -> success, DECLINED/PAYMENT_REJECTED -> secondary,
+					     BOOKED -> success, CANCELLED -> danger (matches the Bookings tab),
+					     DECLINED/PAYMENT_REJECTED -> secondary,
 					     QUOTE_SENT/REVISION_SENT (awaiting planner) -> info,
 					     PENDING_DEPOSIT/PAYMENT_REVIEW (payment in progress) -> primary,
 					     REQUEST_FOR_QUOTE/REVISION_REQUESTED (awaiting vendor) -> warning. */-->
@@ -89,12 +90,15 @@
 								</thead>
 								<tbody>
 									<tr th:each="quotation : ${quotations}">
-										<td th:text="${quotation.eventName()}">Event</td>
+										<td>
+											<div th:text="${quotation.eventName() != null} ? ${quotation.eventName()} : 'Untitled event'">Event</div>
+											<div class="text-muted fs-sm" th:text="'Planner: ' + ${quotation.plannerName()}">Planner</div>
+										</td>
 										<td th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">-</td>
 										<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
 										<td>
 											<span class="badge"
-												th:classappend="${quotation.status().name() == 'BOOKED'} ? 'bg-success' : (${quotation.status().name() == 'DECLINED' or quotation.status().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${quotation.status().name() == 'QUOTE_SENT' or quotation.status().name() == 'REVISION_SENT'} ? 'bg-info' : (${quotation.status().name() == 'PENDING_DEPOSIT' or quotation.status().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning')))"
+												th:classappend="${quotation.status().name() == 'BOOKED'} ? 'bg-success' : (${quotation.status().name() == 'CANCELLED'} ? 'bg-danger' : (${quotation.status().name() == 'DECLINED' or quotation.status().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${quotation.status().name() == 'QUOTE_SENT' or quotation.status().name() == 'REVISION_SENT'} ? 'bg-info' : (${quotation.status().name() == 'PENDING_DEPOSIT' or quotation.status().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning'))))"
 												th:text="${quotation.status()}">STATUS</span>
 											<span class="fs-sm text-muted ms-1" th:text="'v' + ${quotation.version()}">v1</span>
 										</td>
@@ -305,7 +309,7 @@
 									<div th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}" class="d-flex mb-3 pb-3 border-bottom">
 										<div class="flex-shrink-0 me-3">
 											<span class="badge"
-												th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning')))"
+												th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'CANCELLED'} ? 'bg-danger' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning'))))"
 												th:text="${historyEntry.toStatus()}">STATUS</span>
 										</div>
 										<div class="flex-grow-1">

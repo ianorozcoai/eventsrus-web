@@ -63,18 +63,24 @@
 										<div>
 											<h4 class="mb-0" th:text="${status.plan() != null ? 'PRO' : 'No active plan'}">PRO</h4>
 											<span th:if="${status.plan() != null and status.expired()}" class="badge bg-danger">Expired</span>
-											<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired()}" class="badge bg-warning text-dark">Renews soon</span>
-											<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired()}" class="badge bg-success">Active</span>
+											<span th:if="${status.plan() != null and status.inGracePeriod()}" class="badge bg-danger">Grace Period</span>
+											<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-warning text-dark">Renews soon</span>
+											<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-success">Active</span>
 										</div>
 									</div>
 									<p class="mb-1" th:if="${status.expiresAt() != null}">
-										<span th:if="${status.expired()}">Expired on</span>
-										<span th:unless="${status.expired()}">Renews on / expires</span>
+										<span th:if="${status.expired() or status.inGracePeriod()}">Expired on</span>
+										<span th:unless="${status.expired() or status.inGracePeriod()}">Renews on / expires</span>
 										<span th:text="${#temporals.format(status.expiresAt(), 'MMMM d, yyyy')}">January 1, 2026</span>
 									</p>
 									<p class="text-muted fs-sm mb-0" th:if="${status.expired()}">
 										Quotations, chat, and bookings are disabled, and your storefront no longer
 										appears in planner search, until you renew.
+									</p>
+									<p class="text-muted fs-sm mb-0" th:if="${status.inGracePeriod()}">
+										You still have full access and stay recommended to planners until
+										<span th:text="${#temporals.format(status.graceEndsAt(), 'MMMM d, yyyy')}">January 1, 2026</span> -
+										renew before then to avoid losing access.
 									</p>
 								</div>
 							</div>

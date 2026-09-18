@@ -469,6 +469,23 @@ public class BackendClient {
         delete("/api/v1/vendors/me/packages/" + packageId + "/images/" + imageId, jwt);
     }
 
+    // --- Storefront gallery (standalone photos, not tied to a package) ---
+
+    public List<VendorPackageImageItem> getGalleryPhotos(String jwt) {
+        return get("/api/v1/vendors/me/gallery", jwt, new ParameterizedTypeReference<List<VendorPackageImageItem>>() {});
+    }
+
+    public VendorPackageImageItem addGalleryPhoto(String jwt, MultipartFile image, String caption) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addFileIfPresent(body, "image", image);
+        addIfPresent(body, "caption", caption);
+        return postMultipart("/api/v1/vendors/me/gallery", jwt, body, VendorPackageImageItem.class);
+    }
+
+    public void deleteGalleryPhoto(String jwt, Long photoId) {
+        delete("/api/v1/vendors/me/gallery/" + photoId, jwt);
+    }
+
     /** Discontinuing (active=false) hides the package from the storefront without deleting it - reactivating (active=true) brings it right back. */
     public VendorPackageItem setPackageActive(String jwt, Long packageId, boolean active) {
         return putJson("/api/v1/vendors/me/packages/" + packageId + "/active", jwt, Map.of("active", active), VendorPackageItem.class);
@@ -805,6 +822,28 @@ public class BackendClient {
     public void unverifyVendor(String adminJwt, Long vendorUserId) {
         backendRestClient.post()
                 .uri("/api/v1/admin/vendors/" + vendorUserId + "/unverify")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
+    /** Whichever referral (if any) this vendor was the referred party on - null if they arrived unreferred. */
+    public BackendAdminReferralItem getVendorReferral(String adminJwt, Long vendorUserId) {
+        return get("/api/v1/admin/vendors/" + vendorUserId + "/referral", adminJwt, BackendAdminReferralItem.class);
+    }
+
+    /** Support-desk fix for a referral that was never attributed at signup - see AdminVendorController#tagReferral. */
+    public void tagVendorReferral(
+            String adminJwt, Long vendorUserId, String referrerCode, String status, java.math.BigDecimal commissionAmount) {
+        StringBuilder uri = new StringBuilder("/api/v1/admin/vendors/" + vendorUserId + "/referral")
+                .append("?referrerCode=").append(java.net.URLEncoder.encode(referrerCode, java.nio.charset.StandardCharsets.UTF_8))
+                .append("&status=").append(status);
+        if (commissionAmount != null) {
+            uri.append("&commissionAmount=").append(commissionAmount);
+        }
+        backendRestClient.post()
+                .uri(uri.toString())
                 .header("Authorization", "Bearer " + adminJwt)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::raise)

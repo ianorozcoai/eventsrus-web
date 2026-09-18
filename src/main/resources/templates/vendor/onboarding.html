@@ -73,8 +73,6 @@
 					<!-- Onboarding form -->
 					<form id="onboardingForm" th:action="@{/vendor/onboarding}" th:object="${vendorOnboardingForm}" method="post" enctype="multipart/form-data" class="flex-fill">
 						<input type="hidden" id="recaptchaToken" th:field="*{recaptchaToken}">
-						<!-- Pre-filled server-side from the session if this visitor arrived via a referral link (/vendor/?ref=CODE) - see VendorController#onboardingForm. -->
-						<input type="hidden" th:field="*{referralCode}">
 						<div class="row">
 							<div class="col-lg-8 offset-lg-2">
 								<div class="card mb-0">
@@ -309,6 +307,25 @@
 												</div>
 											</div>
 										</template>
+
+										<!-- If this visitor arrived via a referral link (/vendor/?ref=CODE -
+										     see VendorController#onboardingForm), the code is already known
+										     and locked in as read-only; otherwise it's a free-text optional
+										     field. Either way the backend validates it belongs to a real
+										     vendor on submit (see UserService#becomeVendor) - an unknown code
+										     surfaces through the same #onboardingError banner as any other
+										     submit failure. -->
+										<div class="mb-3">
+											<label class="form-label">Referral Code <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+											<input type="text" th:field="*{referralCode}" class="form-control" placeholder="e.g., AB12CD34"
+												th:readonly="${vendorOnboardingForm.referralCode != null and not #strings.isEmpty(vendorOnboardingForm.referralCode)}">
+											<div class="fs-sm text-muted mt-1" th:if="${vendorOnboardingForm.referralCode != null and not #strings.isEmpty(vendorOnboardingForm.referralCode)}">
+												You're signing up through a referral link, so this is locked in.
+											</div>
+											<div class="fs-sm text-muted mt-1" th:unless="${vendorOnboardingForm.referralCode != null and not #strings.isEmpty(vendorOnboardingForm.referralCode)}">
+												If another vendor referred you, enter their code here.
+											</div>
+										</div>
 
 										<label class="form-check mt-2">
 											<input type="checkbox" th:field="*{acceptedTerms}" class="form-check-input" required>

@@ -66,6 +66,14 @@
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 						Review visibility updated.
 					</div>
+					<div th:if="${referralTagged}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Referral tagged.
+					</div>
+					<div th:if="${referralError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${referralError}"></span>
+					</div>
 
 					<div th:if="${documents != null}">
 
@@ -118,6 +126,57 @@
 							</div>
 						</div>
 						<!-- /vendor header -->
+
+						<!-- Referral - who (if anyone) referred this vendor. If nobody was
+						     attributed at signup (e.g. they forgot to use the link, or typed
+						     the code wrong), this lets an admin fix it as a support-desk
+						     action - see AdminVerificationController#tagReferral. -->
+						<div class="card mb-3">
+							<div class="card-header">
+								<h6 class="mb-0">Referral</h6>
+							</div>
+							<div class="card-body">
+								<div th:if="${existingReferral != null}">
+									<p class="mb-1">
+										Referred by <strong th:text="${existingReferral.referrerBusinessName() ?: existingReferral.referrerEmail()}">Referrer</strong>
+										<span class="badge ms-2"
+											th:classappend="${existingReferral.status().name() == 'COMMISSION_PAID'} ? 'bg-success' : (${existingReferral.status().name() == 'CONVERTED'} ? 'bg-primary' : 'bg-warning text-dark')"
+											th:text="${existingReferral.status().name() == 'COMMISSION_PAID'} ? 'Paid' : (${existingReferral.status().name() == 'CONVERTED'} ? 'Converted' : 'Pending')">Status</span>
+									</p>
+									<p class="text-muted fs-sm mb-0">
+										<span th:if="${existingReferral.commissionAmount() != null}">
+											Commission: &#8369;<span th:text="${#numbers.formatDecimal(existingReferral.commissionAmount(), 1, 'COMMA', 2, 'POINT')}">0.00</span> &middot;
+										</span>
+										Tagged <span th:text="${#temporals.format(existingReferral.createdAt(), 'MMM d, yyyy')}">date</span>
+									</p>
+								</div>
+								<form th:if="${existingReferral == null}" th:action="@{'/admin/verifications/' + ${userId} + '/referral'}" method="post" class="row g-2 align-items-end">
+									<div class="col-md-4">
+										<label class="form-label">Referrer's code</label>
+										<input type="text" name="referrerCode" class="form-control" placeholder="e.g., AB12CD34" required>
+									</div>
+									<div class="col-md-3">
+										<label class="form-label">Status</label>
+										<select name="status" id="referralStatusSelect" class="form-select">
+											<option value="PENDING">Pending</option>
+											<option value="CONVERTED">Converted</option>
+											<option value="COMMISSION_PAID">Already Paid</option>
+										</select>
+									</div>
+									<div class="col-md-3">
+										<label class="form-label">Commission <span class="text-muted fs-sm fw-normal">(optional)</span></label>
+										<input type="number" step="0.01" min="0" name="commissionAmount" id="referralCommissionInput" class="form-control" placeholder="Defaults to current setting" disabled>
+									</div>
+									<div class="col-md-2">
+										<button type="submit" class="btn btn-primary w-100">Tag Referral</button>
+									</div>
+									<p class="text-muted fs-sm mt-2 mb-0">
+										This vendor wasn't attributed to a referrer at signup - use this if they complain about a missing referral.
+									</p>
+								</form>
+							</div>
+						</div>
+						<!-- /referral -->
 
 						<div class="row">
 
@@ -239,6 +298,19 @@
 
 	</div>
 	<!-- /page content -->
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var statusSelect = document.getElementById('referralStatusSelect');
+			var commissionInput = document.getElementById('referralCommissionInput');
+			if (!statusSelect || !commissionInput) {
+				return;
+			}
+			statusSelect.addEventListener('change', function () {
+				commissionInput.disabled = statusSelect.value === 'PENDING';
+			});
+		});
+	</script>
 
 </body>
 </html>

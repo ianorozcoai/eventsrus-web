@@ -11,5 +11,6 @@ public enum QuotationStatus {
     PAYMENT_REVIEW,
     PAYMENT_REJECTED,
     BOOKED,
-    DECLINED
+    DECLINED,
+    CANCELLED
 }

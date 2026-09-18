@@ -7,4 +7,6 @@ public record BackendSubscriptionStatus(
         String plan,
         Instant expiresAt,
         boolean expiringSoon,
-        boolean expired) {}
+        boolean expired,
+        boolean inGracePeriod,
+        Instant graceEndsAt) {}

@@ -494,7 +494,7 @@
 													<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
 													<td>
 														<span class="badge"
-															th:classappend="${quotation.status().name() == 'BOOKED'} ? 'bg-success' : (${quotation.status().name() == 'DECLINED' or quotation.status().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${quotation.status().name() == 'QUOTE_SENT' or quotation.status().name() == 'REVISION_SENT'} ? 'bg-info' : (${quotation.status().name() == 'PENDING_DEPOSIT' or quotation.status().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning')))"
+															th:classappend="${quotation.status().name() == 'BOOKED'} ? 'bg-success' : (${quotation.status().name() == 'CANCELLED'} ? 'bg-danger' : (${quotation.status().name() == 'DECLINED' or quotation.status().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${quotation.status().name() == 'QUOTE_SENT' or quotation.status().name() == 'REVISION_SENT'} ? 'bg-info' : (${quotation.status().name() == 'PENDING_DEPOSIT' or quotation.status().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning'))))"
 															th:text="${quotation.status()}">STATUS</span>
 														<span class="fs-sm text-muted ms-1" th:text="'v' + ${quotation.version()}">v1</span>
 													</td>
@@ -581,7 +581,8 @@
 								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" th:id="'acceptQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
 									<div class="modal-dialog modal-dialog-centered modal-lg">
 										<div class="modal-content">
-											<form th:action="@{/planner/events/{eventId}/quotations/{id}/accept(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data" class="accept-quote-form">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/accept(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data" class="accept-quote-form"
+												th:attr="data-cancellation-policy-url=${quotation.cancellationPolicyUrl()},data-refund-terms-url=${quotation.refundTermsUrl()}">
 												<div class="modal-header">
 													<h5 class="modal-title" th:text="'Accept ' + ${quotation.vendorBusinessName()} + '\'s Quotation'">Accept Quotation</h5>
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -686,10 +687,33 @@
 													<p id="acceptQuoteConfirmMessage" class="mb-0 fst-italic text-muted">No message added.</p>
 												</div>
 
-												<div class="mb-0">
+												<div class="mb-3">
 													<div class="fs-sm fw-semibold text-muted mb-1">Payment screenshot</div>
 													<img id="acceptQuoteConfirmScreenshot" src="" alt="Payment screenshot preview" class="img-fluid rounded border d-none" style="max-height:180px;">
 													<p id="acceptQuoteConfirmNoScreenshot" class="text-muted fs-sm mb-0">No screenshot uploaded - you can add one later.</p>
+												</div>
+
+												<!--/* Only shown when the vendor has actually uploaded at least
+												     one of these two documents (see accept-quote-review script
+												     below) - a vendor with neither on file skips straight to the
+												     plain confirm above, no checkbox needed. */-->
+												<div id="acceptQuoteConfirmPolicySection" class="border rounded p-3 d-none">
+													<div class="fs-sm fw-semibold mb-2">Cancellation &amp; Refund Policy</div>
+													<div class="d-flex gap-3 mb-2">
+														<a href="#" id="acceptQuoteConfirmCancellationPolicyLink" class="fs-sm lightbox-trigger d-none">
+															<i class="ph-file-text me-1"></i> Cancellation Policy
+														</a>
+														<a href="#" id="acceptQuoteConfirmRefundTermsLink" class="fs-sm lightbox-trigger d-none">
+															<i class="ph-file-text me-1"></i> Refund Terms
+														</a>
+													</div>
+													<div class="form-check mb-0">
+														<input class="form-check-input" type="checkbox" id="acceptQuoteConfirmPolicyAck">
+														<label class="form-check-label fs-sm" for="acceptQuoteConfirmPolicyAck">
+															I've read and am aware of the vendor's cancellation and refund policy.
+														</label>
+													</div>
+													<p class="text-danger fs-sm mt-2 mb-0 d-none" id="acceptQuoteConfirmPolicyHint">Please confirm you're aware of the policy above before continuing.</p>
 												</div>
 											</div>
 											<div class="modal-footer">
@@ -818,7 +842,7 @@
 												<div th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}" class="d-flex mb-3 pb-3 border-bottom">
 													<div class="flex-shrink-0 me-3">
 														<span class="badge"
-															th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning')))"
+															th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'CANCELLED'} ? 'bg-danger' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning'))))"
 															th:text="${historyEntry.toStatus()}">STATUS</span>
 													</div>
 													<div class="flex-grow-1">
@@ -1046,6 +1070,32 @@
 													<p class="text-muted fs-sm">This marks the booking as <strong>CANCELLED</strong> and notifies the vendor. This can't be undone.</p>
 													<label class="form-label">Reason for cancellation</label>
 													<textarea name="reason" rows="3" class="form-control" placeholder="e.g., Change of plans, going with another vendor..." required></textarea>
+
+													<!--/* Only shown when the vendor has actually uploaded at least
+													     one of these two documents - a vendor with neither on file
+													     skips straight to the plain reason textarea above, no
+													     checkbox needed (see the cancel-booking-review-btn wiring
+													     at the bottom of this page). */-->
+													<div class="border rounded p-3 mt-3" th:if="${booking.cancellationPolicyUrl() != null or booking.refundTermsUrl() != null}">
+														<div class="fs-sm fw-semibold mb-2">Cancellation &amp; Refund Policy</div>
+														<div class="d-flex gap-3 mb-2">
+															<a th:if="${booking.cancellationPolicyUrl() != null}" href="#" class="fs-sm lightbox-trigger"
+																th:attr="data-lightbox-src=${booking.cancellationPolicyUrl()},data-lightbox-caption='Cancellation Policy - ' + ${booking.vendorBusinessName()}">
+																<i class="ph-file-text me-1"></i> Cancellation Policy
+															</a>
+															<a th:if="${booking.refundTermsUrl() != null}" href="#" class="fs-sm lightbox-trigger"
+																th:attr="data-lightbox-src=${booking.refundTermsUrl()},data-lightbox-caption='Refund Terms - ' + ${booking.vendorBusinessName()}">
+																<i class="ph-file-text me-1"></i> Refund Terms
+															</a>
+														</div>
+														<div class="form-check mb-0">
+															<input class="form-check-input cancel-policy-ack-checkbox" type="checkbox" th:id="'cancelPolicyAck-' + ${booking.id()}">
+															<label class="form-check-label fs-sm" th:for="'cancelPolicyAck-' + ${booking.id()}">
+																I'm aware of the vendor's cancellation and refund policy.
+															</label>
+														</div>
+														<p class="text-danger fs-sm mt-2 mb-0 d-none cancel-policy-ack-hint">Please confirm you're aware of the policy above before continuing.</p>
+													</div>
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Never mind</button>
@@ -1591,6 +1641,35 @@
 					var message = form.querySelector('textarea[name="message"]').value.trim();
 					document.getElementById('acceptQuoteConfirmMessage').textContent = message || 'No message added.';
 
+					var cancellationPolicyUrl = form.getAttribute('data-cancellation-policy-url');
+					var refundTermsUrl = form.getAttribute('data-refund-terms-url');
+					var policySection = document.getElementById('acceptQuoteConfirmPolicySection');
+					var policyAck = document.getElementById('acceptQuoteConfirmPolicyAck');
+					var policyHint = document.getElementById('acceptQuoteConfirmPolicyHint');
+					var cancellationLink = document.getElementById('acceptQuoteConfirmCancellationPolicyLink');
+					var refundLink = document.getElementById('acceptQuoteConfirmRefundTermsLink');
+					policyAck.checked = false;
+					policyHint.classList.add('d-none');
+					if (cancellationPolicyUrl || refundTermsUrl) {
+						policySection.classList.remove('d-none');
+						if (cancellationPolicyUrl) {
+							cancellationLink.setAttribute('data-lightbox-src', cancellationPolicyUrl);
+							cancellationLink.setAttribute('data-lightbox-caption', 'Cancellation Policy');
+							cancellationLink.classList.remove('d-none');
+						} else {
+							cancellationLink.classList.add('d-none');
+						}
+						if (refundTermsUrl) {
+							refundLink.setAttribute('data-lightbox-src', refundTermsUrl);
+							refundLink.setAttribute('data-lightbox-caption', 'Refund Terms');
+							refundLink.classList.remove('d-none');
+						} else {
+							refundLink.classList.add('d-none');
+						}
+					} else {
+						policySection.classList.add('d-none');
+					}
+
 					var screenshotInput = form.querySelector('.accept-quote-screenshot-input');
 					var screenshotImg = document.getElementById('acceptQuoteConfirmScreenshot');
 					var noScreenshot = document.getElementById('acceptQuoteConfirmNoScreenshot');
@@ -1622,6 +1701,12 @@
 
 			document.getElementById('acceptQuoteConfirmSubmitBtn').addEventListener('click', function () {
 				if (!activeForm) {
+					return;
+				}
+				var policySection = document.getElementById('acceptQuoteConfirmPolicySection');
+				var policyAck = document.getElementById('acceptQuoteConfirmPolicyAck');
+				if (!policySection.classList.contains('d-none') && !policyAck.checked) {
+					document.getElementById('acceptQuoteConfirmPolicyHint').classList.remove('d-none');
 					return;
 				}
 				window.showPageSpinner('Accepting quote…');
@@ -1691,6 +1776,15 @@
 			});
 
 			window.armConfirmSubmitButtons('.cancel-booking-review-btn', function (btn, form) {
+				var policyCheckbox = form.querySelector('.cancel-policy-ack-checkbox');
+				var policyHint = form.querySelector('.cancel-policy-ack-hint');
+				if (policyCheckbox && !policyCheckbox.checked) {
+					policyHint.classList.remove('d-none');
+					return null;
+				}
+				if (policyHint) {
+					policyHint.classList.add('d-none');
+				}
 				return {
 					title: 'Cancel Booking',
 					intro: 'This marks the booking as CANCELLED and notifies the vendor. This can’t be undone.',

@@ -71,7 +71,6 @@
 								<thead>
 									<tr>
 										<th>Event</th>
-										<th>Planner</th>
 										<th>Event date</th>
 										<th>Price</th>
 										<th>Status</th>
@@ -83,18 +82,23 @@
 									<tr th:each="booking : ${bookings}">
 										<td>
 											<div th:text="${booking.eventName()}">Event</div>
-											<div class="text-muted fs-sm" th:text="${booking.agreementDetails()}">Details</div>
+											<div class="text-muted fs-sm" th:text="'Planner: ' + ${booking.plannerName()}">Planner</div>
+											<!--/* The original request message stops being relevant once the
+											     booking is cancelled - showing it next to the cancellation
+											     reason made it look like the two were related, which is
+											     confusing. Once cancelled, the cancellation reason is the
+											     only message that still matters. */-->
+											<div class="text-muted fs-sm" th:if="${booking.status().name() != 'CANCELLED'}" th:text="${booking.agreementDetails()}">Details</div>
 											<div class="text-danger fs-sm mt-1" th:if="${booking.paymentRejectionReason() != null}">
 												<i class="ph-warning-circle me-1"></i>
 												<span th:text="${booking.paymentRejectionReason()}">Rejection reason</span>
 											</div>
 											<div class="text-muted fs-sm mt-1" th:if="${booking.status().name() == 'CANCELLED'}">
 												<i class="ph-x-circle me-1"></i>
-												Cancelled by <span th:text="${booking.cancelledByUserId() == 9001} ? 'you' : 'the planner'">who</span>:
+												Cancelled by <span th:text="${booking.cancelledByUserId() == currentUserId} ? 'you' : 'the planner'">who</span>:
 												<span th:text="${booking.cancellationReason()}">Reason</span>
 											</div>
 										</td>
-										<td th:text="'Planner #' + ${booking.plannerUserId()}">Planner</td>
 										<td th:text="${#temporals.format(booking.eventDatetime(), 'MMM dd, yyyy')}">-</td>
 										<td>&#8369;<span th:text="${#numbers.formatDecimal(booking.price(), 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
 										<td>

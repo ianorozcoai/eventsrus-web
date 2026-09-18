@@ -57,15 +57,18 @@
 								</a>
 							</li>
 						</ul>
-						<!--/* Same two colors everywhere an event date shows up on this
+						<!--/* Same three colors everywhere an event date shows up on this
 						     page (list badges below and the FullCalendar view - see
 						     VendorController#toFullCalendarEventsJson) - green once a
-						     booking is actually confirmed, violet for anything still
-						     short of that (an inquiry, or a quotation at any stage from
-						     the initial request through payment review). */-->
+						     booking is actually confirmed, red once cancelled (matches
+						     the Bookings/Quotations tabs' own CANCELLED badge), violet
+						     for anything still short of either (an inquiry, or a
+						     quotation at any stage from the initial request through
+						     payment review). */-->
 						<div class="d-flex align-items-center gap-3 fs-sm text-muted">
 							<span><span class="legend-swatch bg-success"></span>Booked</span>
 							<span><span class="legend-swatch bg-purple"></span>Pending / In Progress</span>
+							<span><span class="legend-swatch bg-danger"></span>Cancelled</span>
 						</div>
 					</div>
 					<div class="border-bottom mb-3"></div>
@@ -107,7 +110,7 @@
 												<td th:text="${entry.eventName()}">Event</td>
 												<td th:text="${entry.plannerName()}">Planner</td>
 												<td>
-													<span class="badge" th:classappend="${entry.status() == 'BOOKED'} ? 'bg-success' : 'bg-purple'" th:text="${entry.status()}">STATUS</span>
+													<span class="badge" th:classappend="${entry.status() == 'BOOKED'} ? 'bg-success' : (${entry.status() == 'CANCELLED'} ? 'bg-danger' : 'bg-purple')" th:text="${entry.status()}">STATUS</span>
 												</td>
 											</tr>
 										</tbody>

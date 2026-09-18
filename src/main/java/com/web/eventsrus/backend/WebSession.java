@@ -25,6 +25,8 @@ public final class WebSession {
     public static final String SUBSCRIPTION_EXPIRES_AT = "auth.subscriptionExpiresAt";
     public static final String SUBSCRIPTION_EXPIRING_SOON = "auth.subscriptionExpiringSoon";
     public static final String SUBSCRIPTION_EXPIRED = "auth.subscriptionExpired";
+    public static final String SUBSCRIPTION_IN_GRACE_PERIOD = "auth.subscriptionInGracePeriod";
+    public static final String SUBSCRIPTION_GRACE_ENDS_AT = "auth.subscriptionGraceEndsAt";
     // Shows the paywall modal once per login, not on every page navigation.
     public static final String PAYWALL_SHOWN = "auth.paywallShown";
     // Shows the "add your first package" nudge modal once per login too -
@@ -97,15 +99,24 @@ public final class WebSession {
         session.setAttribute(LAST_NAME, auth.lastName());
         session.setAttribute(ROLE, auth.role());
         session.setAttribute(SIGNUP_INTENT, auth.signupIntent());
-        storeSubscription(session, auth.plan(), auth.planExpiresAt(), false, auth.plan() == null);
+        // Login only knows plan/planExpiresAt (see BackendAuthResponse), not
+        // the finer expiringSoon/inGracePeriod detail - only the full
+        // subscription-status fetch computes those (see storeSubscription's
+        // other two callers). expired mirrors what it always has here: no
+        // live plan at all, which stays correctly false for a vendor still
+        // inside their grace period since plan() stays non-null for them.
+        storeSubscription(session, auth.plan(), auth.planExpiresAt(), false, auth.plan() == null, false, null);
     }
 
     public static void storeSubscription(
-            HttpSession session, String plan, java.time.Instant expiresAt, boolean expiringSoon, boolean expired) {
+            HttpSession session, String plan, java.time.Instant expiresAt, boolean expiringSoon, boolean expired,
+            boolean inGracePeriod, java.time.Instant graceEndsAt) {
         session.setAttribute(SUBSCRIPTION_PLAN, plan);
         session.setAttribute(SUBSCRIPTION_EXPIRES_AT, expiresAt);
         session.setAttribute(SUBSCRIPTION_EXPIRING_SOON, expiringSoon);
         session.setAttribute(SUBSCRIPTION_EXPIRED, expired);
+        session.setAttribute(SUBSCRIPTION_IN_GRACE_PERIOD, inGracePeriod);
+        session.setAttribute(SUBSCRIPTION_GRACE_ENDS_AT, graceEndsAt);
     }
 
     public static boolean isSubscriptionExpired(HttpSession session) {
@@ -115,5 +126,17 @@ public final class WebSession {
         }
         Boolean expired = (Boolean) session.getAttribute(SUBSCRIPTION_EXPIRED);
         return Boolean.TRUE.equals(expired);
+    }
+
+    public static boolean isInSubscriptionGracePeriod(HttpSession session) {
+        if (session == null) {
+            return false;
+        }
+        Boolean inGracePeriod = (Boolean) session.getAttribute(SUBSCRIPTION_IN_GRACE_PERIOD);
+        return Boolean.TRUE.equals(inGracePeriod);
+    }
+
+    public static java.time.Instant subscriptionGraceEndsAt(HttpSession session) {
+        return session == null ? null : (java.time.Instant) session.getAttribute(SUBSCRIPTION_GRACE_ENDS_AT);
     }
 }

@@ -27,4 +27,5 @@ public record BackendAdminVendorListItem(
         Instant verifiedAt,
         String verifiedByAdmin,
         boolean topVendor,
-        Instant createdAt) {}
+        Instant createdAt,
+        long referralCount) {}

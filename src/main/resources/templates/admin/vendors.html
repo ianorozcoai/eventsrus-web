@@ -91,6 +91,7 @@
 												<th>Business Type</th>
 												<th>City</th>
 												<th>Operating Areas</th>
+												<th>Referrals Made</th>
 												<th></th>
 											</tr>
 										</thead>
@@ -100,12 +101,18 @@
 												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
 												<td th:text="${vendor.city()}">City</td>
 												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
+												<td>
+													<span class="badge" th:classappend="${vendor.referralCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${vendor.referralCount()}">0</span>
+												</td>
 												<td class="text-end">
 													<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="btn btn-light btn-sm">
 														<i class="ph-storefront me-1"></i> View Storefront
 														<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
 													</a>
-													<span th:unless="${vendor.slug() != null}" class="text-muted fs-sm">No storefront yet</span>
+													<span th:unless="${vendor.slug() != null}" class="text-muted fs-sm me-2">No storefront yet</span>
+													<a th:href="@{'/admin/verifications/' + ${vendor.vendorUserId()}}" class="btn btn-light btn-sm">
+														<i class="ph-identification-badge me-1"></i> Manage
+													</a>
 												</td>
 											</tr>
 										</tbody>

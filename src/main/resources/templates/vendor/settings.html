@@ -92,6 +92,12 @@
 								Payment Methods
 							</a>
 						</li>
+						<li class="nav-item">
+							<a href="#tab-gallery" class="nav-link" data-bs-toggle="tab">
+								<i class="ph-images me-2"></i>
+								Gallery
+							</a>
+						</li>
 					</ul>
 					<!-- /tabs -->
 
@@ -496,6 +502,55 @@
 							</div>
 							<!-- /payment methods -->
 
+							<!--/* Storefront Gallery - standalone sample-work photos, not
+							     tied to any package (see backend VendorGalleryPhotoService).
+							     Combined with every package's own photos into the same
+							     single Gallery section a planner sees on the storefront
+							     (VendorDirectoryService#getPublicProfile) - a vendor whose
+							     packages don't have much to hang photos off of can still
+							     showcase their work here. Upload is immediate (no
+							     queue-until-Save-Changes the way package photos work)
+							     since the vendor's profile always already exists by the
+							     time they reach Settings - see the gallery-photo script at
+							     the bottom of this page. */-->
+							<div class="tab-pane fade" id="tab-gallery">
+								<div class="card">
+									<div class="card-header">
+										<h6 class="mb-0">Storefront Gallery</h6>
+									</div>
+									<div class="card-body">
+
+										<p class="text-muted fs-sm mb-4">Sample-work photos for your storefront that aren't tied to a specific package - shown together with your package photos in the same Gallery section planners see.</p>
+
+										<div class="row g-3 mb-3" id="galleryPhotosGrid" th:classappend="${#lists.isEmpty(galleryPhotos)} ? 'd-none'">
+											<div class="col-lg-3 col-md-4 col-6" th:each="photo : ${galleryPhotos}">
+												<div class="position-relative">
+													<a href="#" class="d-block lightbox-trigger"
+														th:attr="data-lightbox-src=${photo.imageUrl()},data-lightbox-caption=${photo.caption() != null ? photo.caption() : 'Gallery photo'}">
+														<img th:src="${photo.imageUrl()}" alt="Gallery photo" class="img-fluid rounded border" style="height:130px;width:100%;object-fit:cover;">
+													</a>
+													<!--/* Plain button + AJAX, same nested-form hazard as every
+													     other delete button on this page - this card sits
+													     inside #settingsForm. */-->
+													<button type="button" class="btn btn-danger btn-icon btn-sm rounded-circle position-absolute top-0 end-0 m-1 gallery-photo-delete-btn"
+														style="width:24px;height:24px;padding:0;" title="Remove photo"
+														th:attr="data-delete-url=@{'/vendor/settings/gallery/' + ${photo.id()} + '/delete'}">
+														<i class="ph-x fs-xs"></i>
+													</button>
+												</div>
+											</div>
+										</div>
+										<p class="text-muted fs-sm mb-3" id="galleryPhotosEmpty" th:classappend="${not #lists.isEmpty(galleryPhotos)} ? 'd-none'">No gallery photos yet. Add sample-work photos to showcase on your storefront.</p>
+
+										<label class="form-label">Add photos</label>
+										<div class="dropzone" id="galleryPhotosDropzone"></div>
+										<div class="fs-sm text-muted mt-1">PNG or JPEG only. Uploaded right away - not part of Save Changes.</div>
+
+									</div>
+								</div>
+							</div>
+							<!-- /storefront gallery -->
+
 						</div>
 
 						<div class="d-flex justify-content-end mt-3">
@@ -839,6 +894,136 @@
 		});
 	</script>
 	<!-- /legal document delete -->
+
+
+	<!-- Storefront Gallery - upload and delete, both immediate (no
+	     queue-until-Save-Changes). Dropzone posts one file per request, so
+	     "success" fires per-file, not once for the whole drop - reload only
+	     after the WHOLE queue settles (queuecomplete), and only if at least
+	     one file actually made it through; if every file in the batch was
+	     rejected (e.g. already at the photo limit), stay put so the
+	     Dropzone's own inline error message on each rejected thumbnail
+	     stays visible instead of vanishing under a reload. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var galleryDropzoneEl = document.getElementById('galleryPhotosDropzone');
+			if (galleryDropzoneEl) {
+				var galleryUploadCount = 0;
+				var galleryDropzone = new Dropzone('#galleryPhotosDropzone', {
+					url: '/vendor/settings/gallery',
+					paramName: 'image',
+					acceptedFiles: '.jpg,.jpeg,.png,image/jpeg,image/png',
+					addRemoveLinks: false,
+					dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
+					dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
+				});
+				galleryDropzone.on('success', function () {
+					galleryUploadCount++;
+				});
+				galleryDropzone.on('error', function (file, response) {
+					var message = response && response.error ? response.error : 'Upload failed. Please try again.';
+					var errorEl = file.previewElement && file.previewElement.querySelector('.dz-error-message span');
+					if (errorEl) {
+						errorEl.textContent = message;
+					}
+				});
+				galleryDropzone.on('queuecomplete', function () {
+					if (galleryUploadCount > 0) {
+						window.setGalleryToast(galleryUploadCount === 1
+							? 'Photo added to your gallery.'
+							: galleryUploadCount + ' photos added to your gallery.');
+						// A plain location.href assignment here would only
+						// differ from the current URL by its fragment
+						// (this page loads at plain /vendor/settings, no
+						// hash) - browsers treat that as a same-document
+						// anchor jump, not a real navigation, so the page
+						// never actually reloads and the spinner never
+						// clears. Force a real reload instead.
+						window.location.hash = 'tab-gallery';
+						window.location.reload();
+					}
+				});
+			}
+
+			document.querySelectorAll('.gallery-photo-delete-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') {
+						return;
+					}
+					window.confirmAction('Remove this photo permanently? This cannot be undone.', function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner('Removing…');
+						fetch(btn.getAttribute('data-delete-url'), { method: 'POST' })
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) {
+									throw new Error(result.body.error || 'Could not remove this photo. Please try again.');
+								}
+								window.setGalleryToast('Photo removed from your gallery.');
+								// See the queuecomplete handler above for why
+								// this can't be a plain location.href assignment.
+								window.location.hash = 'tab-gallery';
+								window.location.reload();
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+
+			// Restore whichever tab was active before a reload (e.g. right
+			// after adding/removing a gallery photo) - Bootstrap tabs
+			// default back to the first one otherwise.
+			if (window.location.hash) {
+				var tabLink = document.querySelector('a[data-bs-toggle="tab"][href="' + window.location.hash + '"]');
+				if (tabLink) {
+					bootstrap.Tab.getOrCreateInstance(tabLink).show();
+				}
+			}
+
+			// A gallery add/delete finishes with a full page reload (see
+			// above), which wipes any in-memory state - so the confirmation
+			// message is stashed in sessionStorage right before reloading,
+			// then picked up and shown here on the page that comes back.
+			window.setGalleryToast = function (message) {
+				try {
+					sessionStorage.setItem('galleryToastMessage', message);
+				} catch (e) {
+					// Storage unavailable (e.g. private browsing) - reload
+					// still happens, just without the toast.
+				}
+			};
+			var pendingGalleryToast = null;
+			try {
+				pendingGalleryToast = sessionStorage.getItem('galleryToastMessage');
+				if (pendingGalleryToast) {
+					sessionStorage.removeItem('galleryToastMessage');
+				}
+			} catch (e) {
+				pendingGalleryToast = null;
+			}
+			if (pendingGalleryToast) {
+				document.getElementById('galleryToastBody').textContent = pendingGalleryToast;
+				bootstrap.Toast.getOrCreateInstance(document.getElementById('galleryToast')).show();
+			}
+		});
+	</script>
+	<!-- /storefront gallery -->
+
+	<!-- Confirmation toast for gallery add/remove - see the sessionStorage
+	     handoff in the script above for why this can't just be an
+	     th:if-on-a-flash-attribute banner like the rest of this page. -->
+	<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2100;">
+		<div id="galleryToast" class="toast align-items-center bg-success text-white border-0" role="status" aria-live="polite" aria-atomic="true">
+			<div class="d-flex">
+				<div class="toast-body" id="galleryToastBody"></div>
+				<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+			</div>
+		</div>
+	</div>
 
 
 	<div th:replace="~{fragments/common :: imageLightbox}"></div>

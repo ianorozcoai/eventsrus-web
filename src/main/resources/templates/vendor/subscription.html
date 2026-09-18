@@ -87,36 +87,101 @@
 							<!-- /current plan -->
 
 							<!-- Renew / subscribe - hidden off a localhost URL until PayPal
-							     is off sandbox credentials (see VendorSubscriptionWebController). -->
+							     is off sandbox credentials (see VendorSubscriptionWebController).
+							     Payment method buttons below are deliberately inert for now
+							     (no click handler, nothing to submit to yet) - picking a real
+							     payment method per plan/cycle combination is a separate,
+							     not-yet-built piece of work; this is the plan-selection UI
+							     ahead of that. -->
 							<div class="card" th:if="${showSubscriptionPayment}">
 								<div class="card-header">
-									<h6 class="mb-0" th:text="${status.plan() != null ? 'Renew PRO' : 'Subscribe to PRO'}">Subscribe to PRO</h6>
+									<h6 class="mb-0" th:text="${status.plan() != null ? 'Renew Subscription' : 'Subscribe to PRO'}">Renew Subscription</h6>
 								</div>
 								<div class="card-body">
-									<form th:action="@{/vendor/subscription/subscribe}" method="post">
-										<div class="mb-3">
-											<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
-												<span>
-													<input type="radio" name="billingCycle" value="MONTHLY" class="form-check-input me-2" checked>
-													Monthly
-												</span>
-												<span class="fw-semibold">&#8369;999 / month</span>
-											</label>
-											<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-0">
-												<span>
-													<input type="radio" name="billingCycle" value="ANNUAL" class="form-check-input me-2">
-													Annual
-												</span>
-												<span class="fw-semibold">&#8369;9,999 / year</span>
-											</label>
+									<div class="mb-3">
+										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
+											<span>
+												<input type="radio" name="billingCycle" value="QUARTERLY" class="form-check-input me-2" checked>
+												Quarterly <span class="text-muted fs-sm">(3 months)</span>
+											</span>
+											<span class="text-end">
+												<span class="fw-semibold d-block text-nowrap">&#8369;1,500 / month</span>
+												<span class="text-muted fs-sm">&#8369;4,500 total</span>
+											</span>
+										</label>
+										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
+											<span>
+												<input type="radio" name="billingCycle" value="SEMI_ANNUAL" class="form-check-input me-2">
+												Semi-Annual <span class="text-muted fs-sm">(6 months)</span>
+												<span class="badge bg-success ms-1">Free 1 Month</span>
+											</span>
+											<span class="text-end">
+												<span class="fw-semibold d-block text-nowrap">&#8369;1,500 / month</span>
+												<span class="text-muted fs-sm">&#8369;7,500 total</span>
+											</span>
+										</label>
+										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-0">
+											<span>
+												<input type="radio" name="billingCycle" value="ANNUAL" class="form-check-input me-2">
+												Annual <span class="text-muted fs-sm">(12 months)</span>
+												<span class="badge bg-success ms-1">Free 2 Months</span>
+											</span>
+											<span class="text-end">
+												<span class="fw-semibold d-block text-nowrap">&#8369;1,500 / month</span>
+												<span class="text-muted fs-sm">&#8369;15,000 total</span>
+											</span>
+										</label>
+									</div>
+
+									<label class="form-label">Payment Method</label>
+									<div class="row g-2">
+										<div class="col-6">
+											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+												<img th:src="@{/assets/images/payment-methods/paypal.svg}" alt="" style="height:18px;width:auto;">
+												PayPal
+											</button>
 										</div>
-										<button type="submit" class="btn btn-primary w-100">
-											<span th:text="${status.plan() != null ? 'Renew with PayPal' : 'Subscribe with PayPal'}">Subscribe with PayPal</span>
-										</button>
-									</form>
+										<div class="col-6">
+											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+												<img th:src="@{/assets/images/payment-methods/gcash.svg}" alt="" style="height:18px;width:auto;">
+												GCash
+											</button>
+										</div>
+										<div class="col-6">
+											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+												<img th:src="@{/assets/images/payment-methods/maya.svg}" alt="" style="height:18px;width:auto;">
+												Maya
+											</button>
+										</div>
+										<div class="col-6">
+											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+												<i class="ph-bank fs-lg"></i>
+												Bank Transfer
+											</button>
+										</div>
+									</div>
 								</div>
 							</div>
 							<!-- /renew / subscribe -->
+
+							<!-- Payment method buttons deliberately don't use Bootstrap's
+							     stock outline-button hover (a solid background fill) - a
+							     thicker border reads as "hovering" without the color swap.
+							     border-width alone would grow the button and nudge its
+							     neighbors; the matching negative margin cancels that out so
+							     nothing shifts. -->
+							<style>
+								.payment-method-btn {
+									--btn-hover-bg: transparent;
+									--btn-hover-color: var(--btn-color);
+									--btn-hover-border-color: var(--btn-border-color);
+									border-width: 1px;
+								}
+								.payment-method-btn:hover, .payment-method-btn:focus {
+									border-width: 2px;
+									margin: -1px;
+								}
+							</style>
 
 						</div>
 

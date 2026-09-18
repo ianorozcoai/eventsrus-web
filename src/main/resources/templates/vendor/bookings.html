@@ -60,96 +60,175 @@
 						<span th:text="${bookingsError}">Error</span>
 					</div>
 
+					<!--/* Grouped into 3 tabs, same reasoning as the vendor's
+					     Quotations page - Amended covers anything not yet in a
+					     resting state: a booking with a real pending
+					     BookingAmendment (see BookingAmendmentService -
+					     proposing a change to an already-BOOKED booking), plus
+					     the legacy pre-BOOKED statuses (PROPOSED/APPROVED/
+					     AWAITING_PAYMENT/PAYMENT_SUBMITTED/PAYMENT_REJECTED)
+					     left over from the old cold-proposal flow, since none
+					     of those cleanly fit "Booked" or "Cancelled" either.
+					     Booked is BOOKED with nothing pending; Cancelled
+					     covers both CANCELLED and DECLINED. Rows are already
+					     sorted upcoming-event-first by VendorController. */-->
 					<div class="card">
-						<div class="card-header d-flex align-items-center">
-							<h6 class="mb-0">Your confirmed and pending bookings</h6>
-							<span class="badge bg-primary ms-auto" th:text="${#lists.size(bookings)} + ' total'">0 total</span>
+						<div class="card-header">
+							<ul class="nav nav-tabs card-header-tabs" role="tablist">
+								<li class="nav-item">
+									<a href="#tab-amended" class="nav-link active" data-bs-toggle="tab" role="tab">
+										Amended
+										<span class="badge bg-warning text-dark rounded-pill ms-2" th:text="${#lists.size(bookingsAmended)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#tab-booked" class="nav-link" data-bs-toggle="tab" role="tab">
+										Booked
+										<span class="badge bg-success rounded-pill ms-2" th:text="${#lists.size(bookingsBooked)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#tab-cancelled" class="nav-link" data-bs-toggle="tab" role="tab">
+										Cancelled
+										<span class="badge bg-danger rounded-pill ms-2" th:text="${#lists.size(bookingsCancelled)}">0</span>
+									</a>
+								</li>
+							</ul>
 						</div>
 
-						<div class="table-responsive" th:if="${not #lists.isEmpty(bookings)}">
-							<table id="bookingsTable" class="table table-hover w-100">
-								<thead>
-									<tr>
-										<th>Event</th>
-										<th>Event date</th>
-										<th>Price</th>
-										<th>Status</th>
-										<th>Proposed</th>
-										<th class="text-end">Actions</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr th:each="booking : ${bookings}">
-										<td>
-											<div th:text="${booking.eventName()}">Event</div>
-											<div class="text-muted fs-sm" th:text="'Planner: ' + ${booking.plannerName()}">Planner</div>
-											<!--/* The original request message stops being relevant once the
-											     booking is cancelled - showing it next to the cancellation
-											     reason made it look like the two were related, which is
-											     confusing. Once cancelled, the cancellation reason is the
-											     only message that still matters. */-->
-											<div class="text-muted fs-sm" th:if="${booking.status().name() != 'CANCELLED'}" th:text="${booking.agreementDetails()}">Details</div>
-											<div class="text-danger fs-sm mt-1" th:if="${booking.paymentRejectionReason() != null}">
-												<i class="ph-warning-circle me-1"></i>
-												<span th:text="${booking.paymentRejectionReason()}">Rejection reason</span>
-											</div>
-											<div class="text-muted fs-sm mt-1" th:if="${booking.status().name() == 'CANCELLED'}">
-												<i class="ph-x-circle me-1"></i>
-												Cancelled by <span th:text="${booking.cancelledByUserId() == currentUserId} ? 'you' : 'the planner'">who</span>:
-												<span th:text="${booking.cancellationReason()}">Reason</span>
-											</div>
-										</td>
-										<td th:text="${#temporals.format(booking.eventDatetime(), 'MMM dd, yyyy')}">-</td>
-										<td>&#8369;<span th:text="${#numbers.formatDecimal(booking.price(), 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
-										<td>
-											<span class="badge"
-												th:classappend="${#sets.contains({'APPROVED','BOOKED'}, booking.status().name())} ? 'bg-success' : (${#sets.contains({'PROPOSED','PAYMENT_SUBMITTED'}, booking.status().name())} ? 'bg-warning' : (${booking.status().name() == 'AWAITING_PAYMENT'} ? 'bg-info' : (${booking.status().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-danger')))"
-												th:text="${booking.status()}">STATUS</span>
-										</td>
-										<td th:text="${#temporals.format(booking.proposedAt(), 'MMM dd, yyyy')}">-</td>
-										<td class="text-end">
-											<!--/* One action menu instead of a growing row of buttons - same
-											     burger-icon pattern used for the planner's quotation actions
-											     (see fragments/common.html topnavbar for the same dropdown
-											     convention). Each item keeps the exact same th:if visibility
-											     rule it had as a standalone button/link, just moved inside. */-->
-											<div class="dropdown">
-												<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
-													<i class="ph-list"></i>
-												</button>
-												<div class="dropdown-menu dropdown-menu-end">
-													<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
-														<i class="ph-warning-circle me-2"></i>
-														View Reason
-													</button>
-													<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
-														th:attr="data-lightbox-src=${booking.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${booking.eventName()}">
-														<i class="ph-image me-2"></i>
-														View Screenshot
-													</a>
-													<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
-														th:attr="data-lightbox-src=${booking.invoiceUrl()},data-lightbox-caption='Invoice - ' + ${booking.eventName()}">
-														<i class="ph-file-text me-2"></i>
-														View Invoice
-													</a>
-													<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#acknowledgePaymentModal-' + ${booking.id()}">
-														<i class="ph-check-circle me-2 text-success"></i>
-														Acknowledge
-													</button>
-													<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#rejectPaymentModal-' + ${booking.id()}">
-														<i class="ph-x-circle me-2 text-danger"></i>
-														Reject
-													</button>
-													<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
-														<i class="ph-prohibit me-2"></i>
-														Cancel
-													</button>
-												</div>
-											</div>
-										</td>
-									</tr>
-								</tbody>
-							</table>
+						<div class="card-body tab-content" th:if="${not #lists.isEmpty(bookings)}">
+							<div class="tab-pane fade show active" id="tab-amended" role="tabpanel">
+								<div class="table-responsive" th:if="${not #lists.isEmpty(bookingsAmended)}">
+									<table id="bookingsAmendedTable" class="table table-hover w-100">
+										<thead th:replace="~{::bookingsTableHead}"></thead>
+										<tbody th:replace="~{::bookingsTableBody(${bookingsAmended})}"></tbody>
+									</table>
+								</div>
+								<div class="text-center py-5" th:if="${#lists.isEmpty(bookingsAmended)}">
+									<i class="ph-calendar-check ph-3x text-muted mb-3 d-block"></i>
+									<p class="text-muted mb-0">Nothing amended or awaiting payment right now.</p>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="tab-booked" role="tabpanel">
+								<div class="table-responsive" th:if="${not #lists.isEmpty(bookingsBooked)}">
+									<table id="bookingsBookedTable" class="table table-hover w-100">
+										<thead th:replace="~{::bookingsTableHead}"></thead>
+										<tbody th:replace="~{::bookingsTableBody(${bookingsBooked})}"></tbody>
+									</table>
+								</div>
+								<div class="text-center py-5" th:if="${#lists.isEmpty(bookingsBooked)}">
+									<i class="ph-calendar-check ph-3x text-muted mb-3 d-block"></i>
+									<p class="text-muted mb-0">No booked bookings yet.</p>
+								</div>
+							</div>
+							<div class="tab-pane fade" id="tab-cancelled" role="tabpanel">
+								<div class="table-responsive" th:if="${not #lists.isEmpty(bookingsCancelled)}">
+									<table id="bookingsCancelledTable" class="table table-hover w-100">
+										<thead th:replace="~{::bookingsTableHead}"></thead>
+										<tbody th:replace="~{::bookingsTableBody(${bookingsCancelled})}"></tbody>
+									</table>
+								</div>
+								<div class="text-center py-5" th:if="${#lists.isEmpty(bookingsCancelled)}">
+									<i class="ph-calendar-check ph-3x text-muted mb-3 d-block"></i>
+									<p class="text-muted mb-0">No cancelled or declined bookings.</p>
+								</div>
+							</div>
+						</div>
+
+						<!-- th:fragment source only - never rendered on their own, just
+						     pulled into the 3 tables above via th:replace so the
+						     head/body markup isn't triplicated. The "hidden" lives on
+						     this wrapper div, not on the thead/tbody themselves -
+						     th:replace swaps in the WHOLE fragment tag including its
+						     own attributes, so a "hidden" attribute directly on the
+						     thead/tbody would carry over into the 3 real tables above
+						     too (this bit us once already - see the fix history). -->
+						<div hidden>
+						<thead th:fragment="bookingsTableHead">
+							<tr>
+								<th>Event</th>
+								<th>Event date</th>
+								<th>Price</th>
+								<th>Status</th>
+								<th>Proposed</th>
+								<th class="text-end">Actions</th>
+							</tr>
+						</thead>
+						<tbody th:fragment="bookingsTableBody(rows)">
+							<tr th:each="booking : ${rows}">
+								<td>
+									<div th:text="${booking.eventName()}">Event</div>
+									<div class="text-muted fs-sm" th:text="'Planner: ' + ${booking.plannerName()}">Planner</div>
+									<!--/* The original request message stops being relevant once the
+									     booking is cancelled - showing it next to the cancellation
+									     reason made it look like the two were related, which is
+									     confusing. Once cancelled, the cancellation reason is the
+									     only message that still matters. */-->
+									<div class="text-muted fs-sm" th:if="${booking.status().name() != 'CANCELLED'}" th:text="${booking.agreementDetails()}">Details</div>
+									<div class="text-info fs-sm mt-1" th:if="${booking.hasPendingAmendment()}">
+										<i class="ph-pencil-simple me-1"></i>
+										Amendment pending
+									</div>
+									<div class="text-danger fs-sm mt-1" th:if="${booking.paymentRejectionReason() != null}">
+										<i class="ph-warning-circle me-1"></i>
+										<span th:text="${booking.paymentRejectionReason()}">Rejection reason</span>
+									</div>
+									<div class="text-muted fs-sm mt-1" th:if="${booking.status().name() == 'CANCELLED'}">
+										<i class="ph-x-circle me-1"></i>
+										Cancelled by <span th:text="${booking.cancelledByUserId() == currentUserId} ? 'you' : 'the planner'">who</span>:
+										<span th:text="${booking.cancellationReason()}">Reason</span>
+									</div>
+								</td>
+								<td th:text="${#temporals.format(booking.eventDatetime(), 'MMM dd, yyyy')}">-</td>
+								<td>&#8369;<span th:text="${#numbers.formatDecimal(booking.price(), 1, 'COMMA', 2, 'POINT')}">0.00</span></td>
+								<td>
+									<span class="badge"
+										th:classappend="${#sets.contains({'APPROVED','BOOKED'}, booking.status().name())} ? 'bg-success' : (${#sets.contains({'PROPOSED','PAYMENT_SUBMITTED'}, booking.status().name())} ? 'bg-warning' : (${booking.status().name() == 'AWAITING_PAYMENT'} ? 'bg-info' : (${booking.status().name() == 'DECLINED'} ? 'bg-secondary' : 'bg-danger')))"
+										th:text="${booking.status()}">STATUS</span>
+								</td>
+								<td th:text="${#temporals.format(booking.proposedAt(), 'MMM dd, yyyy')}">-</td>
+								<td class="text-end">
+									<!--/* One action menu instead of a growing row of buttons - same
+									     burger-icon pattern used for the planner's quotation actions
+									     (see fragments/common.html topnavbar for the same dropdown
+									     convention). Each item keeps the exact same th:if visibility
+									     rule it had as a standalone button/link, just moved inside. */-->
+									<div class="dropdown">
+										<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+											<i class="ph-list"></i>
+										</button>
+										<div class="dropdown-menu dropdown-menu-end">
+											<button th:if="${booking.status().name() == 'PAYMENT_REJECTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#viewReasonModal-' + ${booking.id()}">
+												<i class="ph-warning-circle me-2"></i>
+												View Reason
+											</button>
+											<a th:if="${booking.status().name() != 'PAYMENT_REJECTED' and booking.paymentScreenshotUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+												th:attr="data-lightbox-src=${booking.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - ' + ${booking.eventName()}">
+												<i class="ph-image me-2"></i>
+												View Screenshot
+											</a>
+											<a th:if="${booking.status().name() == 'BOOKED' and booking.invoiceUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
+												th:attr="data-lightbox-src=${booking.invoiceUrl()},data-lightbox-caption='Invoice - ' + ${booking.eventName()}">
+												<i class="ph-file-text me-2"></i>
+												View Invoice
+											</a>
+											<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#acknowledgePaymentModal-' + ${booking.id()}">
+												<i class="ph-check-circle me-2 text-success"></i>
+												Acknowledge
+											</button>
+											<button th:if="${booking.status().name() == 'PAYMENT_SUBMITTED'}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#rejectPaymentModal-' + ${booking.id()}">
+												<i class="ph-x-circle me-2 text-danger"></i>
+												Reject
+											</button>
+											<button th:if="${not #sets.contains({'CANCELLED','DECLINED'}, booking.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#cancelBookingModal-' + ${booking.id()}">
+												<i class="ph-prohibit me-2"></i>
+												Cancel
+											</button>
+										</div>
+									</div>
+								</td>
+							</tr>
+						</tbody>
 						</div>
 
 						<!-- Per-booking payment acknowledgement modals - acknowledging requires
@@ -300,17 +379,33 @@
 	<!--/* DataTables (self-hosted, not a CDN - same convention as fullcalendar/
 	     dropzone/multiselect elsewhere in this project) gives client-side
 	     pagination (20 rows/page), search and sorting without any backend
-	     paging protocol. The table only exists in the DOM when there's at
-	     least one booking (see th:if above) - guard the init accordingly. */-->
+	     paging protocol. Each tab's table only exists in the DOM when that
+	     bucket is non-empty (see th:if above) - guard each init accordingly.
+	     order: [] keeps the upcoming-event-first order the controller
+	     already sorted rows into. The Amended tab is visible on load and
+	     inits immediately; Booked/Cancelled start hidden and lazy-init on
+	     their tab's first shown.bs.tab, same pattern as admin/vendors.html. */-->
 	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
 	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-			if (document.getElementById('bookingsTable')) {
-				$('#bookingsTable').DataTable({ pageLength: 20 });
+			if (document.getElementById('bookingsAmendedTable')) {
+				$('#bookingsAmendedTable').DataTable({ pageLength: 20, order: [] });
 			}
+			var bookedTable = null;
+			var cancelledTable = null;
+			document.querySelector('a[href="#tab-booked"]').addEventListener('shown.bs.tab', function () {
+				if (!bookedTable && document.getElementById('bookingsBookedTable')) {
+					bookedTable = $('#bookingsBookedTable').DataTable({ pageLength: 20, order: [] });
+				}
+			});
+			document.querySelector('a[href="#tab-cancelled"]').addEventListener('shown.bs.tab', function () {
+				if (!cancelledTable && document.getElementById('bookingsCancelledTable')) {
+					cancelledTable = $('#bookingsCancelledTable').DataTable({ pageLength: 20, order: [] });
+				}
+			});
 		});
 	</script>
 

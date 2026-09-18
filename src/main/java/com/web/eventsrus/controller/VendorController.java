@@ -1,5 +1,6 @@
 package com.web.eventsrus.controller;
 
+import com.web.eventsrus.model.BookingStatus;
 import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.CreateTicketForm;
 import com.web.eventsrus.model.EventType;
@@ -9,6 +10,7 @@ import com.web.eventsrus.model.PackageType;
 import com.web.eventsrus.model.PaymentType;
 import com.web.eventsrus.model.PhilippineProvinces;
 import com.web.eventsrus.model.QuotationRequestForm;
+import com.web.eventsrus.model.QuotationStatus;
 import com.web.eventsrus.model.SupportTicket;
 import com.web.eventsrus.model.SupportTicketMessage;
 import com.web.eventsrus.model.TicketCategory;
@@ -36,11 +38,13 @@ import com.web.eventsrus.backend.WebSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -226,13 +230,31 @@ public class VendorController {
         return "redirect:/vendor/leads";
     }
 
+    // Legacy cold-proposal statuses (PROPOSED/APPROVED/AWAITING_PAYMENT/
+    // PAYMENT_SUBMITTED) and PAYMENT_REJECTED all sit somewhere between
+    // "proposed" and "booked" - none of them are a clean fit for the Booked
+    // or Cancelled tabs, so they group under Amended alongside bookings that
+    // have an actual pending BookingAmendment.
+    private static final Set<BookingStatus> BOOKING_IN_FLUX_STATUSES = Set.of(
+            BookingStatus.PROPOSED, BookingStatus.APPROVED, BookingStatus.AWAITING_PAYMENT,
+            BookingStatus.PAYMENT_SUBMITTED, BookingStatus.PAYMENT_REJECTED);
+
     @GetMapping("/bookings")
     public String bookings(HttpSession session, Model model) {
         String jwt = WebSession.token(session);
         List<VendorBooking> bookings = backendClient.getBookings(jwt).stream()
-                .sorted(Comparator.comparing(VendorBooking::eventDatetime))
+                .sorted(upcomingBookingsFirst())
                 .toList();
         model.addAttribute("bookings", bookings);
+        model.addAttribute("bookingsAmended", bookings.stream()
+                .filter(b -> b.hasPendingAmendment() || BOOKING_IN_FLUX_STATUSES.contains(b.status()))
+                .toList());
+        model.addAttribute("bookingsBooked", bookings.stream()
+                .filter(b -> b.status() == BookingStatus.BOOKED && !b.hasPendingAmendment())
+                .toList());
+        model.addAttribute("bookingsCancelled", bookings.stream()
+                .filter(b -> b.status() == BookingStatus.CANCELLED || b.status() == BookingStatus.DECLINED)
+                .toList());
         model.addAttribute("currentUserId", WebSession.userId(session));
         model.addAttribute("activePage", "bookings");
         model.addAttribute("pageTitle", "Bookings");
@@ -470,9 +492,19 @@ public class VendorController {
     public String quotations(HttpSession session, Model model) {
         String jwt = WebSession.token(session);
         List<VendorQuotation> quotations = backendClient.getQuotations(jwt).stream()
-                .sorted(Comparator.comparing(VendorQuotation::createdAt).reversed())
+                .sorted(upcomingQuotationsFirst())
                 .toList();
         model.addAttribute("quotations", quotations);
+        model.addAttribute("quotationsInProgress", quotations.stream()
+                .filter(q -> q.status() != QuotationStatus.BOOKED && q.status() != QuotationStatus.DECLINED
+                        && q.status() != QuotationStatus.CANCELLED)
+                .toList());
+        model.addAttribute("quotationsBooked", quotations.stream()
+                .filter(q -> q.status() == QuotationStatus.BOOKED)
+                .toList());
+        model.addAttribute("quotationsDeclined", quotations.stream()
+                .filter(q -> q.status() == QuotationStatus.DECLINED || q.status() == QuotationStatus.CANCELLED)
+                .toList());
         // Pre-fetched per quotation (same "one extra call per row" pattern
         // already used for leads' conversationIdByEventId) so the "Version
         // History" modal is just server-rendered data already in scope,
@@ -1064,6 +1096,56 @@ public class VendorController {
     private boolean isPngOrJpeg(MultipartFile file) {
         String contentType = file.getContentType();
         return "image/png".equals(contentType) || "image/jpeg".equals(contentType);
+    }
+
+    // "Upcoming first": events that haven't happened yet (soonest first),
+    // then events that already happened (most recent first), then anything
+    // with no date at all, last. A plain ascending sort by raw date buries
+    // upcoming events under old ones instead of surfacing what's next.
+    private static Comparator<VendorBooking> upcomingBookingsFirst() {
+        Instant now = Instant.now();
+        return Comparator
+                .<VendorBooking>comparingInt(b -> bookingDateBucket(b.eventDatetime(), now))
+                .thenComparing(b -> bookingDateBucketRank(b.eventDatetime(), now));
+    }
+
+    private static int bookingDateBucket(Instant eventDatetime, Instant now) {
+        if (eventDatetime == null) {
+            return 2;
+        }
+        return eventDatetime.isBefore(now) ? 1 : 0;
+    }
+
+    private static long bookingDateBucketRank(Instant eventDatetime, Instant now) {
+        if (eventDatetime == null) {
+            return 0;
+        }
+        // Upcoming (bucket 0) sorts soonest-first ascending; past (bucket 1)
+        // sorts most-recent-first, so negate its distance from now instead.
+        long epochSeconds = eventDatetime.getEpochSecond();
+        return eventDatetime.isBefore(now) ? -epochSeconds : epochSeconds;
+    }
+
+    private static Comparator<VendorQuotation> upcomingQuotationsFirst() {
+        LocalDate today = LocalDate.now();
+        return Comparator
+                .<VendorQuotation>comparingInt(q -> quotationDateBucket(q.targetDate(), today))
+                .thenComparing(q -> quotationDateBucketRank(q.targetDate(), today));
+    }
+
+    private static int quotationDateBucket(LocalDate targetDate, LocalDate today) {
+        if (targetDate == null) {
+            return 2;
+        }
+        return targetDate.isBefore(today) ? 1 : 0;
+    }
+
+    private static long quotationDateBucketRank(LocalDate targetDate, LocalDate today) {
+        if (targetDate == null) {
+            return 0;
+        }
+        long epochDay = targetDate.toEpochDay();
+        return targetDate.isBefore(today) ? -epochDay : epochDay;
     }
 
     @PostMapping("/settings/payment-methods/{paymentMethodId}/delete")

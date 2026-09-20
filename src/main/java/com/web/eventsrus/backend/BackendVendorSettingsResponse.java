@@ -15,6 +15,7 @@ import java.util.List;
 public record BackendVendorSettingsResponse(
         String slug,
         String businessName,
+        String description,
         String ownerName,
         BusinessType businessType,
         String contactEmail,

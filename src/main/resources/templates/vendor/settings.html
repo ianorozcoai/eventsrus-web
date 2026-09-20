@@ -128,6 +128,12 @@
 											</div>
 										</div>
 
+										<div class="mb-3">
+											<label class="form-label">Business description</label>
+											<textarea th:field="*{description}" rows="2" class="form-control" placeholder="A short tagline describing what your business offers."></textarea>
+											<div class="fs-sm text-muted mt-1">Shown right on your public storefront, under your business name.</div>
+										</div>
+
 										<div class="row">
 											<div class="col-lg-6">
 												<div class="mb-3">
@@ -909,6 +915,14 @@
 			var galleryDropzoneEl = document.getElementById('galleryPhotosDropzone');
 			if (galleryDropzoneEl) {
 				var galleryUploadCount = 0;
+				// Dropzone's own per-thumbnail error message only shows on
+				// hover - easy to miss entirely (e.g. hitting the 20-photo
+				// limit gave no visible feedback until you happened to hover
+				// the rejected thumbnail). One toast per drop batch surfaces
+				// it immediately instead; galleryErrorShown caps it at one
+				// even when several files in the same batch are all
+				// rejected for the same reason.
+				var galleryErrorShown = false;
 				var galleryDropzone = new Dropzone('#galleryPhotosDropzone', {
 					url: '/vendor/settings/gallery',
 					paramName: 'image',
@@ -916,6 +930,9 @@
 					addRemoveLinks: false,
 					dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
 					dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
+				});
+				galleryDropzone.on('addedfiles', function () {
+					galleryErrorShown = false;
 				});
 				galleryDropzone.on('success', function () {
 					galleryUploadCount++;
@@ -925,6 +942,10 @@
 					var errorEl = file.previewElement && file.previewElement.querySelector('.dz-error-message span');
 					if (errorEl) {
 						errorEl.textContent = message;
+					}
+					if (!galleryErrorShown) {
+						galleryErrorShown = true;
+						window.showGalleryToastNow(message, 'danger');
 					}
 				});
 				galleryDropzone.on('queuecomplete', function () {
@@ -996,6 +1017,16 @@
 					// still happens, just without the toast.
 				}
 			};
+			// For feedback that doesn't involve a reload (e.g. an upload
+			// rejected for being over the gallery limit) - shows right away
+			// instead of round-tripping through sessionStorage.
+			window.showGalleryToastNow = function (message, variant) {
+				var toastEl = document.getElementById('galleryToast');
+				toastEl.classList.remove('bg-success', 'bg-danger');
+				toastEl.classList.add(variant === 'danger' ? 'bg-danger' : 'bg-success');
+				document.getElementById('galleryToastBody').textContent = message;
+				bootstrap.Toast.getOrCreateInstance(toastEl).show();
+			};
 			var pendingGalleryToast = null;
 			try {
 				pendingGalleryToast = sessionStorage.getItem('galleryToastMessage');
@@ -1006,8 +1037,13 @@
 				pendingGalleryToast = null;
 			}
 			if (pendingGalleryToast) {
+				// Always success-styled - setGalleryToast (above) is only
+				// ever called before a reload on a successful add/delete.
+				var galleryToastEl = document.getElementById('galleryToast');
+				galleryToastEl.classList.remove('bg-danger');
+				galleryToastEl.classList.add('bg-success');
 				document.getElementById('galleryToastBody').textContent = pendingGalleryToast;
-				bootstrap.Toast.getOrCreateInstance(document.getElementById('galleryToast')).show();
+				bootstrap.Toast.getOrCreateInstance(galleryToastEl).show();
 			}
 		});
 	</script>

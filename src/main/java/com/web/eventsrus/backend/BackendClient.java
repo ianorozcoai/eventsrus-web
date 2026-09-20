@@ -507,6 +507,7 @@ public class BackendClient {
             MultipartFile refundTermsFile) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         addIfPresent(body, "businessName", form.getBusinessName());
+        addIfPresent(body, "description", form.getDescription());
         addIfPresent(body, "ownerName", form.getOwnerName());
         addIfPresent(body, "businessType", form.getBusinessType() != null ? form.getBusinessType().name() : null);
         addIfPresent(body, "contactEmail", form.getContactEmail());

@@ -973,6 +973,7 @@ public class VendorController {
     private VendorSettingsForm toSettingsForm(BackendVendorSettingsResponse settings) {
         VendorSettingsForm form = new VendorSettingsForm();
         form.setBusinessName(settings.businessName());
+        form.setDescription(settings.description());
         form.setOwnerName(settings.ownerName());
         form.setBusinessType(settings.businessType());
         form.setContactEmail(settings.contactEmail());

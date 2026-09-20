@@ -317,19 +317,9 @@
 											</div>
 										</div>
 									</div>
-									<p class="text-muted fs-sm mb-4" th:if="${#lists.isEmpty(profile.legalDocuments())}">
+									<p class="text-muted fs-sm mb-0" th:if="${#lists.isEmpty(profile.legalDocuments())}">
 										No business registration documents on file yet.
 									</p>
-
-									<p class="fw-semibold mb-2">Identity Documents</p>
-									<div class="border rounded p-3" style="max-width:260px;">
-										<div class="d-flex align-items-center justify-content-center bg-light rounded mb-2" style="height:100px;">
-											<i class="ph-fw ph-2x" th:classappend="${profile.identityVerified()} ? 'ph-shield-check text-success' : 'ph-clock text-muted'"></i>
-										</div>
-										<span class="fs-sm" th:classappend="${profile.identityVerified()} ? 'text-success' : 'text-muted'"
-											th:text="${profile.identityVerified()} ? 'Verified' : 'Not yet uploaded'">Status</span>
-										<p class="text-muted fs-sm mb-0 mt-1">Kept private for the vendor's security - not shown here.</p>
-									</div>
 								</div>
 							</div>
 							<!-- /verification & legalities -->

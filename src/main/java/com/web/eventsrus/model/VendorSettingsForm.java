@@ -9,12 +9,13 @@ import lombok.Setter;
 /**
  * Mirrors eventsrus-backend's dto.VendorSettingsRequest field-for-field,
  * including its own tab grouping (the backend's own comments already split
- * it into these 3 tabs - this class just keeps the same shape). One
- * stub-only field that used to live here - description (set at onboarding,
- * shown on the public storefront, but never exposed for editing again by
- * the real VendorSettingsRequest/Response) - was dropped once this form
- * started binding to the real endpoint; editing it here would have
- * silently done nothing. maxCustomersPerDay is real now too (V28) -
+ * it into these 3 tabs - this class just keeps the same shape). description
+ * (set at onboarding, shown on the public storefront) is real here again -
+ * it used to be a stub-only field with no backing endpoint and was rightly
+ * dropped, but that also silently left it permanently uneditable after
+ * onboarding even though the backend model/storefront never stopped
+ * supporting it; VendorSettingsRequest/Response now carry it for real.
+ * maxCustomersPerDay is real now too (V28) -
  * distinct from maxGuestCapacity (headcount per event): how many separate
  * client bookings the vendor can take on in one day.
  * operatingAreas (the provinces the vendor serves, or "Entire
@@ -44,6 +45,7 @@ public class VendorSettingsForm {
 
     // Tab 1 - Business Info & Credentials
     private String businessName;
+    private String description;
     private String ownerName;
     private BusinessType businessType;
     private String contactEmail;

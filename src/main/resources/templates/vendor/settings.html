@@ -66,6 +66,40 @@
 						</span>
 					</div>
 
+					<!-- Public storefront URL - shareable with clients/planners. The
+					     full URL is built client-side (window.location.origin +
+					     path) since there's no app.base-url config in this repo,
+					     and this way it's automatically correct on both localhost
+					     and production with no server-side config. Slug itself is
+					     never editable here - see UserService#becomeVendor. -->
+					<div class="card" th:if="${vendorSlug != null}">
+						<div class="card-body">
+							<label class="form-label">Public Storefront URL</label>
+							<p class="text-muted fs-sm mb-2">Share this with clients so they can view your storefront and request a quote directly.</p>
+							<div class="input-group">
+								<input type="text" id="storefrontUrl" class="form-control" readonly>
+								<button type="button" class="btn btn-outline-secondary" onclick="copyStorefrontUrl()">
+									<i class="ph-copy me-1"></i> Copy
+								</button>
+							</div>
+						</div>
+					</div>
+					<!-- /public storefront url -->
+					<script th:if="${vendorSlug != null}" th:inline="javascript">
+						document.addEventListener('DOMContentLoaded', function () {
+							var slug = /*[[${vendorSlug}]]*/ '';
+							document.getElementById('storefrontUrl').value = window.location.origin + '/vendor/storefront/' + slug;
+						});
+						function copyStorefrontUrl() {
+							var input = document.getElementById('storefrontUrl');
+							input.select();
+							input.setSelectionRange(0, 99999);
+							navigator.clipboard.writeText(input.value).catch(function () {
+								document.execCommand('copy');
+							});
+						}
+					</script>
+
 					<!-- Tabs -->
 					<ul class="nav nav-tabs mb-3">
 						<li class="nav-item">

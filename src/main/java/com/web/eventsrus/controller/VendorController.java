@@ -77,6 +77,12 @@ public class VendorController {
     @Value("${recaptcha.site-key}")
     private String recaptchaSiteKey;
 
+    // For the embedded Google Sign-In widget in the storefront's guided
+    // signup modals (see loadStorefront) - same client id AuthWebController
+    // uses for the real /planner and /vendor login pages.
+    @Value("${google.oauth.client-id}")
+    private String googleClientId;
+
     public VendorController(ObjectMapper objectMapper, BackendClient backendClient) {
         this.objectMapper = objectMapper;
         this.backendClient = backendClient;
@@ -839,6 +845,20 @@ public class VendorController {
         // see) but the submit buttons are disabled, see the template.
         Long viewerUserId = WebSession.userId(session);
         model.addAttribute("isOwnStorefront", viewerUserId != null && viewerUserId.equals(profile.vendorUserId()));
+
+        // Drives the guided-signup flow (see storefront.html): a genuinely
+        // anonymous visitor, or a logged-in planner with no eventId yet,
+        // gets a "Request a Quote"/"Send an Inquiry" button that walks them
+        // through account-check -> Google sign-in -> (if needed) a quick
+        // event-creation step, all in-page, instead of a form that's
+        // guaranteed to fail (see requirePlannerLogin below).
+        model.addAttribute("plannerLoggedIn", WebSession.isLoggedIn(session));
+        model.addAttribute("eventTypes", EventType.displayOrder());
+        model.addAttribute("googleClientId", googleClientId);
+        // "Go to Dashboard" in the navbar - only for a logged-in planner
+        // (not a vendor casually browsing a storefront, and not the
+        // isOwnStorefront preview case, handled separately in the template).
+        model.addAttribute("viewerIsPlanner", "PLANNER".equals(WebSession.role(session)));
     }
 
     // Best-effort - a missing/inaccessible event just means no date
@@ -947,6 +967,11 @@ public class VendorController {
         if (!model.containsAttribute("vendorSettingsForm")) {
             model.addAttribute("vendorSettingsForm", toSettingsForm(settings));
         }
+        // Public storefront URL, shareable with clients - the copy-link
+        // card above the tabs. slug itself is never editable (auto-
+        // generated once at onboarding - see UserService#becomeVendor),
+        // so this is read-only display, not part of vendorSettingsForm.
+        model.addAttribute("vendorSlug", settings.slug());
         model.addAttribute("settingsDocuments", new VendorSettingsDocuments(
                 settings.logoImageUrl(), settings.idCardUrl(), settings.selfieUrl(),
                 settings.cancellationPolicyUrl(), settings.refundTermsUrl(),

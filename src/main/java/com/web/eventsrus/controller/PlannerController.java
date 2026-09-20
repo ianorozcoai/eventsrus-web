@@ -339,6 +339,59 @@ public class PlannerController {
         return "redirect:/planner/events";
     }
 
+    // JSON variant of the same create-then-save pair above, for the
+    // storefront's guided signup flow (see VendorController#loadStorefront
+    // and storefront.html's Modal C) - a brand-new or event-less planner
+    // who just wants to request a quote from one vendor doesn't need the
+    // full intake form's location/description (both optional on the real
+    // backend request, same as submitIntake leaves them for this trimmed
+    // 3-field version); they can fill those in normally later. Driven by
+    // fetch() from a modal rather than a page form post, so this returns
+    // JSON instead of redirecting - WebMvcConfig already gates every
+    // /planner/** route to a logged-in session, so this is only ever
+    // reachable once the storefront's embedded Google sign-in has actually
+    // succeeded.
+    @PostMapping("/quick-create")
+    @ResponseBody
+    public QuickEventResult quickCreate(
+            @RequestParam String name, @RequestParam EventType eventType,
+            @RequestParam(required = false) LocalDate eventDate, HttpSession session) {
+        String jwt = WebSession.token(session);
+        try {
+            PlannerEvent created = backendClient.createEvent(jwt, eventType, eventDate, null, null);
+            backendClient.saveEvent(jwt, created.id(), name);
+            return new QuickEventResult(true, created.id(), null);
+        } catch (BackendApiException e) {
+            return new QuickEventResult(false, null, e.getMessage());
+        }
+    }
+
+    public record QuickEventResult(boolean success, Long eventId, String error) {
+    }
+
+    // For the storefront's guided flow's "is this for an existing event?"
+    // step (see VendorController#loadStorefront and storefront.html's
+    // Modal D) - a logged-in planner with events already on file gets to
+    // pick one instead of always being pushed into creating a new one.
+    // "Upcoming" = not already in the past; an event with no date at all
+    // (never picked one) counts as upcoming too, since there's nothing to
+    // say it isn't.
+    @GetMapping("/upcoming")
+    @ResponseBody
+    public List<UpcomingEventOption> upcomingEvents(HttpSession session) {
+        String jwt = WebSession.token(session);
+        LocalDate today = LocalDate.now(MANILA);
+        return backendClient.listEvents(jwt).stream()
+                .filter(e -> e.eventDate() == null || !e.eventDate().isBefore(today))
+                .sorted(Comparator.comparing(PlannerEventSummary::eventDate, Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(e -> new UpcomingEventOption(
+                        e.id(), e.name(), e.eventType() != null ? e.eventType().getLabel() : null, e.eventDate()))
+                .toList();
+    }
+
+    public record UpcomingEventOption(long id, String name, String eventTypeLabel, LocalDate eventDate) {
+    }
+
     /**
      * Live vendor-matching endpoint behind the always-on location/date
      * filter on the Overview tab (see events.html's script block and

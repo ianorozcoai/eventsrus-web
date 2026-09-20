@@ -13,6 +13,25 @@
 					<span class="d-none d-sm-inline-block fw-bold fs-lg ms-2 text-white">EventsRUs</span>
 				</a>
 			</div>
+			<!-- A planner who arrived here already logged in (from a link, a
+			     bookmark, or right after the guided sign-up flow above) has
+			     no other way back to their own dashboard from this
+			     standalone page (no sidebar here, unlike every other
+			     planner/vendor page) - new tab, so they don't lose their
+			     place on this vendor's storefront. Vendor-role visitors and
+			     the vendor's own preview aren't offered this - they belong
+			     on their vendor dashboard, not a planner one. -->
+			<!--/* Not a .btn-outline-light - this theme's compiled CSS doesn't
+			     give that class actual white/light text (same kind of
+			     custom-color override already hit with .btn-outline-secondary
+			     elsewhere in this app), so it would render unreadably dark
+			     text on this dark navbar. Matches the brand link just above
+			     instead: plain text-white utility classes. */-->
+			<a th:if="${plannerLoggedIn and viewerIsPlanner and not isOwnStorefront}" th:href="@{/planner/dashboard}" target="_blank"
+				class="d-inline-flex align-items-center text-white text-decoration-none px-3 py-1 rounded-pill fs-sm"
+				style="border:1px solid rgba(255,255,255,.4);">
+				<i class="ph-squares-four me-1"></i> Go to Dashboard
+			</a>
 		</div>
 	</div>
 	<!-- /main navbar -->
@@ -393,7 +412,20 @@
 										<i class="ph-info me-2"></i> This is a preview of your own storefront - you can't send yourself a quotation request.
 									</div>
 
-									<form th:action="@{/vendor/storefront/quotation-request}" th:object="${quotationRequestForm}" method="post">
+									<!--/* A visitor who isn't logged in, or who has no eventId yet, would
+									     only hit a guaranteed failure submitting this form for real (see
+									     VendorController#requirePlannerLogin - the real endpoint needs
+									     both) - a guided sign-up flow instead of a doomed form, see the
+									     startGuidedFlow()/Modal A/B/C script near the bottom of this
+									     page. */-->
+									<div th:if="${not isOwnStorefront and (not plannerLoggedIn or eventId == null)}" class="text-center py-2">
+										<p class="text-muted fs-sm mb-3">Sign up free (or log in) to request a quote from <strong th:text="${profile.businessName()}">this vendor</strong> - takes less than a minute.</p>
+										<button type="button" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;" onclick="startGuidedFlow()">
+											Request a Quote
+										</button>
+									</div>
+
+									<form th:if="${isOwnStorefront or (plannerLoggedIn and eventId != null)}" th:action="@{/vendor/storefront/quotation-request}" th:object="${quotationRequestForm}" method="post">
 										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
 										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
 										<input type="hidden" name="vendorUserId" th:value="${profile.vendorUserId()}">
@@ -442,7 +474,14 @@
 										<i class="ph-info me-2"></i> This is a preview of your own storefront - you can't send yourself an inquiry.
 									</div>
 
-									<form th:action="@{/vendor/storefront/inquiry}" th:object="${inquiryForm}" method="post">
+									<div th:if="${not isOwnStorefront and (not plannerLoggedIn or eventId == null)}" class="text-center py-2">
+										<p class="text-muted fs-sm mb-3">Sign up free (or log in) to send a message to <strong th:text="${profile.businessName()}">this vendor</strong>.</p>
+										<button type="button" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;" onclick="startGuidedFlow()">
+											Send an Inquiry
+										</button>
+									</div>
+
+									<form th:if="${isOwnStorefront or (plannerLoggedIn and eventId != null)}" th:action="@{/vendor/storefront/inquiry}" th:object="${inquiryForm}" method="post">
 										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
 										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
 										<input type="hidden" name="vendorUserId" th:value="${profile.vendorUserId()}">
@@ -516,6 +555,344 @@
 	<script th:if="${inquirySubmitted}">
 		document.addEventListener('DOMContentLoaded', function () {
 			window.showAlert('Your message has been sent.');
+		});
+	</script>
+
+	<!-- Guided sign-up flow (see the "Request a Quote"/"Send an Inquiry"
+	     buttons above) - three modals, all client-side, no page navigation
+	     until the very end:
+	       Modal A "Do you have an account?" -> only for a genuinely
+	         anonymous visitor.
+	       Modal B embeds Google Identity Services (same in-page,
+	         callback-based sign-in as login.html - see
+	         handleGuidedGoogleCredential) - reused for both a real login
+	         and a real signup, the backend's own find-or-create logic
+	         doesn't care which.
+	       Modal C the trimmed 3-field "quick event" form (Name/Type/Date
+	         only - location/description are optional on the real backend
+	         request, left blank; the planner can fill those in normally
+	         later) - shown either after Modal A's "No" (then followed by
+	         Modal B to actually create the account) or directly, with no
+	         account question at all, for a planner who's already logged in
+	         but simply has no event yet.
+	     Ends by creating the event for real (POST /planner/events/quick-create)
+	     and reloading this same page with ?eventId=..., which is enough for
+	     loadStorefront's own gating to show the real form next. -->
+	<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+	<div class="modal fade" id="guidedAccountModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Do you have an EventsRUs account?</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted mb-0">To request a quote or send an inquiry, you'll need a free EventsRUs planner account with at least one event.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary" id="guidedHasAccountNo">No, I'm new</button>
+					<button type="button" class="btn btn-primary" id="guidedHasAccountYes">Yes, I have one</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Shown whenever an authenticated planner (whether already logged in,
+	     or just logged in via Modal B's "Yes" branch) has at least one
+	     upcoming event on file - lets them attach this request to one of
+	     those instead of always being pushed into creating a new one. -->
+	<div class="modal fade" id="guidedExistingEventModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Is this for an existing event?</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted mb-0">You already have events on file - is this quote or inquiry for one of them?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-outline-secondary" id="guidedExistingEventNo">No, a new event</button>
+					<button type="button" class="btn btn-primary" id="guidedExistingEventYes">Yes, pick one</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="guidedEventPickerModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Choose an event</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<!-- d-grid gap-2, not list-group - list-group's connected,
+					     border-sharing rows read as one continuous block
+					     rather than clearly separate events. -->
+					<div id="guidedEventPickerList" class="d-grid gap-2"></div>
+					<p id="guidedEventPickerEmpty" class="text-muted mb-0 d-none">No upcoming events found.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="guidedEventModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Tell us about your event</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<div class="mb-3">
+						<label class="form-label">Event Name</label>
+						<input type="text" id="guidedEventName" class="form-control" placeholder="e.g., Maria's Wedding">
+					</div>
+					<div class="mb-3">
+						<label class="form-label">Type of Event</label>
+						<select id="guidedEventType" class="form-select">
+							<option value="">Select a type</option>
+							<option th:each="type : ${eventTypes}" th:value="${type}" th:text="${type.label}"></option>
+						</select>
+					</div>
+					<div class="mb-0">
+						<label class="form-label">Event Date</label>
+						<input type="date" id="guidedEventDate" class="form-control">
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="guidedEventContinue">Continue</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="guidedSigninModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="guidedSigninTitle">Sign in to continue</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body text-center">
+					<div id="guidedSigninError" class="alert alert-danger d-none text-start"></div>
+					<div id="guidedGoogleContainer" class="d-flex justify-content-center">
+						<div id="g_id_onload"
+							th:attr="data-client_id=${googleClientId}"
+							data-callback="handleGuidedGoogleCredential"
+							data-auto_prompt="false">
+						</div>
+						<div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with" data-shape="pill"></div>
+					</div>
+					<div id="guidedSigninProgress" class="d-none align-items-center justify-content-center gap-2 text-muted mt-2">
+						<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+						<span>Signing you in&hellip;</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script th:inline="javascript">
+		document.addEventListener('DOMContentLoaded', function () {
+			// guidedAuthenticated starts true only when the page already
+			// loaded logged-in (the "logged in, no event yet" case) - that
+			// case skips Modal A/B entirely and goes straight to Modal C.
+			var guidedAuthenticated = /*[[${plannerLoggedIn}]]*/ false;
+			var guidedHadEventIdAtLoad = /*[[${eventId != null}]]*/ false;
+			var guidedPendingEvent = null;
+			var guidedUpcomingEvents = [];
+
+			window.startGuidedFlow = function () {
+				if (guidedAuthenticated) {
+					checkExistingEventsAndProceed();
+				} else {
+					bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedAccountModal')).show();
+				}
+			};
+
+			// Only ever called once actually authenticated - an anonymous
+			// "No, I'm new" visitor skips this entirely (see
+			// guidedHasAccountNo below) since they can't have any events
+			// yet by definition.
+			function checkExistingEventsAndProceed() {
+				fetch('/planner/events/upcoming')
+					.then(function (res) { return res.json(); })
+					.then(function (events) {
+						guidedUpcomingEvents = events;
+						if (events.length > 0) {
+							bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedExistingEventModal')).show();
+						} else {
+							bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedEventModal')).show();
+						}
+					})
+					.catch(function () {
+						// Best-effort - if the check itself fails, fall back
+						// to "create a new event" rather than getting stuck.
+						bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedEventModal')).show();
+					});
+			}
+
+			document.getElementById('guidedHasAccountYes').addEventListener('click', function () {
+				bootstrap.Modal.getInstance(document.getElementById('guidedAccountModal')).hide();
+				document.getElementById('guidedSigninTitle').textContent = 'Log in to continue';
+				bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedSigninModal')).show();
+			});
+
+			document.getElementById('guidedHasAccountNo').addEventListener('click', function () {
+				bootstrap.Modal.getInstance(document.getElementById('guidedAccountModal')).hide();
+				bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedEventModal')).show();
+			});
+
+			document.getElementById('guidedExistingEventYes').addEventListener('click', function () {
+				bootstrap.Modal.getInstance(document.getElementById('guidedExistingEventModal')).hide();
+				renderEventPickerAndShow();
+			});
+
+			document.getElementById('guidedExistingEventNo').addEventListener('click', function () {
+				bootstrap.Modal.getInstance(document.getElementById('guidedExistingEventModal')).hide();
+				bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedEventModal')).show();
+			});
+
+			function renderEventPickerAndShow() {
+				var list = document.getElementById('guidedEventPickerList');
+				var empty = document.getElementById('guidedEventPickerEmpty');
+				list.innerHTML = '';
+				if (guidedUpcomingEvents.length === 0) {
+					empty.classList.remove('d-none');
+				} else {
+					empty.classList.add('d-none');
+					guidedUpcomingEvents.forEach(function (ev) {
+						var item = document.createElement('button');
+						item.type = 'button';
+						// d-flex flex-column - this theme's .btn is itself a
+						// flex container (for icon+label alignment), which
+						// without this laid the name/detail divs out side by
+						// side on one line instead of stacked.
+						item.className = 'btn btn-light d-flex flex-column align-items-start text-start border rounded';
+						var nameEl = document.createElement('div');
+						nameEl.className = 'fw-semibold';
+						nameEl.textContent = ev.name;
+						var detailEl = document.createElement('div');
+						detailEl.className = 'fs-sm text-muted';
+						detailEl.textContent = (ev.eventTypeLabel || 'Event') + (ev.eventDate ? ' - ' + ev.eventDate : ' - No date set');
+						item.appendChild(nameEl);
+						item.appendChild(detailEl);
+						item.addEventListener('click', function () {
+							window.location.href = window.location.pathname + '?eventId=' + ev.id;
+						});
+						list.appendChild(item);
+					});
+				}
+				bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedEventPickerModal')).show();
+			}
+
+			document.getElementById('guidedEventContinue').addEventListener('click', function () {
+				var name = document.getElementById('guidedEventName').value.trim();
+				var eventType = document.getElementById('guidedEventType').value;
+				var eventDate = document.getElementById('guidedEventDate').value;
+				if (!name || !eventType) {
+					alert('Please fill in the event name and type.');
+					return;
+				}
+				guidedPendingEvent = { name: name, eventType: eventType, eventDate: eventDate };
+				bootstrap.Modal.getInstance(document.getElementById('guidedEventModal')).hide();
+				if (guidedAuthenticated) {
+					createQuickEventAndRedirect();
+				} else {
+					document.getElementById('guidedSigninTitle').textContent = 'Create your free account';
+					bootstrap.Modal.getOrCreateInstance(document.getElementById('guidedSigninModal')).show();
+				}
+			});
+
+			// Google Identity Services calls this directly (see
+			// data-callback on #g_id_onload above) - same in-page,
+			// callback-based flow as login.html's handleGoogleCredential,
+			// just POSTing here instead of navigating to a whole separate
+			// page, and choosing what to do next itself instead of
+			// following a server-computed redirectTo.
+			window.handleGuidedGoogleCredential = function (response) {
+				var errorBox = document.getElementById('guidedSigninError');
+				var googleContainer = document.getElementById('guidedGoogleContainer');
+				var progress = document.getElementById('guidedSigninProgress');
+
+				errorBox.classList.add('d-none');
+				googleContainer.classList.add('d-none');
+				progress.classList.remove('d-none');
+				progress.classList.add('d-flex');
+
+				function showError(message) {
+					errorBox.textContent = message;
+					errorBox.classList.remove('d-none');
+					progress.classList.add('d-none');
+					progress.classList.remove('d-flex');
+					googleContainer.classList.remove('d-none');
+				}
+
+				var body = new URLSearchParams();
+				body.set('idToken', response.credential);
+				body.set('intent', 'planner');
+
+				fetch('/login/google', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: body.toString()
+				})
+					.then(function (res) { return res.json(); })
+					.then(function (result) {
+						if (!result.success) {
+							showError(result.error || 'Sign-in failed. Please try again.');
+							return;
+						}
+						guidedAuthenticated = true;
+						if (guidedPendingEvent) {
+							createQuickEventAndRedirect();
+						} else if (guidedHadEventIdAtLoad) {
+							window.location.reload();
+						} else {
+							// "Yes, I have an account" branch, still no
+							// event linked - auto-chain straight into the
+							// existing-event check instead of making them
+							// click "Request a Quote"/"Send an Inquiry" again.
+							bootstrap.Modal.getInstance(document.getElementById('guidedSigninModal')).hide();
+							checkExistingEventsAndProceed();
+						}
+					})
+					.catch(function () {
+						showError('Could not reach the server. Please try again.');
+					});
+			};
+
+			function createQuickEventAndRedirect() {
+				var body = new URLSearchParams();
+				body.set('name', guidedPendingEvent.name);
+				body.set('eventType', guidedPendingEvent.eventType);
+				if (guidedPendingEvent.eventDate) {
+					body.set('eventDate', guidedPendingEvent.eventDate);
+				}
+				fetch('/planner/events/quick-create', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: body.toString()
+				})
+					.then(function (res) { return res.json(); })
+					.then(function (result) {
+						if (result.success) {
+							window.location.href = window.location.pathname + '?eventId=' + result.eventId;
+						} else {
+							alert(result.error || 'Could not create your event. Please try again.');
+						}
+					})
+					.catch(function () {
+						alert('Could not reach the server. Please try again.');
+					});
+			}
 		});
 	</script>
 

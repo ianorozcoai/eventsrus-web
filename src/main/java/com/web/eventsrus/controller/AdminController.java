@@ -2,7 +2,9 @@ package com.web.eventsrus.controller;
 
 import com.web.eventsrus.admin.AdminSession;
 import com.web.eventsrus.backend.BackendApiException;
+import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
+import com.web.eventsrus.backend.WebSession;
 import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.PhilippineProvinces;
 import jakarta.servlet.http.HttpSession;
@@ -114,6 +116,39 @@ public class AdminController {
             model.addAttribute("incompleteSignups", List.of());
         }
         return "admin/vendors";
+    }
+
+    /**
+     * "View Dashboard" - opens this vendor's real dashboard for the admin,
+     * without that vendor's own Google login (see AdminVendorController
+     * #impersonate on the backend). Stores a completely normal vendor
+     * WebSession, plus one extra marker so the vendor-shell can show a
+     * "Viewing as ... - Exit" banner (see fragments/common.html) - the admin's
+     * own AdminSession is untouched throughout, so exiting is a plain
+     * WebSession clear, not a re-login.
+     */
+    @PostMapping("/vendors/{userId}/view-dashboard")
+    public String viewVendorDashboard(@PathVariable Long userId, HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("vendorsError", "Not connected to eventsrus-backend right now - log out and back in to retry.");
+            return "redirect:/admin/vendors";
+        }
+        try {
+            BackendAuthResponse auth = backendClient.impersonateVendor(jwt, userId, AdminSession.username(session));
+            WebSession.store(session, auth);
+            WebSession.markImpersonating(session);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("vendorsError", e.getMessage());
+            return "redirect:/admin/vendors";
+        }
+        return "redirect:/vendor/dashboard";
+    }
+
+    @PostMapping("/vendors/exit-impersonation")
+    public String exitImpersonation(HttpSession session) {
+        WebSession.clear(session);
+        return "redirect:/admin/vendors";
     }
 
     @GetMapping("/admins")

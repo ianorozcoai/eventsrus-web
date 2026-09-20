@@ -76,5 +76,9 @@ public class VendorNavBadgeModelAttributes {
         model.addAttribute("navBookingsCount", bookings);
         model.addAttribute("vendorBusinessName", vendorBusinessName);
         model.addAttribute("vendorOwnerName", vendorOwnerName);
+        // Drives the "Viewing as ... - Exit" banner (see fragments/common.html)
+        // when an admin opened this dashboard via "View Dashboard" instead of
+        // the vendor's own Google login - see AdminController#viewVendorDashboard.
+        model.addAttribute("impersonatingByAdmin", session != null && WebSession.isImpersonating(session));
     }
 }

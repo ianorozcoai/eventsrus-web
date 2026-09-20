@@ -37,6 +37,11 @@ public final class WebSession {
     // sign-in, and attached to the onboarding form if this visitor becomes a
     // vendor - see AuthWebController#vendorLogin and vendor/onboarding.html.
     public static final String REFERRAL_CODE = "auth.referralCode";
+    // Set only when an admin used "View Dashboard" (see AdminController) to
+    // open this vendor's dashboard without their own Google login - drives
+    // the "Viewing as ... - Exit" banner on every vendor page. Never set by
+    // any real login.
+    public static final String IMPERSONATING_BY_ADMIN = "auth.impersonatingByAdmin";
 
     private WebSession() {
     }
@@ -89,6 +94,39 @@ public final class WebSession {
         if (session.getAttribute(REFERRAL_CODE) == null && code != null && !code.isBlank()) {
             session.setAttribute(REFERRAL_CODE, code);
         }
+    }
+
+    public static boolean isImpersonating(HttpSession session) {
+        return session != null && Boolean.TRUE.equals(session.getAttribute(IMPERSONATING_BY_ADMIN));
+    }
+
+    public static void markImpersonating(HttpSession session) {
+        session.setAttribute(IMPERSONATING_BY_ADMIN, true);
+    }
+
+    // Deliberately NOT session.invalidate() - AdminSession lives in this same
+    // HttpSession under its own "admin.*" namespace and must survive this,
+    // so "Exit" (see AdminController#exitImpersonation) drops the admin
+    // straight back into their still-logged-in admin session instead of a
+    // login page. Only removes this class's own "auth.*" attributes.
+    public static void clear(HttpSession session) {
+        session.removeAttribute(TOKEN);
+        session.removeAttribute(USER_ID);
+        session.removeAttribute(EMAIL);
+        session.removeAttribute(FIRST_NAME);
+        session.removeAttribute(LAST_NAME);
+        session.removeAttribute(ROLE);
+        session.removeAttribute(SIGNUP_INTENT);
+        session.removeAttribute(SUBSCRIPTION_PLAN);
+        session.removeAttribute(SUBSCRIPTION_EXPIRES_AT);
+        session.removeAttribute(SUBSCRIPTION_EXPIRING_SOON);
+        session.removeAttribute(SUBSCRIPTION_EXPIRED);
+        session.removeAttribute(SUBSCRIPTION_IN_GRACE_PERIOD);
+        session.removeAttribute(SUBSCRIPTION_GRACE_ENDS_AT);
+        session.removeAttribute(PAYWALL_SHOWN);
+        session.removeAttribute(FIRST_PACKAGE_NUDGE_SHOWN);
+        session.removeAttribute(REFERRAL_CODE);
+        session.removeAttribute(IMPERSONATING_BY_ADMIN);
     }
 
     public static void store(HttpSession session, BackendAuthResponse auth) {

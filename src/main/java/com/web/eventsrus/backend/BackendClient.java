@@ -820,6 +820,18 @@ public class BackendClient {
                 .toBodilessEntity();
     }
 
+    /** "View Dashboard" from admin/vendors.html - issues a real vendor-role JWT via the admin's own authority. */
+    public BackendAuthResponse impersonateVendor(String adminJwt, Long vendorUserId, String adminUsername) {
+        String uri = "/api/v1/admin/vendors/" + vendorUserId + "/impersonate"
+                + (adminUsername != null ? "?adminUsername=" + java.net.URLEncoder.encode(adminUsername, java.nio.charset.StandardCharsets.UTF_8) : "");
+        return backendRestClient.post()
+                .uri(uri)
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(BackendAuthResponse.class);
+    }
+
     public void unverifyVendor(String adminJwt, Long vendorUserId) {
         backendRestClient.post()
                 .uri("/api/v1/admin/vendors/" + vendorUserId + "/unverify")

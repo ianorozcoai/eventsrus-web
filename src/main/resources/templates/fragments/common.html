@@ -43,8 +43,27 @@
 
 <body>
 
-	<!--/* Top navbar - identical on every vendor-shell page. */-->
-	<div th:fragment="topnavbar" class="navbar navbar-dark navbar-expand-lg navbar-static border-bottom border-bottom-white border-opacity-10">
+	<!--/* Top navbar - identical on every vendor-shell page. th:block (not a
+	     div) since this fragment now has two top-level siblings: the
+	     impersonation banner and the real navbar - th:block renders no
+	     element of its own, so th:replace still drops exactly those two
+	     nodes in, not a third wrapping tag. */-->
+	<th:block th:fragment="topnavbar">
+	<!--/* Shown only when an admin opened this dashboard via "View
+	     Dashboard" (see AdminController#viewVendorDashboard) instead of the
+	     vendor's own Google login - impersonatingByAdmin comes from
+	     VendorNavBadgeModelAttributes, computed the same way on every
+	     vendor-shell page. Exit posts to the admin-side route (still
+	     reachable - AdminSession was never touched) rather than a plain
+	     logout, which would kill the admin's own session too. */-->
+	<div th:if="${impersonatingByAdmin}" class="bg-warning text-dark text-center py-2 fs-sm fw-semibold">
+		<i class="ph-eye me-1"></i>
+		Viewing <span th:text="${vendorBusinessName}">this vendor</span> as admin
+		<form th:action="@{/admin/vendors/exit-impersonation}" method="post" class="d-inline ms-2">
+			<button type="submit" class="btn btn-dark btn-sm py-0 px-2">Exit</button>
+		</form>
+	</div>
+	<div class="navbar navbar-dark navbar-expand-lg navbar-static border-bottom border-bottom-white border-opacity-10">
 		<div class="container-fluid">
 			<div class="d-flex d-lg-none me-2">
 				<button type="button" class="navbar-toggler sidebar-mobile-main-toggle rounded">
@@ -99,6 +118,7 @@
 			</ul>
 		</div>
 	</div>
+	</th:block>
 
 	<!--/*
 	    Bell-icon notification dropdown, shared by the vendor topnavbar

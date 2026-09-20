@@ -28,4 +28,5 @@ public record BackendAdminVendorListItem(
         String verifiedByAdmin,
         boolean topVendor,
         Instant createdAt,
-        long referralCount) {}
+        long referralCount,
+        boolean fakeAccount) {}

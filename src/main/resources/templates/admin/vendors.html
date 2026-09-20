@@ -35,6 +35,11 @@
 						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
 					</div>
 
+					<div th:if="${vendorsError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${vendorsError}">Error</span>
+					</div>
+
 					<div class="card" th:unless="${backendUnavailable}">
 
 						<div class="card-header">
@@ -97,7 +102,10 @@
 										</thead>
 										<tbody>
 											<tr th:each="vendor : ${vendors}">
-												<td th:text="${vendor.businessName()}">Business Name</td>
+												<td>
+													<span th:text="${vendor.businessName()}">Business Name</span>
+													<span th:if="${vendor.fakeAccount()}" class="badge bg-warning text-dark ms-1" title="Seeded/placeholder account, not a real vendor">Test</span>
+												</td>
 												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
 												<td th:text="${vendor.city()}">City</td>
 												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
@@ -105,14 +113,37 @@
 													<span class="badge" th:classappend="${vendor.referralCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${vendor.referralCount()}">0</span>
 												</td>
 												<td class="text-end">
-													<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="btn btn-light btn-sm">
-														<i class="ph-storefront me-1"></i> View Storefront
-														<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
-													</a>
-													<span th:unless="${vendor.slug() != null}" class="text-muted fs-sm me-2">No storefront yet</span>
-													<a th:href="@{'/admin/verifications/' + ${vendor.vendorUserId()}}" class="btn btn-light btn-sm">
-														<i class="ph-identification-badge me-1"></i> Manage
-													</a>
+													<!--/* Burger-icon action menu - same pattern as the vendor's own
+													     Bookings/Quotations dropdowns (see fragments/common.html
+													     topnavbar for the same convention) - three separate buttons
+													     here got cramped once "View Dashboard" was added. */-->
+													<div class="dropdown">
+														<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+															<i class="ph-list"></i>
+														</button>
+														<div class="dropdown-menu dropdown-menu-end">
+															<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="dropdown-item">
+																<i class="ph-storefront me-2"></i> View Storefront
+																<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
+															</a>
+															<span th:unless="${vendor.slug() != null}" class="dropdown-item-text text-muted fs-sm">No storefront yet</span>
+															<a th:href="@{'/admin/verifications/' + ${vendor.vendorUserId()}}" class="dropdown-item">
+																<i class="ph-identification-badge me-2"></i> Manage
+															</a>
+															<!--/* Opens this vendor's real dashboard as them, without
+															     their Google login - see
+															     AdminController#viewVendorDashboard. A form/POST, not a
+															     plain link, since it mutates this admin's own session
+															     (switches it to a vendor WebSession) - same
+															     form-around-a-dropdown-item-button pattern as the
+															     profile dropdown's own Log out. */-->
+															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
+																<button type="submit" class="dropdown-item">
+																	<i class="ph-squares-four me-2"></i> View Dashboard
+																</button>
+															</form>
+														</div>
+													</div>
 												</td>
 											</tr>
 										</tbody>

@@ -9,4 +9,8 @@ public record BackendSubscriptionStatus(
         boolean expiringSoon,
         boolean expired,
         boolean inGracePeriod,
-        Instant graceEndsAt) {}
+        Instant graceEndsAt,
+        int monthlyPrice,
+        int quarterlyPrice,
+        int semiAnnualPrice,
+        int annualPrice) {}

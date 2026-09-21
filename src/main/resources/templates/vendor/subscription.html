@@ -93,75 +93,97 @@
 							     payment method per plan/cycle combination is a separate,
 							     not-yet-built piece of work; this is the plan-selection UI
 							     ahead of that. -->
-							<div class="card" th:if="${showSubscriptionPayment}">
+							<form class="card" th:if="${showSubscriptionPayment}" th:action="@{/vendor/subscription/subscribe}" method="post">
 								<div class="card-header">
 									<h6 class="mb-0" th:text="${status.plan() != null ? 'Renew Subscription' : 'Subscribe to PRO'}">Renew Subscription</h6>
 								</div>
 								<div class="card-body">
 									<div class="mb-3">
+										<!--/* Monthly is hidden, not removed - kept as a real, working
+										     option (backend + PayPal plan both still live) in case it
+										     comes back later. Every tier's "/ month" figure always shows
+										     the flat configured rate (status.monthlyPrice()), never a
+										     discounted average - the savings show up only in the total
+										     and the "Free N Month(s)" badge, not by understating the
+										     per-month rate. */-->
+										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2" style="display:none !important;">
+											<span>
+												<input type="radio" name="billingCycle" value="MONTHLY" class="form-check-input me-2">
+												Monthly <span class="text-muted fs-sm">(1 month)</span>
+											</span>
+											<span class="text-end">
+												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> total</span>
+											</span>
+										</label>
 										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
 											<span>
 												<input type="radio" name="billingCycle" value="QUARTERLY" class="form-check-input me-2" checked>
-												Quarterly <span class="text-muted fs-sm">(3 months)</span>
+												Quarterly <span class="text-muted fs-sm text-nowrap">(3 mo.)</span>
 											</span>
 											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;1,500 / month</span>
-												<span class="text-muted fs-sm">&#8369;4,500 total</span>
+												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.quarterlyPrice(), 1, 'COMMA', 0, 'POINT')}">2,997</span> total</span>
 											</span>
 										</label>
 										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
 											<span>
 												<input type="radio" name="billingCycle" value="SEMI_ANNUAL" class="form-check-input me-2">
-												Semi-Annual <span class="text-muted fs-sm">(6 months)</span>
+												Semi-Annual <span class="text-muted fs-sm text-nowrap">(6 mo.)</span>
 												<span class="badge bg-success ms-1">Free 1 Month</span>
 											</span>
 											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;1,500 / month</span>
-												<span class="text-muted fs-sm">&#8369;7,500 total</span>
+												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.semiAnnualPrice(), 1, 'COMMA', 0, 'POINT')}">4,995</span> total</span>
 											</span>
 										</label>
 										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-0">
 											<span>
 												<input type="radio" name="billingCycle" value="ANNUAL" class="form-check-input me-2">
-												Annual <span class="text-muted fs-sm">(12 months)</span>
+												Annual <span class="text-muted fs-sm text-nowrap">(12 mo.)</span>
 												<span class="badge bg-success ms-1">Free 2 Months</span>
 											</span>
 											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;1,500 / month</span>
-												<span class="text-muted fs-sm">&#8369;15,000 total</span>
+												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.annualPrice(), 1, 'COMMA', 0, 'POINT')}">9,990</span> total</span>
 											</span>
 										</label>
 									</div>
 
 									<label class="form-label">Payment Method</label>
 									<div class="row g-2">
-										<div class="col-6">
-											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+										<div class="col-12">
+											<button type="submit" class="btn btn-outline-secondary payment-method-btn w-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
 												<img th:src="@{/assets/images/payment-methods/paypal.svg}" alt="" style="height:18px;width:auto;">
 												PayPal
 											</button>
 										</div>
-										<div class="col-6">
-											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+										<!--/* GCash/Maya/Bank Transfer are hidden, not removed - same
+										     "keep working, just not shown" treatment as the Monthly
+										     billing-cycle option above, for when they're actually built.
+										     display:none alone isn't enough here either - .d-flex is a
+										     Bootstrap !important utility, so the override needs one too. */-->
+										<div class="col-6" style="display:none !important;">
+											<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
 												<img th:src="@{/assets/images/payment-methods/gcash.svg}" alt="" style="height:18px;width:auto;">
 												GCash
 											</button>
 										</div>
-										<div class="col-6">
-											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+										<div class="col-6" style="display:none !important;">
+											<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
 												<img th:src="@{/assets/images/payment-methods/maya.svg}" alt="" style="height:18px;width:auto;">
 												Maya
 											</button>
 										</div>
-										<div class="col-6">
-											<button type="button" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+										<div class="col-6" style="display:none !important;">
+											<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
 												<i class="ph-bank fs-lg"></i>
 												Bank Transfer
 											</button>
 										</div>
 									</div>
 								</div>
-							</div>
+							</form>
 							<!-- /renew / subscribe -->
 
 							<!-- Payment method buttons deliberately don't use Bootstrap's

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title th:text="${isNotFound} ? 'Page Not Found - EventsRUs' : 'Something Went Wrong - EventsRUs'">Error - EventsRUs</title>
+
+	<!-- Global stylesheets -->
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+	<!-- /global stylesheets -->
+
+	<!-- Core JS files -->
+	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+	<!-- /core JS files -->
+</head>
+
+<body class="bg-body">
+
+	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3">
+
+		<div class="card" style="max-width:380px;width:100%;">
+			<div class="card-body text-center p-4">
+				<a th:href="@{/}" class="d-inline-block mb-3">
+					<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:260px;max-width:85%;height:auto;">
+				</a>
+
+				<div class="d-inline-flex align-items-center justify-content-center bg-light rounded-circle mx-auto mb-3" style="width:64px;height:64px;">
+					<i class="ph-warning-circle ph-2x text-danger"></i>
+				</div>
+
+				<h5 class="mb-1" th:text="${isNotFound} ? 'Page not found' : 'Oops, something went wrong'">Something went wrong</h5>
+				<p class="text-muted fs-sm mb-4"
+					th:text="${isNotFound} ? 'That link does not exist, or was mistyped.' : 'Something broke on our end, not you.'">
+					Please try again.
+				</p>
+
+				<div class="d-flex flex-column gap-2">
+					<a th:href="${dashboardUrl}" class="btn btn-primary" th:text="${showLogout} ? 'Go to Dashboard' : 'Go to Homepage'">Go to Dashboard</a>
+
+					<form th:if="${showLogout}" th:action="${logoutAction}" method="post" class="d-grid">
+						<button type="submit" class="btn btn-outline-secondary">Log out</button>
+					</form>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+</body>
+</html>

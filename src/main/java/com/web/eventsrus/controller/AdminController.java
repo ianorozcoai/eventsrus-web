@@ -1,6 +1,7 @@
 package com.web.eventsrus.controller;
 
 import com.web.eventsrus.admin.AdminSession;
+import com.web.eventsrus.backend.BackendAdminVendorListItem;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
@@ -9,6 +10,8 @@ import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.PhilippineProvinces;
 import jakarta.servlet.http.HttpSession;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -103,16 +106,25 @@ public class AdminController {
         if (jwt == null) {
             model.addAttribute("backendUnavailable", true);
             model.addAttribute("vendors", List.of());
+            model.addAttribute("testVendors", List.of());
             model.addAttribute("incompleteSignups", List.of());
             return "admin/vendors";
         }
         try {
             model.addAttribute("backendUnavailable", false);
-            model.addAttribute("vendors", backendClient.listVendorsForAdmin(jwt));
+            // Test/fake accounts (see User.fakeAccount, AdminVendorImpersonation
+            // work) get their own tab rather than mixing into the real Vendors
+            // list - admins reviewing real vendors shouldn't have to mentally
+            // filter out seeded test data.
+            Map<Boolean, List<BackendAdminVendorListItem>> partitioned = backendClient.listVendorsForAdmin(jwt).stream()
+                    .collect(Collectors.partitioningBy(BackendAdminVendorListItem::fakeAccount));
+            model.addAttribute("vendors", partitioned.get(false));
+            model.addAttribute("testVendors", partitioned.get(true));
             model.addAttribute("incompleteSignups", backendClient.listIncompleteVendorSignups(jwt));
         } catch (BackendApiException e) {
             model.addAttribute("backendUnavailable", true);
             model.addAttribute("vendors", List.of());
+            model.addAttribute("testVendors", List.of());
             model.addAttribute("incompleteSignups", List.of());
         }
         return "admin/vendors";

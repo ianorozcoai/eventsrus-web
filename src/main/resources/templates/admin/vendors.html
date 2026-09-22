@@ -56,6 +56,12 @@
 										<span class="badge bg-secondary rounded-pill ms-2" th:text="${#lists.size(incompleteSignups)}">0</span>
 									</a>
 								</li>
+								<li class="nav-item">
+									<a href="#tab-test-vendors" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-flask me-2"></i> Test Accounts
+										<span class="badge bg-warning text-dark rounded-pill ms-2" th:text="${#lists.size(testVendors)}">0</span>
+									</a>
+								</li>
 							</ul>
 						</div>
 
@@ -102,10 +108,7 @@
 										</thead>
 										<tbody>
 											<tr th:each="vendor : ${vendors}">
-												<td>
-													<span th:text="${vendor.businessName()}">Business Name</span>
-													<span th:if="${vendor.fakeAccount()}" class="badge bg-warning text-dark ms-1" title="Seeded/placeholder account, not a real vendor">Test</span>
-												</td>
+												<td th:text="${vendor.businessName()}">Business Name</td>
 												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
 												<td th:text="${vendor.city()}">City</td>
 												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
@@ -137,6 +140,60 @@
 															     (switches it to a vendor WebSession) - same
 															     form-around-a-dropdown-item-button pattern as the
 															     profile dropdown's own Log out. */-->
+															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
+																<button type="submit" class="dropdown-item">
+																	<i class="ph-squares-four me-2"></i> View Dashboard
+																</button>
+															</form>
+														</div>
+													</div>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Seeded/placeholder vendors (User.fakeAccount = true) - kept
+							     out of the real Vendors tab above so admins reviewing actual
+							     vendors don't have to mentally filter out test data. Same
+							     row shape/actions as the real Vendors table. -->
+							<div class="tab-pane fade" id="tab-test-vendors" role="tabpanel">
+								<div class="table-responsive">
+									<table id="testVendorsTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business Name</th>
+												<th>Business Type</th>
+												<th>City</th>
+												<th>Operating Areas</th>
+												<th>Referrals Made</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="vendor : ${testVendors}">
+												<td th:text="${vendor.businessName()}">Business Name</td>
+												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
+												<td th:text="${vendor.city()}">City</td>
+												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
+												<td>
+													<span class="badge" th:classappend="${vendor.referralCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${vendor.referralCount()}">0</span>
+												</td>
+												<td class="text-end">
+													<div class="dropdown">
+														<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+															<i class="ph-list"></i>
+														</button>
+														<div class="dropdown-menu dropdown-menu-end">
+															<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="dropdown-item">
+																<i class="ph-storefront me-2"></i> View Storefront
+																<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
+															</a>
+															<span th:unless="${vendor.slug() != null}" class="dropdown-item-text text-muted fs-sm">No storefront yet</span>
+															<a th:href="@{'/admin/verifications/' + ${vendor.vendorUserId()}}" class="dropdown-item">
+																<i class="ph-identification-badge me-2"></i> Manage
+															</a>
 															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
 																<button type="submit" class="dropdown-item">
 																	<i class="ph-squares-four me-2"></i> View Dashboard
@@ -223,6 +280,13 @@
 			// the tab's own "shown" event (first time only) avoids that.
 			var vendorsTable = $('#vendorsTable').DataTable({ pageLength: 20 });
 			var incompleteTable = null;
+			var testVendorsTable = null;
+
+			document.querySelector('a[href="#tab-test-vendors"]').addEventListener('shown.bs.tab', function () {
+				if (!testVendorsTable) {
+					testVendorsTable = $('#testVendorsTable').DataTable({ pageLength: 20 });
+				}
+			});
 
 			document.querySelector('a[href="#tab-incomplete"]').addEventListener('shown.bs.tab', function () {
 				if (!incompleteTable) {

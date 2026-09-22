@@ -100,9 +100,11 @@
 											<tr>
 												<th>Business Name</th>
 												<th>Business Type</th>
-												<th>City</th>
-												<th>Operating Areas</th>
+												<th>Contact</th>
+												<th>Bookings</th>
 												<th>Referrals Made</th>
+												<th>Last Login</th>
+												<th class="d-none">Operating Areas</th>
 												<th></th>
 											</tr>
 										</thead>
@@ -110,11 +112,18 @@
 											<tr th:each="vendor : ${vendors}">
 												<td th:text="${vendor.businessName()}">Business Name</td>
 												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
-												<td th:text="${vendor.city()}">City</td>
-												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
+												<td>
+													<div th:text="${vendor.contactEmail()}">email@example.com</div>
+													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">09xxxxxxxxx</div>
+												</td>
+												<td>
+													<span class="badge" th:classappend="${vendor.bookingCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${vendor.bookingCount()}">0</span>
+												</td>
 												<td>
 													<span class="badge" th:classappend="${vendor.referralCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${vendor.referralCount()}">0</span>
 												</td>
+												<td th:text="${vendor.lastLoginAt() != null ? #temporals.format(vendor.lastLoginAt(), 'MMM d, yyyy h:mm a') : 'Never'}">Never</td>
+												<td class="d-none" th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
 												<td class="text-end">
 													<!--/* Burger-icon action menu - same pattern as the vendor's own
 													     Bookings/Quotations dropdowns (see fragments/common.html
@@ -301,14 +310,15 @@
 				vendorsTable.column(1).search(value ? '^' + $.fn.dataTable.util.escapeRegex(value) + '$' : '', true, false).draw();
 			});
 
-			// Operating Area: a vendor matches if column 3 (the comma-joined
-			// list of provinces it serves) contains ANY of the selected
-			// provinces - can't use DataTables' built-in column search for
-			// this (that's a single term, not "any of N"), so this is a
-			// custom global search function instead, scoped to this table
-			// only (search functions apply to every DataTable on the page
-			// otherwise, and this one shares the page with
-			// #incompleteSignupsTable).
+			// Operating Area: a vendor matches if column 6 (the comma-joined
+			// list of provinces it serves - kept as a hidden column so this
+			// filter still works even though it's no longer shown) contains
+			// ANY of the selected provinces - can't use DataTables' built-in
+			// column search for this (that's a single term, not "any of
+			// N"), so this is a custom global search function instead,
+			// scoped to this table only (search functions apply to every
+			// DataTable on the page otherwise, and this one shares the page
+			// with #incompleteSignupsTable).
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
 				jQuery('.multiselect-vendor-operating-area').multiselect({ nonSelectedText: 'All Operating Areas' });
 			}
@@ -321,7 +331,7 @@
 				if (selected.length === 0) {
 					return true;
 				}
-				var cellValue = searchData[3];
+				var cellValue = searchData[6];
 				return selected.some(function (area) { return cellValue.indexOf(area) !== -1; });
 			});
 			$('#vendorOperatingAreaFilter').on('change', function () {

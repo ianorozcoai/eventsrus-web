@@ -29,4 +29,6 @@ public record BackendAdminVendorListItem(
         boolean topVendor,
         Instant createdAt,
         long referralCount,
-        boolean fakeAccount) {}
+        boolean fakeAccount,
+        long bookingCount,
+        Instant lastLoginAt) {}

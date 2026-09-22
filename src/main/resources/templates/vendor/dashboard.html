@@ -160,45 +160,89 @@
 				<!-- /content area -->
 
 
-				<!-- First-package nudge - a fun, one-time pop-up (see
+				<!-- First-package nudge - DISABLED, not deleted (replaced by the
+				     "Book a Setup Session" nudge below). To restore: change
+				     th:if="false" back to th:if="${showSetupSessionNudge}" on
+				     both this block and its script (and rename that
+				     controller attribute back to showFirstPackageNudge if
+				     restoring for real - see VendorController#dashboard). -->
+				<th:block th:if="false">
+					<div class="modal fade" id="firstPackageModal" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content border-0 overflow-hidden" style="border-radius:20px;">
+								<div class="position-relative text-center text-white p-4 pt-5"
+									style="background: linear-gradient(135deg, #0c83ff 0%, #6f42c1 55%, #f8512d 130%);">
+									<button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+									<div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mx-auto mb-3 first-package-bounce" style="width:84px;height:84px;">
+										<i class="ph-package ph-2x text-primary"></i>
+									</div>
+									<h4 class="fw-bold mb-0">Your storefront is live... <span class="d-block">but it's a little empty! 👀</span></h4>
+								</div>
+								<div class="modal-body text-center p-4">
+									<p class="text-muted mb-4">
+										Planners can't book what they can't see! Add your first package - even a simple
+										one - so your storefront actually has something to show off. It only takes a
+										minute, promise. ✨
+									</p>
+									<div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
+										<button type="button" class="btn btn-light" data-bs-dismiss="modal">Maybe later</button>
+										<a th:href="@{/vendor/packages(openAddPackage=1)}" class="btn btn-primary px-4">
+											<i class="ph-plus-circle me-1"></i> Add My First Package
+										</a>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<script>
+						document.addEventListener('DOMContentLoaded', function () {
+							new bootstrap.Modal(document.getElementById('firstPackageModal')).show();
+						});
+					</script>
+				</th:block>
+				<!-- /first-package nudge (disabled) -->
+
+				<!-- "Book a Setup Session" nudge - shown once per login (see
 				     VendorController#dashboard / WebSession.FIRST_PACKAGE_NUDGE_SHOWN
-				     for the once-per-login logic) encouraging a brand-new
-				     vendor with zero packages to add their first one. The
-				     CTA deep-links into /vendor/packages?openAddPackage=1,
-				     which auto-opens the Add Package modal there. -->
-				<div th:if="${showFirstPackageNudge}" class="modal fade" id="firstPackageModal" tabindex="-1" aria-hidden="true">
+				     for the once-per-login logic, reused from the old
+				     first-package nudge above) for a brand-new vendor with
+				     zero packages, offering a concierge setup call instead of
+				     just nagging about packages specifically - onboarding is
+				     deliberately minimal now, so there's a lot more than just
+				     packages left to help with. Only ever shows once the
+				     Cal.com link is actually configured. -->
+				<div th:if="${showSetupSessionNudge}" class="modal fade" id="setupSessionModal" tabindex="-1" aria-hidden="true">
 					<div class="modal-dialog modal-dialog-centered">
 						<div class="modal-content border-0 overflow-hidden" style="border-radius:20px;">
 							<div class="position-relative text-center text-white p-4 pt-5"
 								style="background: linear-gradient(135deg, #0c83ff 0%, #6f42c1 55%, #f8512d 130%);">
 								<button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
 								<div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mx-auto mb-3 first-package-bounce" style="width:84px;height:84px;">
-									<i class="ph-package ph-2x text-primary"></i>
+									<i class="ph-headset ph-2x text-primary"></i>
 								</div>
-								<h4 class="fw-bold mb-0">Your storefront is live... <span class="d-block">but it's a little empty! 👀</span></h4>
+								<h4 class="fw-bold mb-0">Do you want our team to help setup your account?</h4>
 							</div>
 							<div class="modal-body text-center p-4">
 								<p class="text-muted mb-4">
-									Planners can't book what they can't see! Add your first package - even a simple
-									one - so your storefront actually has something to show off. It only takes a
-									minute, promise. ✨
+									We'll walk you through packages, your storefront, and everything else -
+									just pick a date and time that works for you.
 								</p>
 								<div class="d-flex flex-column flex-sm-row justify-content-center gap-2">
 									<button type="button" class="btn btn-light" data-bs-dismiss="modal">Maybe later</button>
-									<a th:href="@{/vendor/packages(openAddPackage=1)}" class="btn btn-primary px-4">
-										<i class="ph-plus-circle me-1"></i> Add My First Package
+									<a th:href="${setupSessionBookingUrl}" target="_blank" rel="noopener" class="btn btn-primary px-4">
+										<i class="ph-calendar-check me-1"></i> Book a Session
 									</a>
 								</div>
 							</div>
 						</div>
 					</div>
 				</div>
-				<script th:if="${showFirstPackageNudge}">
+				<script th:if="${showSetupSessionNudge}">
 					document.addEventListener('DOMContentLoaded', function () {
-						new bootstrap.Modal(document.getElementById('firstPackageModal')).show();
+						new bootstrap.Modal(document.getElementById('setupSessionModal')).show();
 					});
 				</script>
-				<!-- /first-package nudge -->
+				<!-- /book-a-setup-session nudge -->
 
 
 				<!-- Footer -->

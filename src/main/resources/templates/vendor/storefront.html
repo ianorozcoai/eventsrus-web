@@ -360,9 +360,13 @@
 										<i class="ph-at text-muted me-2"></i>
 										<span th:text="${profile.contactEmail()}">email@example.com</span>
 									</div>
-									<div class="d-flex align-items-center">
+									<div class="d-flex align-items-center" th:classappend="${profile.facebookPageUrl() != null and not #strings.isEmpty(profile.facebookPageUrl())} ? 'mb-2' : ''">
 										<i class="ph-phone text-muted me-2"></i>
 										<span th:text="${profile.phoneNumber()}">+63 900 000 0000</span>
+									</div>
+									<div class="d-flex align-items-center" th:if="${profile.facebookPageUrl() != null and not #strings.isEmpty(profile.facebookPageUrl())}">
+										<i class="ph-facebook-logo text-muted me-2"></i>
+										<a th:href="${profile.facebookPageUrl()}" target="_blank" rel="noopener" th:text="${profile.facebookPageUrl()}">Facebook Page</a>
 									</div>
 								</div>
 							</div>

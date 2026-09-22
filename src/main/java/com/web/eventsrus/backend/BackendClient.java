@@ -119,6 +119,7 @@ public class BackendClient {
         addIfPresent(body, "description", form.getDescription());
         addIfPresent(body, "contactEmail", form.getContactEmail());
         addIfPresent(body, "phoneNumber", form.getPhoneNumber());
+        addIfPresent(body, "facebookPageUrl", form.getFacebookPageUrl());
         addIfPresent(body, "addressLine1", form.getAddressLine1());
         addIfPresent(body, "addressLine2", form.getAddressLine2());
         addIfPresent(body, "city", form.getCity());
@@ -512,6 +513,7 @@ public class BackendClient {
         addIfPresent(body, "businessType", form.getBusinessType() != null ? form.getBusinessType().name() : null);
         addIfPresent(body, "contactEmail", form.getContactEmail());
         addIfPresent(body, "phoneNumber", form.getPhoneNumber());
+        addIfPresent(body, "facebookPageUrl", form.getFacebookPageUrl());
         addIfPresent(body, "addressLine1", form.getAddressLine1());
         addIfPresent(body, "addressLine2", form.getAddressLine2());
         addIfPresent(body, "city", form.getCity());

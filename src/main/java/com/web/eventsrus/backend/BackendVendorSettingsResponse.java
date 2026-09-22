@@ -20,6 +20,7 @@ public record BackendVendorSettingsResponse(
         BusinessType businessType,
         String contactEmail,
         String phoneNumber,
+        String facebookPageUrl,
         String addressLine1,
         String addressLine2,
         String city,

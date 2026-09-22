@@ -48,7 +48,7 @@ class VendorControllerStorefrontTest {
     private VendorPublicProfile profile(long vendorUserId) {
         return new VendorPublicProfile(
                 vendorUserId, "Business", "Owner", "Description", null, null, "City", "State", "Country",
-                "contact@example.com", "0900", null, null, null, null, null, false, java.util.List.of(),
+                "contact@example.com", "0900", null, null, null, null, null, null, false, java.util.List.of(),
                 java.util.List.of(), null, 0, null, java.util.List.of(), java.util.List.of());
     }
 

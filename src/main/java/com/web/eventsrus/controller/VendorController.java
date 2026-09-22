@@ -83,6 +83,11 @@ public class VendorController {
     @Value("${google.oauth.client-id}")
     private String googleClientId;
 
+    // "Book a Setup Session" dashboard nudge - blank until the Cal.com
+    // booking page is configured; the nudge itself doesn't show while blank.
+    @Value("${vendor.setup-session-booking-url}")
+    private String setupSessionBookingUrl;
+
     public VendorController(ObjectMapper objectMapper, BackendClient backendClient) {
         this.objectMapper = objectMapper;
         this.backendClient = backendClient;
@@ -94,15 +99,22 @@ public class VendorController {
         model.addAttribute("dashboard", dashboard);
         model.addAttribute("activePage", "dashboard");
 
-        // Fun first-package nudge - shown once per login (mirrors the
-        // paywall modal's own "not on every page navigation" pattern), and
-        // only for as long as the vendor genuinely has zero packages.
+        // "Book a Setup Session" nudge - shown once per login (mirrors the
+        // paywall modal's own "not on every page navigation" pattern), only
+        // for as long as the vendor genuinely has zero packages, and only
+        // once the Cal.com booking link is actually configured (see
+        // vendor.setup-session-booking-url) - never show a dead-end popup.
+        // Replaces the old first-package nudge, same trigger/session flag,
+        // see the disabled firstPackageModal block in dashboard.html for how
+        // to restore that one instead if this is ever rolled back.
         boolean nudgeAlreadyShown = Boolean.TRUE.equals(session.getAttribute(WebSession.FIRST_PACKAGE_NUDGE_SHOWN));
-        boolean showFirstPackageNudge = !dashboard.hasPackages() && !nudgeAlreadyShown;
-        if (showFirstPackageNudge) {
+        boolean showSetupSessionNudge = !dashboard.hasPackages() && !nudgeAlreadyShown
+                && setupSessionBookingUrl != null && !setupSessionBookingUrl.isBlank();
+        if (showSetupSessionNudge) {
             session.setAttribute(WebSession.FIRST_PACKAGE_NUDGE_SHOWN, true);
         }
-        model.addAttribute("showFirstPackageNudge", showFirstPackageNudge);
+        model.addAttribute("showSetupSessionNudge", showSetupSessionNudge);
+        model.addAttribute("setupSessionBookingUrl", setupSessionBookingUrl);
         return "vendor/dashboard";
     }
 
@@ -1003,6 +1015,7 @@ public class VendorController {
         form.setBusinessType(settings.businessType());
         form.setContactEmail(settings.contactEmail());
         form.setPhoneNumber(settings.phoneNumber());
+        form.setFacebookPageUrl(settings.facebookPageUrl());
         form.setAddressLine1(settings.addressLine1());
         form.setAddressLine2(settings.addressLine2());
         form.setCity(settings.city());

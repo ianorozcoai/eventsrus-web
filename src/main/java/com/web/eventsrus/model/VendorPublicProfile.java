@@ -44,6 +44,7 @@ public record VendorPublicProfile(
         String country,
         String contactEmail,
         String phoneNumber,
+        String facebookPageUrl,
         String tierLabel,
         String primaryRegion,
         Integer bookingsCount,

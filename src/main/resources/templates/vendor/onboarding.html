@@ -118,8 +118,8 @@
 										<div class="row">
 											<div class="col-lg-6">
 												<div class="mb-3">
-													<label class="form-label">Business type <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<select th:field="*{businessType}" class="form-select">
+													<label class="form-label">Business type</label>
+													<select th:field="*{businessType}" class="form-select" required>
 														<option value="">Select a type</option>
 														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
 													</select>
@@ -128,9 +128,9 @@
 
 											<div class="col-lg-6">
 												<div class="mb-3">
-													<label class="form-label">Owner name <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<label class="form-label">Owner name</label>
 													<div class="form-control-feedback form-control-feedback-start">
-														<input type="text" th:field="*{ownerName}" class="form-control" placeholder="Ian Orozco">
+														<input type="text" th:field="*{ownerName}" class="form-control" placeholder="Ian Orozco" required>
 														<div class="form-control-feedback-icon">
 															<i class="ph-user-circle text-muted"></i>
 														</div>
@@ -139,7 +139,12 @@
 											</div>
 										</div>
 
-										<div class="mb-3">
+										<!-- Hidden, not removed - re-enable by dropping the inline style.
+										     Plain `hidden`/display:none alone isn't reliable in this theme:
+										     Bootstrap utility classes carry !important and silently override
+										     a non-!important inline style (same gotcha hit and fixed earlier
+										     for the vendor subscription page's Monthly option). -->
+										<div class="mb-3" style="display:none !important;">
 											<label class="form-label">Description <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
 											<textarea th:field="*{description}" rows="3" class="form-control" placeholder="What does your business offer?"></textarea>
 										</div>
@@ -150,9 +155,9 @@
 										<div class="row">
 											<div class="col-lg-6">
 												<div class="mb-3">
-													<label class="form-label">Contact email <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<label class="form-label">Email</label>
 													<div class="form-control-feedback form-control-feedback-start">
-														<input type="email" th:field="*{contactEmail}" class="form-control" placeholder="business@example.com">
+														<input type="email" th:field="*{contactEmail}" class="form-control" placeholder="business@example.com" required>
 														<div class="form-control-feedback-icon">
 															<i class="ph-at text-muted"></i>
 														</div>
@@ -162,9 +167,9 @@
 
 											<div class="col-lg-6">
 												<div class="mb-3">
-													<label class="form-label">Phone number <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<label class="form-label">Mobile number</label>
 													<div class="form-control-feedback form-control-feedback-start">
-														<input type="tel" th:field="*{phoneNumber}" class="form-control" placeholder="+63 917 123 4567">
+														<input type="tel" th:field="*{phoneNumber}" class="form-control" placeholder="+63 917 123 4567" required>
 														<div class="form-control-feedback-icon">
 															<i class="ph-phone text-muted"></i>
 														</div>
@@ -173,140 +178,154 @@
 											</div>
 										</div>
 
-										<!-- Address -->
-										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Address</h6>
-
 										<div class="mb-3">
-											<label class="form-label">Address line 1 <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-											<input type="text" th:field="*{addressLine1}" class="form-control">
-										</div>
-
-										<div class="mb-3">
-											<label class="form-label">Address line 2 <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-											<input type="text" th:field="*{addressLine2}" class="form-control">
-										</div>
-
-										<div class="row">
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">City <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="text" th:field="*{city}" class="form-control">
-												</div>
-											</div>
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">Province <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<select th:field="*{state}" class="form-select">
-														<option value="">Select a province</option>
-														<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
-													</select>
+											<label class="form-label">Facebook Page URL <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+											<div class="form-control-feedback form-control-feedback-start">
+												<input type="url" th:field="*{facebookPageUrl}" class="form-control" placeholder="https://facebook.com/yourbusiness">
+												<div class="form-control-feedback-icon">
+													<i class="ph-facebook-logo text-muted"></i>
 												</div>
 											</div>
 										</div>
 
-										<div class="row">
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">Postal code <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="text" th:field="*{postalCode}" class="form-control">
+										<!-- Hidden, not removed - see the Description field's comment
+										     above for why plain hidden/display:none doesn't work here. -->
+										<div style="display:none !important;">
+											<!-- Address -->
+											<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Address</h6>
+
+											<div class="mb-3">
+												<label class="form-label">Address line 1 <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+												<input type="text" th:field="*{addressLine1}" class="form-control">
+											</div>
+
+											<div class="mb-3">
+												<label class="form-label">Address line 2 <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+												<input type="text" th:field="*{addressLine2}" class="form-control">
+											</div>
+
+											<div class="row">
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">City <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="text" th:field="*{city}" class="form-control">
+													</div>
+												</div>
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">Province <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<select th:field="*{state}" class="form-select">
+															<option value="">Select a province</option>
+															<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
+														</select>
+													</div>
 												</div>
 											</div>
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">Country <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<select th:field="*{country}" class="form-select">
-														<option value="Philippines">Philippines</option>
-													</select>
+
+											<div class="row">
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">Postal code <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="text" th:field="*{postalCode}" class="form-control">
+													</div>
+												</div>
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">Country <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<select th:field="*{country}" class="form-select">
+															<option value="Philippines">Philippines</option>
+														</select>
+													</div>
 												</div>
 											</div>
-										</div>
 
-										<div class="mb-3">
-											<label class="form-label">Operating area</label>
-											<select th:field="*{operatingAreas}" multiple="multiple" required class="form-control multiselect-operating-areas"
-												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
-												data-filter-placeholder="Search for a province..." data-number-displayed="999">
-												<option th:each="area : ${operatingAreaOptions}" th:value="${area}" th:text="${area}"></option>
-											</select>
-											<div class="fs-sm text-muted mt-1">Search and select every province you'll operate in, or select "Entire Philippines" if you serve the whole country.</div>
-											<div id="operatingAreasFeedback" class="fs-sm text-danger mt-1 d-none">Please select at least one operating area.</div>
-										</div>
+											<div class="mb-3">
+												<label class="form-label">Operating area</label>
+												<select th:field="*{operatingAreas}" multiple="multiple" class="form-control multiselect-operating-areas"
+													data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+													data-filter-placeholder="Search for a province..." data-number-displayed="999">
+													<option th:each="area : ${operatingAreaOptions}" th:value="${area}" th:text="${area}"></option>
+												</select>
+												<div class="fs-sm text-muted mt-1">Search and select every province you'll operate in, or select "Entire Philippines" if you serve the whole country.</div>
+												<div id="operatingAreasFeedback" class="fs-sm text-danger mt-1 d-none">Please select at least one operating area.</div>
+											</div>
 
-										<div class="mb-3">
-											<label class="form-label">Event types you cater to</label>
-											<select th:field="*{cateredEventTypes}" multiple="multiple" required class="form-control multiselect-event-types"
-												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
-												data-filter-placeholder="Search for an event type..." data-number-displayed="999">
-												<option th:each="type : ${eventTypeOptions}" th:value="${type}" th:text="${type.label}"></option>
-											</select>
-											<div class="fs-sm text-muted mt-1">Select every type of event you take on — this helps planners find you for the right occasions.</div>
-											<div id="cateredEventTypesFeedback" class="fs-sm text-danger mt-1 d-none">Please select at least one event type you cater to.</div>
-										</div>
+											<div class="mb-3">
+												<label class="form-label">Event types you cater to</label>
+												<select th:field="*{cateredEventTypes}" multiple="multiple" class="form-control multiselect-event-types"
+													data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+													data-filter-placeholder="Search for an event type..." data-number-displayed="999">
+													<option th:each="type : ${eventTypeOptions}" th:value="${type}" th:text="${type.label}"></option>
+												</select>
+												<div class="fs-sm text-muted mt-1">Select every type of event you take on — this helps planners find you for the right occasions.</div>
+												<div id="cateredEventTypesFeedback" class="fs-sm text-danger mt-1 d-none">Please select at least one event type you cater to.</div>
+											</div>
 
-										<!-- Documents -->
-										<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Documents</h6>
-										<p class="text-muted fs-sm mb-3">Used to verify your business — kept private, only visible to EventsRUs admins.</p>
+											<!-- Documents -->
+											<h6 class="fw-semibold border-bottom pb-2 mb-3 mt-4">Documents</h6>
+											<p class="text-muted fs-sm mb-3">Used to verify your business — kept private, only visible to EventsRUs admins.</p>
 
-										<div class="row">
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">Logo <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="file" name="logo" class="form-control" accept="image/*">
+											<div class="row">
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">Logo <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="file" name="logo" class="form-control" accept="image/*">
+													</div>
+												</div>
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">ID card <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="file" name="idCard" class="form-control" accept="image/*">
+													</div>
 												</div>
 											</div>
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">ID card <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="file" name="idCard" class="form-control" accept="image/*">
+
+											<div class="row">
+												<div class="col-lg-6">
+													<div class="mb-3">
+														<label class="form-label">Selfie <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="file" name="selfie" class="form-control" accept="image/*">
+													</div>
 												</div>
 											</div>
-										</div>
 
-										<div class="row">
-											<div class="col-lg-6">
-												<div class="mb-3">
-													<label class="form-label">Selfie <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="file" name="selfie" class="form-control" accept="image/*">
-												</div>
+											<!-- Legal Documents - a business can have several of these
+											     (DTI, SEC, Mayor's Permit, Barangay Clearance, BIR, ...),
+											     so this is a repeatable row instead of one "Business
+											     permit" input - starts empty, fully optional, add as many
+											     as apply. More can be added later from Account Settings. -->
+											<div class="mb-2 d-flex align-items-center flex-wrap gap-2">
+												<label class="form-label mb-0">Legal Documents <span class="text-muted fs-sm fw-normal">(Optional - DTI, SEC, Mayor's Permit, Barangay Clearance, BIR, etc.)</span></label>
+												<button type="button" id="addLegalDocumentRow" class="btn btn-outline-secondary btn-sm ms-auto">
+													<i class="ph-plus me-1"></i> Add Document
+												</button>
 											</div>
-										</div>
+											<div id="legalDocumentRows" class="mb-3"></div>
 
-										<!-- Legal Documents - a business can have several of these
-										     (DTI, SEC, Mayor's Permit, Barangay Clearance, BIR, ...),
-										     so this is a repeatable row instead of one "Business
-										     permit" input - starts empty, fully optional, add as many
-										     as apply. More can be added later from Account Settings. -->
-										<div class="mb-2 d-flex align-items-center flex-wrap gap-2">
-											<label class="form-label mb-0">Legal Documents <span class="text-muted fs-sm fw-normal">(Optional - DTI, SEC, Mayor's Permit, Barangay Clearance, BIR, etc.)</span></label>
-											<button type="button" id="addLegalDocumentRow" class="btn btn-outline-secondary btn-sm ms-auto">
-												<i class="ph-plus me-1"></i> Add Document
-											</button>
+											<template id="legalDocumentRowTemplate">
+												<div class="row legal-document-row align-items-end mb-3">
+													<div class="col-lg-4">
+														<label class="form-label">Document type</label>
+														<select name="legalDocumentTypes" class="form-select">
+															<option th:each="type : ${documentTypes}" th:value="${type}" th:text="${type.getLabel()}"></option>
+														</select>
+													</div>
+													<div class="col-lg-4">
+														<label class="form-label">Label <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="text" name="legalDocumentLabels" class="form-control" placeholder="e.g., Fire Safety Certificate">
+													</div>
+													<div class="col-lg-3">
+														<label class="form-label">File</label>
+														<input type="file" name="legalDocumentFiles" class="form-control" accept="image/*,application/pdf">
+													</div>
+													<div class="col-lg-1">
+														<button type="button" class="btn btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0 remove-legal-document-row" style="width:28px;height:28px;" title="Remove">
+															<i class="ph-x fs-sm"></i>
+														</button>
+													</div>
+												</div>
+											</template>
 										</div>
-										<div id="legalDocumentRows" class="mb-3"></div>
-
-										<template id="legalDocumentRowTemplate">
-											<div class="row legal-document-row align-items-end mb-3">
-												<div class="col-lg-4">
-													<label class="form-label">Document type</label>
-													<select name="legalDocumentTypes" class="form-select">
-														<option th:each="type : ${documentTypes}" th:value="${type}" th:text="${type.getLabel()}"></option>
-													</select>
-												</div>
-												<div class="col-lg-4">
-													<label class="form-label">Label <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="text" name="legalDocumentLabels" class="form-control" placeholder="e.g., Fire Safety Certificate">
-												</div>
-												<div class="col-lg-3">
-													<label class="form-label">File</label>
-													<input type="file" name="legalDocumentFiles" class="form-control" accept="image/*,application/pdf">
-												</div>
-												<div class="col-lg-1">
-													<button type="button" class="btn btn-outline-danger rounded-circle d-inline-flex align-items-center justify-content-center p-0 remove-legal-document-row" style="width:28px;height:28px;" title="Remove">
-														<i class="ph-x fs-sm"></i>
-													</button>
-												</div>
-											</div>
-										</template>
 
 										<!-- If this visitor arrived via a referral link (/vendor/?ref=CODE -
 										     see VendorController#onboardingForm), the code is already known
@@ -427,6 +446,7 @@
 				setValue('description', pick(descriptions));
 				setValue('contactEmail', 'info@' + emailHandle + '.ph');
 				setValue('phoneNumber', '+63 9' + randomDigits(2) + ' ' + randomDigits(3) + ' ' + randomDigits(4));
+				setValue('facebookPageUrl', 'https://facebook.com/' + emailHandle);
 				setValue('addressLine1', pick(streets));
 				setValue('addressLine2', pick(barangays));
 				setValue('city', pick(cities));
@@ -456,10 +476,6 @@
 			}
 
 			var form = document.getElementById('onboardingForm');
-			var operatingAreas = document.getElementById('operatingAreas');
-			var feedback = document.getElementById('operatingAreasFeedback');
-			var cateredEventTypes = document.getElementById('cateredEventTypes');
-			var eventTypesFeedback = document.getElementById('cateredEventTypesFeedback');
 			var tokenField = document.getElementById('recaptchaToken');
 			var siteKey = /*[[${recaptchaSiteKey}]]*/ '';
 			var submitButton = document.getElementById('onboardingSubmitButton');
@@ -519,30 +535,6 @@
 
 				if (errorBox) {
 					errorBox.classList.add('d-none');
-				}
-
-				// Native "required" on a <select> the multiselect plugin hides
-				// doesn't reliably show browser validation UI, so enforce it explicitly.
-				if (operatingAreas && operatingAreas.selectedOptions.length === 0) {
-					if (feedback) {
-						feedback.classList.remove('d-none');
-					}
-					operatingAreas.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
-					return;
-				}
-				if (feedback) {
-					feedback.classList.add('d-none');
-				}
-
-				if (cateredEventTypes && cateredEventTypes.selectedOptions.length === 0) {
-					if (eventTypesFeedback) {
-						eventTypesFeedback.classList.remove('d-none');
-					}
-					cateredEventTypes.closest('.mb-3').scrollIntoView({ behavior: 'smooth', block: 'center' });
-					return;
-				}
-				if (eventTypesFeedback) {
-					eventTypesFeedback.classList.add('d-none');
 				}
 
 				setSubmitting(true);

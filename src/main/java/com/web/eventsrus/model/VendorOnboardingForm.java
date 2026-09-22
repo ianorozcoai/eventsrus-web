@@ -29,6 +29,7 @@ public class VendorOnboardingForm {
     private String description;
     private String contactEmail;
     private String phoneNumber;
+    private String facebookPageUrl;
     private String addressLine1;
     private String addressLine2;
     private String city;
@@ -37,10 +38,9 @@ public class VendorOnboardingForm {
     private String country;
     private List<String> operatingAreas;
 
-    // Which event types the vendor caters to - mandatory at onboarding
-    // (backend enforces @NotEmpty on VendorOnboardingRequest.cateredEventTypes;
-    // onboarding.html also blocks submit client-side). Editable later in
-    // Account Settings' Service Scope tab (VendorSettingsForm).
+    // Which event types the vendor caters to - hidden on the simplified
+    // onboarding form (no longer required either client- or server-side).
+    // Editable later in Account Settings' Service Scope tab (VendorSettingsForm).
     private List<EventType> cateredEventTypes;
 
     private boolean acceptedTerms;

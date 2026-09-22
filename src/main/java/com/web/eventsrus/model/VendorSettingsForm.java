@@ -50,6 +50,7 @@ public class VendorSettingsForm {
     private BusinessType businessType;
     private String contactEmail;
     private String phoneNumber;
+    private String facebookPageUrl;
     private String addressLine1;
     private String addressLine2;
     private String city;

@@ -37,7 +37,7 @@ public class PayPalReturnWebController {
         try {
             BackendSubscriptionStatus status = backendClient.confirmSubscription(jwt, vendorSubscriptionId);
             WebSession.storeSubscription(session, status.plan(), status.expiresAt(), status.expiringSoon(), status.expired(),
-                    status.inGracePeriod(), status.graceEndsAt());
+                    status.inGracePeriod(), status.graceEndsAt(), status.billingSource());
             redirectAttributes.addFlashAttribute("subscriptionConfirmed", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("subscriptionError", e.getMessage());

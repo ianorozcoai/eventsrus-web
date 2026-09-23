@@ -6,6 +6,7 @@
 
 	<div th:replace="~{fragments/common :: topnavbar}"></div>
 	<div th:replace="~{fragments/common :: paywallModal}"></div>
+	<div th:replace="~{fragments/common :: gcashRejectedModal}"></div>
 
 	<!-- Page content -->
 	<div class="page-content">
@@ -183,11 +184,12 @@
 											<div class="col-lg-6">
 												<div class="mb-3">
 													<label class="form-label">Business type</label>
-													<select th:field="*{businessType}" class="form-select">
-														<option value="">Select a type</option>
+													<select th:field="*{businessTypes}" multiple="multiple" class="form-control multiselect-business-types"
+														data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+														data-filter-placeholder="Search business types..." data-number-displayed="999">
 														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
 													</select>
-													<div class="fs-sm text-muted mt-1">Also shown as your storefront's main category.</div>
+													<div class="fs-sm text-muted mt-1">Also shown as your storefront's categories.</div>
 												</div>
 											</div>
 										</div>
@@ -733,6 +735,7 @@
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+				jQuery('.multiselect-business-types').multiselect();
 				jQuery('.multiselect-operating-areas').multiselect();
 				jQuery('.multiselect-event-types').multiselect();
 			}

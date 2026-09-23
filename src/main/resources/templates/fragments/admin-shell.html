@@ -129,6 +129,18 @@
 						</a>
 					</li>
 					<li class="nav-item">
+						<a th:href="@{/admin/subscription-payments}" class="nav-link" th:classappend="${activePage == 'subscription-payments'} ? 'active'">
+							<i class="ph-qr-code"></i>
+							<span>GCash Payments</span>
+						</a>
+					</li>
+					<li class="nav-item">
+						<a th:href="@{/admin/referrals}" class="nav-link" th:classappend="${activePage == 'referrals'} ? 'active'">
+							<i class="ph-handshake"></i>
+							<span>Referrals</span>
+						</a>
+					</li>
+					<li class="nav-item">
 						<a th:href="@{/admin/support/vendors}" class="nav-link" th:classappend="${activePage == 'support-vendors'} ? 'active'">
 							<i class="ph-lifebuoy"></i>
 							<span>Vendor Complaints</span>

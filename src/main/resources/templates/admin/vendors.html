@@ -71,15 +71,16 @@
 							<div class="tab-pane fade show active" id="tab-vendors" role="tabpanel">
 
 								<!-- Client-side filters over the same rows DataTables already
-								     paginates - Business Type is a plain dropdown (exact match),
-								     Operating Area is a multiselect (a vendor matches if it
-								     serves ANY of the selected provinces). See the script block
-								     below for the actual filtering logic. -->
+								     paginates - both Business Type and Operating Area are
+								     multiselects (a vendor matches if it has ANY of the
+								     selected values), since a vendor can now belong to
+								     several business types the same way it can serve several
+								     provinces. See the script block below for the actual
+								     filtering logic. -->
 								<div class="row g-2 mb-3">
 									<div class="col-md-4">
 										<label class="form-label fs-sm mb-1">Business Type</label>
-										<select id="vendorBusinessTypeFilter" class="form-select">
-											<option value="">All Business Types</option>
+										<select id="vendorBusinessTypeFilter" multiple="multiple" class="form-control multiselect-vendor-business-type">
 											<option th:each="type : ${businessTypes}" th:value="${type.getLabel()}" th:text="${type.getLabel()}"></option>
 										</select>
 									</div>
@@ -111,7 +112,10 @@
 										<tbody>
 											<tr th:each="vendor : ${vendors}">
 												<td th:text="${vendor.businessName()}">Business Name</td>
-												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
+												<td>
+													<span th:each="bt, iter : ${vendor.businessTypes()}"
+														th:text="${bt.getLabel()} + (${iter.last} ? '' : ', ')">Business Type</span>
+												</td>
 												<td>
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">09xxxxxxxxx</div>
@@ -183,7 +187,10 @@
 										<tbody>
 											<tr th:each="vendor : ${testVendors}">
 												<td th:text="${vendor.businessName()}">Business Name</td>
-												<td th:text="${vendor.businessType()?.getLabel()}">Business Type</td>
+												<td>
+													<span th:each="bt, iter : ${vendor.businessTypes()}"
+														th:text="${bt.getLabel()} + (${iter.last} ? '' : ', ')">Business Type</span>
+												</td>
 												<td th:text="${vendor.city()}">City</td>
 												<td th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
 												<td>
@@ -303,25 +310,36 @@
 				}
 			});
 
-			// Business Type: exact match against column 1 (regex-anchored so
-			// "Catering" doesn't also match a hypothetical "Cake Catering").
-			$('#vendorBusinessTypeFilter').on('change', function () {
-				var value = this.value;
-				vendorsTable.column(1).search(value ? '^' + $.fn.dataTable.util.escapeRegex(value) + '$' : '', true, false).draw();
-			});
-
-			// Operating Area: a vendor matches if column 6 (the comma-joined
-			// list of provinces it serves - kept as a hidden column so this
-			// filter still works even though it's no longer shown) contains
-			// ANY of the selected provinces - can't use DataTables' built-in
-			// column search for this (that's a single term, not "any of
-			// N"), so this is a custom global search function instead,
-			// scoped to this table only (search functions apply to every
-			// DataTable on the page otherwise, and this one shares the page
-			// with #incompleteSignupsTable).
+			// Business Type and Operating Area both work the same way now -
+			// a vendor matches if its column (1 for Business Type, 6 for
+			// Operating Area - the latter a hidden, comma-joined column
+			// since it's no longer shown directly) contains ANY of the
+			// selected values. Can't use DataTables' built-in column search
+			// for this (that's a single term, not "any of N"), so both are
+			// custom global search functions instead, scoped to this table
+			// only (search functions apply to every DataTable on the page
+			// otherwise, and this one shares the page with
+			// #incompleteSignupsTable).
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+				jQuery('.multiselect-vendor-business-type').multiselect({ nonSelectedText: 'All Business Types' });
 				jQuery('.multiselect-vendor-operating-area').multiselect({ nonSelectedText: 'All Operating Areas' });
 			}
+			var businessTypeFilter = document.getElementById('vendorBusinessTypeFilter');
+			$.fn.dataTable.ext.search.push(function (settings, searchData) {
+				if (settings.nTable.id !== 'vendorsTable') {
+					return true;
+				}
+				var selected = Array.from(businessTypeFilter.selectedOptions).map(function (o) { return o.value; });
+				if (selected.length === 0) {
+					return true;
+				}
+				var cellValue = searchData[1];
+				return selected.some(function (type) { return cellValue.indexOf(type) !== -1; });
+			});
+			$('#vendorBusinessTypeFilter').on('change', function () {
+				vendorsTable.draw();
+			});
+
 			var operatingAreaFilter = document.getElementById('vendorOperatingAreaFilter');
 			$.fn.dataTable.ext.search.push(function (settings, searchData) {
 				if (settings.nTable.id !== 'vendorsTable') {
@@ -339,9 +357,9 @@
 			});
 
 			document.getElementById('clearVendorFilters').addEventListener('click', function () {
-				document.getElementById('vendorBusinessTypeFilter').value = '';
+				jQuery('.multiselect-vendor-business-type').multiselect('deselectAll', false);
 				jQuery('.multiselect-vendor-operating-area').multiselect('deselectAll', false);
-				vendorsTable.column(1).search('').draw();
+				vendorsTable.draw();
 			});
 		});
 	</script>

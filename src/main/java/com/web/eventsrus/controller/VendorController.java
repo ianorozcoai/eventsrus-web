@@ -33,6 +33,7 @@ import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
 import com.web.eventsrus.backend.BackendQuotationHistoryEntry;
+import com.web.eventsrus.backend.BackendSubscriptionStatus;
 import com.web.eventsrus.backend.BackendVendorSettingsResponse;
 import com.web.eventsrus.backend.WebSession;
 import jakarta.servlet.http.HttpServletRequest;
@@ -95,9 +96,14 @@ public class VendorController {
 
     @GetMapping("/dashboard")
     public String dashboard(HttpSession session, Model model) {
-        VendorDashboard dashboard = backendClient.getDashboard(WebSession.token(session));
+        String jwt = WebSession.token(session);
+        VendorDashboard dashboard = backendClient.getDashboard(jwt);
         model.addAttribute("dashboard", dashboard);
         model.addAttribute("activePage", "dashboard");
+        // "status" (for fragments/common.html :: planSelectionModal's plan
+        // picker) and every paywall* flag are already provided by
+        // PaywallModelAttributes for any logged-in vendor - no need to fetch
+        // subscription state again here.
 
         // "Book a Setup Session" nudge - shown once per login (mirrors the
         // paywall modal's own "not on every page navigation" pattern), only
@@ -107,8 +113,19 @@ public class VendorController {
         // Replaces the old first-package nudge, same trigger/session flag,
         // see the disabled firstPackageModal block in dashboard.html for how
         // to restore that one instead if this is ever rolled back.
+        //
+        // Also gated on the vendor actually having a live plan - either a
+        // free/promo trial (billingSource=FREE_GRANT) or a paying vendor
+        // whose payment has actually cleared (PayPal: immediate; GCash: only
+        // once an admin verifies - see paywallAwaitingGcashVerification,
+        // already computed by PaywallModelAttributes). A paying vendor whose
+        // GCash payment is still under review, or who has no plan at all
+        // yet, shouldn't be offered a setup session before they've paid.
         boolean nudgeAlreadyShown = Boolean.TRUE.equals(session.getAttribute(WebSession.FIRST_PACKAGE_NUDGE_SHOWN));
-        boolean showSetupSessionNudge = !dashboard.hasPackages() && !nudgeAlreadyShown
+        Object status = model.getAttribute("status");
+        boolean hasVerifiedPlan = status instanceof BackendSubscriptionStatus s && s.plan() != null
+                && !Boolean.TRUE.equals(model.getAttribute("paywallAwaitingGcashVerification"));
+        boolean showSetupSessionNudge = !dashboard.hasPackages() && !nudgeAlreadyShown && hasVerifiedPlan
                 && setupSessionBookingUrl != null && !setupSessionBookingUrl.isBlank();
         if (showSetupSessionNudge) {
             session.setAttribute(WebSession.FIRST_PACKAGE_NUDGE_SHOWN, true);
@@ -1012,7 +1029,7 @@ public class VendorController {
         form.setBusinessName(settings.businessName());
         form.setDescription(settings.description());
         form.setOwnerName(settings.ownerName());
-        form.setBusinessType(settings.businessType());
+        form.setBusinessTypes(settings.businessTypes());
         form.setContactEmail(settings.contactEmail());
         form.setPhoneNumber(settings.phoneNumber());
         form.setFacebookPageUrl(settings.facebookPageUrl());
@@ -1022,7 +1039,6 @@ public class VendorController {
         form.setState(settings.state());
         form.setPostalCode(settings.postalCode());
         form.setCountry(settings.country());
-        form.setPrimaryCategory(settings.primaryCategory());
         form.setMaxGuestCapacity(settings.maxGuestCapacity());
         form.setMaxCustomersPerDay(settings.maxCustomersPerDay());
         form.setBasePrice(settings.basePrice());

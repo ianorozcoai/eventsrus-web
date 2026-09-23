@@ -290,6 +290,407 @@
 
 	</div>
 
+	<!--/* The Quarterly/Semi-Annual/Annual plan picker + PayPal JS SDK Smart
+	     Buttons - shared between vendor/subscription.html's own "Renew/
+	     Subscribe" card and the required plan-selection modal below, so
+	     there's one copy of this markup. References ${status} (a
+	     BackendSubscriptionStatus) and ${paypalClientId} directly rather
+	     than taking them as fragment parameters - both are already global
+	     model attributes for any logged-in vendor page, see
+	     PaywallModelAttributes.
+
+	     Smart Buttons (not the old server-redirect flow) so PayPal can offer
+	     its "Debit or Credit Card" guest option alongside the PayPal button
+	     - whether that guest option actually appears depends on PayPal's own
+	     account/region eligibility, not this code. The browser calls PayPal
+	     directly (createSubscription/actions.subscription.create), then
+	     onApprove POSTs the resulting subscription id to our own
+	     /vendor/subscription/paypal-approve - our backend never calls
+	     PayPal's create-subscription endpoint itself in this flow (contrast
+	     the old CreateSubscriptionRequest-based POST /subscribe, kept around
+	     unused for now rather than deleted). */-->
+	<th:block th:fragment="proPlanPickerForm">
+		<!-- Payment method buttons deliberately don't use Bootstrap's stock
+		     outline-button hover (a solid background fill) - a thicker
+		     border reads as "hovering" without the color swap. border-width
+		     alone would grow the button and nudge its neighbors; the
+		     matching negative margin cancels that out so nothing shifts.
+		     Lives here (rather than on the page that includes this fragment)
+		     so it also applies on the dashboard's planSelectionModal, which
+		     includes this same fragment but not vendor/subscription.html's
+		     own styles. The explicit background-color/border-color
+		     overrides (not just border-width) are needed because whichever
+		     theme's .btn-outline-secondary:hover rule wins the cascade here
+		     still sets a color fill on its own - !important is the only way
+		     to reliably beat it regardless of where this fragment renders. -->
+		<style>
+			.payment-method-btn {
+				--btn-hover-bg: transparent;
+				--btn-hover-color: var(--btn-color);
+				--btn-hover-border-color: var(--btn-border-color);
+				border-width: 1px;
+			}
+			.payment-method-btn:hover, .payment-method-btn:focus {
+				border-width: 2px;
+				margin: -1px;
+				background-color: var(--bs-white, #fff) !important;
+				border-color: var(--btn-border-color) !important;
+				color: var(--btn-color) !important;
+			}
+		</style>
+		<div class="mb-3">
+			<!--/* Monthly is hidden, not removed - kept as a real, working
+			     option (backend + PayPal plan both still live) in case it
+			     comes back later. Every tier's "/ month" figure always shows
+			     the flat configured rate (status.monthlyPrice()), never a
+			     discounted average - the savings show up only in the total
+			     and the "Free N Month(s)" badge, not by understating the
+			     per-month rate. data-plan-id is the actual PayPal Plan ID
+			     charged when this radio is selected - read at click time by
+			     the Smart Buttons script below. */-->
+			<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2" style="display:none !important;">
+				<span>
+					<input type="radio" name="billingCycle" value="MONTHLY" class="form-check-input me-2" th:attr="data-plan-id=${status.monthlyPlanId()}">
+					Monthly <span class="text-muted fs-sm">(1 month)</span>
+				</span>
+				<span class="text-end">
+					<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+					<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> total</span>
+				</span>
+			</label>
+			<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
+				<span>
+					<input type="radio" name="billingCycle" value="QUARTERLY" class="form-check-input me-2" checked th:attr="data-plan-id=${status.quarterlyPlanId()}">
+					Quarterly <span class="text-muted fs-sm text-nowrap">(3 mo.)</span>
+				</span>
+				<span class="text-end">
+					<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+					<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.quarterlyPrice(), 1, 'COMMA', 0, 'POINT')}">2,997</span> total</span>
+				</span>
+			</label>
+			<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
+				<span>
+					<input type="radio" name="billingCycle" value="SEMI_ANNUAL" class="form-check-input me-2" th:attr="data-plan-id=${status.semiAnnualPlanId()}">
+					Semi-Annual <span class="text-muted fs-sm text-nowrap">(6 mo.)</span>
+					<span class="badge bg-success ms-1">Free 1 Month</span>
+				</span>
+				<span class="text-end">
+					<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+					<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.semiAnnualPrice(), 1, 'COMMA', 0, 'POINT')}">4,995</span> total</span>
+				</span>
+			</label>
+			<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-0">
+				<span>
+					<input type="radio" name="billingCycle" value="ANNUAL" class="form-check-input me-2" th:attr="data-plan-id=${status.annualPlanId()}">
+					Annual <span class="text-muted fs-sm text-nowrap">(12 mo.)</span>
+					<span class="badge bg-success ms-1">Free 2 Months</span>
+				</span>
+				<span class="text-end">
+					<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
+					<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.annualPrice(), 1, 'COMMA', 0, 'POINT')}">9,990</span> total</span>
+				</span>
+			</label>
+		</div>
+
+		<label class="form-label">Payment Method</label>
+		<div class="row g-2">
+			<div class="col-12">
+				<div id="paypal-button-container"></div>
+				<p id="paypal-button-error" class="text-danger fs-sm mb-0 mt-1" hidden>
+					Something went wrong starting your payment. Please try again.
+				</p>
+			</div>
+			<div class="col-12">
+				<button type="button" id="gcashPayButton" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+					<img th:src="@{/assets/images/payment-methods/gcash.svg}" alt="" style="height:18px;width:auto;">
+					GCash
+				</button>
+			</div>
+			<!--/* Maya/Bank Transfer are hidden, not removed - same
+			     "keep working, just not shown" treatment as the Monthly
+			     billing-cycle option above, for when they're actually built.
+			     display:none alone isn't enough here either - .d-flex is a
+			     Bootstrap !important utility, so the override needs one too. */-->
+			<div class="col-6" style="display:none !important;">
+				<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+					<img th:src="@{/assets/images/payment-methods/maya.svg}" alt="" style="height:18px;width:auto;">
+					Maya
+				</button>
+			</div>
+			<div class="col-6" style="display:none !important;">
+				<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
+					<i class="ph-bank fs-lg"></i>
+					Bank Transfer
+				</button>
+			</div>
+		</div>
+
+		<script th:src="'https://www.paypal.com/sdk/js?client-id=' + ${paypalClientId} + '&vault=true&intent=subscription'"></script>
+		<script>
+			(function () {
+				// document.currentScript is only valid synchronously, during
+				// this script's own initial execution - captured now since
+				// the modal-shown listener below fires later, asynchronously.
+				var thisScript = document.currentScript;
+
+				function renderPayPalButtons() {
+					var container = document.getElementById('paypal-button-container');
+					// Guards against double-render if both DOMContentLoaded and
+					// shown.bs.modal could somehow both fire for the same
+					// container, and against a missing SDK (blocked script,
+					// bad client id) rather than throwing into a broken page.
+					if (!container || container.dataset.rendered || typeof paypal === 'undefined') {
+						return;
+					}
+					container.dataset.rendered = 'true';
+
+					paypal.Buttons({
+						createSubscription: function (data, actions) {
+							var selected = document.querySelector('input[name="billingCycle"]:checked');
+							return actions.subscription.create({ plan_id: selected.getAttribute('data-plan-id') });
+						},
+						onApprove: function (data) {
+							fetch('/vendor/subscription/paypal-approve', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ paypalSubscriptionId: data.subscriptionID })
+							})
+								.then(function (response) { return response.json(); })
+								.then(function (result) {
+									if (result.success) {
+										window.location.href = '/vendor/dashboard';
+									} else {
+										document.getElementById('paypal-button-error').hidden = false;
+									}
+								})
+								.catch(function () {
+									document.getElementById('paypal-button-error').hidden = false;
+								});
+						},
+						onError: function () {
+							document.getElementById('paypal-button-error').hidden = false;
+						}
+					}).render('#paypal-button-container');
+				}
+
+				// The picker renders inside a hidden Bootstrap modal on the
+				// dashboard's required plan-selection popup - PayPal's
+				// Buttons need real layout to render into, so that case waits
+				// for the modal to actually be shown rather than rendering
+				// into a display:none container on DOMContentLoaded.
+				var modalAncestor = thisScript.closest('.modal');
+				if (modalAncestor) {
+					modalAncestor.addEventListener('shown.bs.modal', renderPayPalButtons);
+				} else {
+					document.addEventListener('DOMContentLoaded', renderPayPalButtons);
+				}
+
+				// GCash's own modal (fragments/common.html :: gcashPaymentModal)
+				// is always a sibling in the DOM, never nested inside this one
+				// (Bootstrap doesn't support nested modals) - whichever page
+				// includes this picker also includes that modal directly.
+				function wireGcashButton() {
+					var button = document.getElementById('gcashPayButton');
+					var gcashModalEl = document.getElementById('gcashPaymentModal');
+					if (!button || !gcashModalEl || button.dataset.wired) {
+						return;
+					}
+					button.dataset.wired = 'true';
+					button.addEventListener('click', function () {
+						var selected = document.querySelector('input[name="billingCycle"]:checked');
+						document.getElementById('gcashBillingCycle').value = selected.value;
+						new bootstrap.Modal(gcashModalEl).show();
+					});
+				}
+				if (modalAncestor) {
+					modalAncestor.addEventListener('shown.bs.modal', wireGcashButton);
+				} else {
+					document.addEventListener('DOMContentLoaded', wireGcashButton);
+				}
+			})();
+		</script>
+	</th:block>
+
+	<!--/* GCash's manual-payment popup - the real QR code (gcash.jpg) plus a
+	     plain multipart upload form (no JS/fetch needed, unlike the PayPal
+	     flow above) posting straight to /vendor/subscription/gcash-payment.
+	     Always a DOM sibling of proPlanPickerForm's include (see the comment
+	     there) rather than nested inside it, so it never ends up nested
+	     inside another open modal. gcashBillingCycle is filled in by
+	     proPlanPickerForm's own script right before this modal is shown. */-->
+	<th:block th:fragment="gcashPaymentModal">
+		<div class="modal fade" id="gcashPaymentModal" tabindex="-1">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title mb-0">Pay via GCash</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+					</div>
+					<div class="modal-body text-center">
+						<img th:src="@{/assets/images/gcash.jpg}" alt="GCash QR code" class="img-fluid rounded mb-3" style="max-width:260px;">
+						<p class="text-muted fs-sm">
+							Scan the QR code or send payment to the GCash account above, then upload a screenshot of
+							your payment confirmation. An admin reviews it and activates your subscription once confirmed.
+						</p>
+						<form th:action="@{/vendor/subscription/gcash-payment}" method="post" enctype="multipart/form-data" class="text-start">
+							<input type="hidden" name="billingCycle" id="gcashBillingCycle">
+							<div class="mb-3">
+								<label class="form-label">Payment Screenshot</label>
+								<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg" required>
+							</div>
+							<div class="mb-3">
+								<label class="form-label">Remarks (optional)</label>
+								<textarea name="vendorRemarks" class="form-control" rows="2"
+									placeholder="e.g. Sent via GCash app, ref #12345"></textarea>
+							</div>
+							<button type="submit" class="btn btn-primary w-100">Upload Payment Screenshot</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</th:block>
+
+	<!--/* Required "Choose your PRO plan" pop-up for a vendor who hasn't paid
+	     yet (no subscription row exists at all - paywallRequiresPlanSelection)
+	     - keeps reappearing every login (see PaywallModelAttributes) until
+	     they pay via PayPal or GCash; there's no free-trial skip anymore, so
+	     no dismiss button either. A GCash submission gets its own separate,
+	     dismissible "awaiting verification" state instead (paywallAwaitingGcashVerification)
+	     rather than forcing another choice - the vendor already did their
+	     part; an admin reviewing it is what's pending, not them. Deliberately
+	     separate from paywallModal below (a renewal reminder for vendors who
+	     DO have a real plan). Only ever renders on pages that add a "status"
+	     model attribute (currently just vendor/dashboard.html - see
+	     VendorController#dashboard) since that's what proPlanPickerForm
+	     above needs for pricing. */-->
+	<th:block th:fragment="planSelectionModal">
+		<div th:if="${paywallRequiresPlanSelection and not paywallAlreadyShown}"
+			class="modal fade" id="planSelectionModal" tabindex="-1"
+			data-bs-backdrop="static" data-bs-keyboard="false">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-body p-4">
+						<div class="text-center mb-3">
+							<i class="ph-crown-simple text-warning" style="font-size:3rem;"></i>
+							<h5 class="mt-3 mb-1">Choose your PRO plan</h5>
+							<p class="text-muted mb-0">
+								Pick a billing cycle and pay via PayPal or GCash to get full access.
+							</p>
+						</div>
+
+						<div th:replace="~{fragments/common :: proPlanPickerForm}"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script th:if="${paywallRequiresPlanSelection and not paywallAlreadyShown}">
+			document.addEventListener('DOMContentLoaded', function () {
+				new bootstrap.Modal(document.getElementById('planSelectionModal')).show();
+			});
+		</script>
+
+		<!--/* The dismissible "your GCash payment is pending review" notice -
+		     paywallAwaitingGcashVerification is mutually exclusive with
+		     paywallRequiresPlanSelection (see PaywallModelAttributes), so
+		     this never shows alongside the modal above. */-->
+		<div th:if="${paywallAwaitingGcashVerification and not paywallAlreadyShown}"
+			class="modal fade" id="gcashAwaitingVerificationModal" tabindex="-1">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-body p-4 text-center">
+						<i class="ph-hourglass-medium text-warning" style="font-size:3rem;"></i>
+						<h5 class="mt-3 mb-1">Your GCash payment is being reviewed</h5>
+						<p class="text-muted mb-3">
+							We received your payment screenshot. An admin will confirm it shortly and activate your
+							PRO plan - no further action needed from you.
+						</p>
+						<button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">OK</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script th:if="${paywallAwaitingGcashVerification and not paywallAlreadyShown}">
+			document.addEventListener('DOMContentLoaded', function () {
+				new bootstrap.Modal(document.getElementById('gcashAwaitingVerificationModal')).show();
+			});
+		</script>
+	</th:block>
+
+	<!--/* The dismissible "your GCash payment verification failed" notice -
+	     paywallPaymentFailed (a rejected GCash submission) is mutually
+	     exclusive with both paywallRequiresPlanSelection and
+	     paywallAwaitingGcashVerification (see PaywallModelAttributes).
+	     Unlike the "pending review" notice above, this one's CTA navigates
+	     to /vendor/subscription rather than just dismissing - that's where
+	     the re-upload form (and the reason shown below) actually live, see
+	     vendor/subscription.html's Current Plan card. Included separately
+	     from planSelectionModal since it needs to render on every page (the
+	     vendor might be several pages deep when this fires), not just the
+	     dashboard. */-->
+	<th:block th:fragment="gcashRejectedModal">
+		<div th:if="${paywallPaymentFailed and not paywallAlreadyShown}"
+			class="modal fade" id="gcashRejectedModal" tabindex="-1">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-body p-4 text-center">
+						<i class="ph-x-circle text-danger" style="font-size:3rem;"></i>
+						<h5 class="mt-3 mb-1">Your GCash payment verification failed</h5>
+						<p class="text-muted mb-1" th:if="${status != null and status.gcashRejectionReason() != null}">
+							<span th:text="${status.gcashRejectionReason()}">Reason</span>
+						</p>
+						<p class="text-muted mb-3">
+							Please re-upload your payment screenshot on the Billing &amp; Subscription page.
+						</p>
+						<a th:href="@{/vendor/subscription} + '#renewSubscribeCard'" class="btn btn-primary w-100">Go to Billing &amp; Subscription</a>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script th:if="${paywallPaymentFailed and not paywallAlreadyShown}">
+			document.addEventListener('DOMContentLoaded', function () {
+				new bootstrap.Modal(document.getElementById('gcashRejectedModal')).show();
+			});
+		</script>
+	</th:block>
+
+	<!--/* One-time "Welcome to PRO" celebration - fires the moment a
+	     vendor's plan is genuinely active (promo trial or PayPal:
+	     immediately; GCash: only once an admin verifies, never during the
+	     temporary 7-day grant - see PaywallModelAttributes/
+	     VendorSubscriptionService#statusResponseFor). showProWelcomeModal is
+	     backed by a persisted per-user flag (User.proWelcomeShown), not a
+	     session flag, so it survives across logins and still fires exactly
+	     once even when the vendor isn't present when GCash gets verified.
+	     "Got it" posts to /vendor/subscription/welcome-shown, which marks
+	     the flag server-side - same plain-POST-and-redirect idiom as every
+	     other action in this app, no fetch/AJAX. */-->
+	<th:block th:fragment="proWelcomeModal">
+		<div th:if="${showProWelcomeModal}" class="modal fade" id="proWelcomeModal" tabindex="-1"
+			data-bs-backdrop="static">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-body p-4 text-center">
+						<i class="ph-confetti text-warning" style="font-size:3rem;"></i>
+						<h5 class="mt-3 mb-1">Welcome to PRO!</h5>
+						<p class="text-muted mb-3">
+							Your subscription is active. You now have full access to quotations, chat, bookings,
+							and premium placement in planner search.
+						</p>
+						<form th:action="@{/vendor/subscription/welcome-shown}" method="post">
+							<button type="submit" class="btn btn-warning w-100">Got it</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script th:if="${showProWelcomeModal}">
+			document.addEventListener('DOMContentLoaded', function () {
+				new bootstrap.Modal(document.getElementById('proWelcomeModal')).show();
+			});
+		</script>
+	</th:block>
+
 	<!--/* Paywall pop-up - shown once per login (PaywallModelAttributes flips
 	     WebSession.PAYWALL_SHOWN the first time these attributes come back
 	     false, on any page other than /vendor/subscription itself), starting
@@ -538,8 +939,13 @@
 		</div>
 		<script>
 			// Global on purpose - callers on any page just call
-			// window.confirmAction(...) from a plain click handler.
-			window.confirmAction = function (message, onConfirm) {
+			// window.confirmAction(...) from a plain click handler. The
+			// third "options" argument is optional - {label, btnClass} let
+			// a non-destructive caller (e.g. "Verify" this payment) swap out
+			// the default "Yes, Remove"/btn-danger styling, which otherwise
+			// reads as a delete confirmation for any action.
+			window.confirmAction = function (message, onConfirm, options) {
+				options = options || {};
 				var modalEl = document.getElementById('confirmActionModal');
 				document.getElementById('confirmActionMessage').textContent = message;
 				var confirmBtn = document.getElementById('confirmActionConfirmBtn');
@@ -548,6 +954,8 @@
 				// one modal instance is reused for every delete on the page.
 				var freshBtn = confirmBtn.cloneNode(true);
 				confirmBtn.parentNode.replaceChild(freshBtn, confirmBtn);
+				freshBtn.textContent = options.label || 'Yes, Remove';
+				freshBtn.className = 'btn ' + (options.btnClass || 'btn-danger');
 				var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 				freshBtn.addEventListener('click', function () {
 					modal.hide();

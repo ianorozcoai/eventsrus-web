@@ -38,7 +38,7 @@ public record VendorPublicProfile(
         String ownerName,
         String description,
         String logoImageUrl,
-        BusinessType businessType,
+        List<BusinessType> businessTypes,
         String city,
         String state,
         String country,

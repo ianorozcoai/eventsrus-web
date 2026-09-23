@@ -23,8 +23,11 @@ import lombok.Setter;
  * cateredEventTypes (which event types the vendor caters to) are both real
  * on the backend DTO now, bound the same way - repeated form fields from a
  * native multi-select, not a delimited string.
- * primaryCategory/maxGuestCapacity/basePrice/storefrontOverview are kept
- * here for real-DTO parity even though Tab 2 no longer renders them.
+ * maxGuestCapacity/basePrice/storefrontOverview are kept here for
+ * real-DTO parity even though Tab 2 no longer renders them.
+ * businessTypes replaced the old single-value businessType/primaryCategory
+ * pair - a vendor can now belong to several categories, bound the same way
+ * as operatingAreas (repeated form fields from a native multi-select).
  * Tab 3 (retainerPercentage/cancellationPolicy/refundTerms) has no fields
  * here at all now - the real VendorSettingsRequest dropped retainer
  * entirely and moved cancellation policy / refund terms to PDF uploads
@@ -47,7 +50,7 @@ public class VendorSettingsForm {
     private String businessName;
     private String description;
     private String ownerName;
-    private BusinessType businessType;
+    private List<BusinessType> businessTypes;
     private String contactEmail;
     private String phoneNumber;
     private String facebookPageUrl;
@@ -59,7 +62,6 @@ public class VendorSettingsForm {
     private String country;
 
     // Tab 2 - Service Scope & Metrics
-    private BusinessType primaryCategory;
     private Integer maxGuestCapacity;
     private Integer maxCustomersPerDay;
     private BigDecimal basePrice;

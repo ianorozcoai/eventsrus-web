@@ -15,7 +15,7 @@ public record BackendAdminVendorListItem(
         String ownerName,
         String contactEmail,
         String phoneNumber,
-        BusinessType businessType,
+        List<BusinessType> businessTypes,
         String slug,
         String city,
         String state,

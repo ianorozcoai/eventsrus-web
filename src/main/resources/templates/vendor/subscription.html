@@ -60,14 +60,35 @@
 								</div>
 								<div class="card-body">
 									<div class="d-flex align-items-center mb-3">
+										<!--/* "Free-Pro" (not a real paid plan yet) covers three cases: a
+										     promo-trial vendor (billingSource=FREE_GRANT, always free), a
+										     GCash submission still mid-review (real temporary access already
+										     granted - see VendorSubscriptionService#submitGcashPayment - but
+										     no payment confirmed yet), and a rejected GCash submission
+										     (temporary access revoked, but still shown as Free-Pro rather
+										     than a bare "No active plan" so the vendor sees what happened,
+										     not a blank slate). Flips to "PRO" once a real payment is
+										     confirmed: PayPal immediately, GCash once an admin verifies. */-->
 										<div>
-											<h4 class="mb-0" th:text="${status.plan() != null ? 'PRO' : 'No active plan'}">PRO</h4>
-											<span th:if="${status.plan() != null and status.expired()}" class="badge bg-danger">Expired</span>
-											<span th:if="${status.plan() != null and status.inGracePeriod()}" class="badge bg-danger">Grace Period</span>
-											<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-warning text-dark">Renews soon</span>
-											<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-success">Active</span>
+											<h4 class="mb-0"
+												th:text="${status.plan() == null and !paywallPaymentFailed ? 'No active plan' : ((status.billingSource() == 'FREE_GRANT' or paywallAwaitingGcashVerification or paywallPaymentFailed) ? 'Free-Pro' : 'PRO')}">PRO</h4>
+											<span th:if="${paywallAwaitingGcashVerification}" class="badge bg-warning text-dark">Payment is being verified</span>
+											<span th:if="${paywallPaymentFailed}" class="badge bg-danger">Payment verification failed</span>
+											<th:block th:unless="${paywallAwaitingGcashVerification or paywallPaymentFailed}">
+												<span th:if="${status.plan() != null and status.expired()}" class="badge bg-danger">Expired</span>
+												<span th:if="${status.plan() != null and status.inGracePeriod()}" class="badge bg-danger">Grace Period</span>
+												<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-warning text-dark">Renews soon</span>
+												<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-success">Active</span>
+											</th:block>
 										</div>
 									</div>
+									<p class="mb-2 text-danger" th:if="${paywallPaymentFailed and status.gcashRejectionReason() != null}">
+										<i class="ph-warning-circle me-1"></i>
+										<span th:text="${status.gcashRejectionReason()}">Reason</span>
+									</p>
+									<a th:if="${paywallPaymentFailed}" href="#renewSubscribeCard" class="btn btn-danger w-100 mb-2">
+										<i class="ph-upload-simple me-1"></i> Re-upload Payment Screenshot
+									</a>
 									<p class="mb-1" th:if="${status.expiresAt() != null}">
 										<span th:if="${status.expired() or status.inGracePeriod()}">Expired on</span>
 										<span th:unless="${status.expired() or status.inGracePeriod()}">Renews on / expires</span>
@@ -86,124 +107,22 @@
 							</div>
 							<!-- /current plan -->
 
-							<!-- Renew / subscribe - hidden off a localhost URL until PayPal
-							     is off sandbox credentials (see VendorSubscriptionWebController).
-							     Payment method buttons below are deliberately inert for now
-							     (no click handler, nothing to submit to yet) - picking a real
-							     payment method per plan/cycle combination is a separate,
-							     not-yet-built piece of work; this is the plan-selection UI
-							     ahead of that. -->
-							<form class="card" th:if="${showSubscriptionPayment}" th:action="@{/vendor/subscription/subscribe}" method="post">
+							<!-- Renew / subscribe - see fragments/common.html :: proPlanPickerForm
+							     for the actual radios/PayPal+GCash buttons, shared with the
+							     required plan-selection modal on the dashboard. Maya/Bank
+							     Transfer are deliberately inert for now (no click handler,
+							     nothing to submit to yet). -->
+							<div class="card" id="renewSubscribeCard">
 								<div class="card-header">
-									<h6 class="mb-0" th:text="${status.plan() != null ? 'Renew Subscription' : 'Subscribe to PRO'}">Renew Subscription</h6>
+									<h6 class="mb-0"
+										th:text="${paywallPaymentFailed ? 'Re-upload Payment Screenshot' : (status.plan() != null ? 'Renew Subscription' : 'Subscribe to PRO')}">Renew Subscription</h6>
 								</div>
 								<div class="card-body">
-									<div class="mb-3">
-										<!--/* Monthly is hidden, not removed - kept as a real, working
-										     option (backend + PayPal plan both still live) in case it
-										     comes back later. Every tier's "/ month" figure always shows
-										     the flat configured rate (status.monthlyPrice()), never a
-										     discounted average - the savings show up only in the total
-										     and the "Free N Month(s)" badge, not by understating the
-										     per-month rate. */-->
-										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2" style="display:none !important;">
-											<span>
-												<input type="radio" name="billingCycle" value="MONTHLY" class="form-check-input me-2">
-												Monthly <span class="text-muted fs-sm">(1 month)</span>
-											</span>
-											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
-												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> total</span>
-											</span>
-										</label>
-										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
-											<span>
-												<input type="radio" name="billingCycle" value="QUARTERLY" class="form-check-input me-2" checked>
-												Quarterly <span class="text-muted fs-sm text-nowrap">(3 mo.)</span>
-											</span>
-											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
-												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.quarterlyPrice(), 1, 'COMMA', 0, 'POINT')}">2,997</span> total</span>
-											</span>
-										</label>
-										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-2">
-											<span>
-												<input type="radio" name="billingCycle" value="SEMI_ANNUAL" class="form-check-input me-2">
-												Semi-Annual <span class="text-muted fs-sm text-nowrap">(6 mo.)</span>
-												<span class="badge bg-success ms-1">Free 1 Month</span>
-											</span>
-											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
-												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.semiAnnualPrice(), 1, 'COMMA', 0, 'POINT')}">4,995</span> total</span>
-											</span>
-										</label>
-										<label class="form-label d-flex align-items-center justify-content-between border rounded p-3 mb-0">
-											<span>
-												<input type="radio" name="billingCycle" value="ANNUAL" class="form-check-input me-2">
-												Annual <span class="text-muted fs-sm text-nowrap">(12 mo.)</span>
-												<span class="badge bg-success ms-1">Free 2 Months</span>
-											</span>
-											<span class="text-end">
-												<span class="fw-semibold d-block text-nowrap">&#8369;<span th:text="${#numbers.formatDecimal(status.monthlyPrice(), 1, 'COMMA', 0, 'POINT')}">999</span> / month</span>
-												<span class="text-muted fs-sm">&#8369;<span th:text="${#numbers.formatDecimal(status.annualPrice(), 1, 'COMMA', 0, 'POINT')}">9,990</span> total</span>
-											</span>
-										</label>
-									</div>
-
-									<label class="form-label">Payment Method</label>
-									<div class="row g-2">
-										<div class="col-12">
-											<button type="submit" class="btn btn-outline-secondary payment-method-btn w-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
-												<img th:src="@{/assets/images/payment-methods/paypal.svg}" alt="" style="height:18px;width:auto;">
-												PayPal
-											</button>
-										</div>
-										<!--/* GCash/Maya/Bank Transfer are hidden, not removed - same
-										     "keep working, just not shown" treatment as the Monthly
-										     billing-cycle option above, for when they're actually built.
-										     display:none alone isn't enough here either - .d-flex is a
-										     Bootstrap !important utility, so the override needs one too. */-->
-										<div class="col-6" style="display:none !important;">
-											<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
-												<img th:src="@{/assets/images/payment-methods/gcash.svg}" alt="" style="height:18px;width:auto;">
-												GCash
-											</button>
-										</div>
-										<div class="col-6" style="display:none !important;">
-											<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
-												<img th:src="@{/assets/images/payment-methods/maya.svg}" alt="" style="height:18px;width:auto;">
-												Maya
-											</button>
-										</div>
-										<div class="col-6" style="display:none !important;">
-											<button type="button" disabled title="Coming soon" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
-												<i class="ph-bank fs-lg"></i>
-												Bank Transfer
-											</button>
-										</div>
-									</div>
+									<div th:replace="~{fragments/common :: proPlanPickerForm}"></div>
 								</div>
-							</form>
+							</div>
+							<div th:replace="~{fragments/common :: gcashPaymentModal}"></div>
 							<!-- /renew / subscribe -->
-
-							<!-- Payment method buttons deliberately don't use Bootstrap's
-							     stock outline-button hover (a solid background fill) - a
-							     thicker border reads as "hovering" without the color swap.
-							     border-width alone would grow the button and nudge its
-							     neighbors; the matching negative margin cancels that out so
-							     nothing shifts. -->
-							<style>
-								.payment-method-btn {
-									--btn-hover-bg: transparent;
-									--btn-hover-color: var(--btn-color);
-									--btn-hover-border-color: var(--btn-border-color);
-									border-width: 1px;
-								}
-								.payment-method-btn:hover, .payment-method-btn:focus {
-									border-width: 2px;
-									margin: -1px;
-								}
-							</style>
 
 						</div>
 
@@ -236,6 +155,7 @@
 													     Jackson already serializes the real enum down to its name), not an
 													     enum with its own .name() to call. */-->
 													<span th:if="${entry.billingSource() == 'FREE_GRANT'}" class="badge bg-info">Free Trial</span>
+													<span th:if="${entry.billingSource() == 'GCASH'}" class="badge bg-primary">GCash</span>
 													<span th:if="${entry.billingSource() == 'PAYPAL'}" class="badge bg-primary">PayPal</span>
 												</td>
 												<td>

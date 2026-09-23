@@ -24,7 +24,7 @@ import lombok.Setter;
 public class VendorOnboardingForm {
 
     private String businessName;
-    private BusinessType businessType;
+    private List<BusinessType> businessTypes;
     private String ownerName;
     private String description;
     private String contactEmail;
@@ -54,4 +54,9 @@ public class VendorOnboardingForm {
     // stashed by AuthWebController#vendorLogin from /vendor/?ref=CODE) -
     // real, verified by the backend (VendorReferralService#attribute).
     private String referralCode;
+
+    // Checked against the admin-configured Vendor Promo Code system setting
+    // (see PromoCodeService) - a valid code grants the free trial with no
+    // paywall; blank sends the vendor through the pay-or-skip flow instead.
+    private String promoCode;
 }

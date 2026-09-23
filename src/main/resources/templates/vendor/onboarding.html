@@ -119,8 +119,9 @@
 											<div class="col-lg-6">
 												<div class="mb-3">
 													<label class="form-label">Business type</label>
-													<select th:field="*{businessType}" class="form-select" required>
-														<option value="">Select a type</option>
+													<select th:field="*{businessTypes}" multiple="multiple" class="form-control multiselect-business-types"
+														data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
+														data-filter-placeholder="Search business types..." data-number-displayed="999">
 														<option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type.label}"></option>
 													</select>
 												</div>
@@ -346,6 +347,15 @@
 											</div>
 										</div>
 
+										<!-- Grants the full free trial with no paywall if it matches the
+										     admin-configured code (see PromoCodeService) - an invalid code
+										     rejects the whole submission via the same #onboardingError
+										     banner, before anything is uploaded. -->
+										<div class="mb-3">
+											<label class="form-label">Promo Code <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+											<input type="text" th:field="*{promoCode}" class="form-control" placeholder="e.g., FREE3M">
+										</div>
+
 										<label class="form-check mt-2">
 											<input type="checkbox" th:field="*{acceptedTerms}" class="form-check-input" required>
 											<span class="form-check-label">Accept <a th:href="@{/terms}" target="_blank">&nbsp;vendor terms of service</a></span>
@@ -471,6 +481,7 @@
 	<script th:inline="javascript">
 		document.addEventListener('DOMContentLoaded', function () {
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
+				jQuery('.multiselect-business-types').multiselect();
 				jQuery('.multiselect-operating-areas').multiselect();
 				jQuery('.multiselect-event-types').multiselect();
 			}

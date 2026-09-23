@@ -92,6 +92,32 @@ public class BackendClient {
                 BackendSubscriptionStatus.class);
     }
 
+    /** Records a subscription PayPal's JS SDK Smart Buttons already created client-side - see fragments/common.html :: proPlanPickerForm's onApprove. */
+    public BackendSubscriptionStatus recordApprovedSubscription(String jwt, String paypalSubscriptionId) {
+        return postJson("/api/v1/vendors/me/subscription/paypal-approve", jwt,
+                Map.of("paypalSubscriptionId", paypalSubscriptionId), BackendSubscriptionStatus.class);
+    }
+
+    /** "Upload Payment Screenshot" on the GCash popup - see fragments/common.html :: gcashPaymentModal. */
+    public BackendSubscriptionStatus submitGcashPayment(
+            String jwt, String billingCycle, MultipartFile screenshot, String vendorRemarks) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("billingCycle", billingCycle);
+        addFileIfPresent(body, "screenshot", screenshot);
+        addIfPresent(body, "vendorRemarks", vendorRemarks);
+        return postMultipart("/api/v1/vendors/me/subscription/gcash-payment", jwt, body, BackendSubscriptionStatus.class);
+    }
+
+    /** "Got it" on the one-time Welcome to PRO popup - see fragments/common.html :: proWelcomeModal. */
+    public void markProWelcomeShown(String jwt) {
+        backendRestClient.post()
+                .uri("/api/v1/vendors/me/subscription/welcome-shown")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
     /**
      * PATCH /api/v1/users/me/vendor - the real vendor onboarding submission.
      * Field-for-field port of eventsrus-ui's vendor_api.dart#becomeVendor
@@ -114,7 +140,9 @@ public class BackendClient {
             List<String> legalDocumentLabels) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         addIfPresent(body, "businessName", form.getBusinessName());
-        addIfPresent(body, "businessType", form.getBusinessType() != null ? form.getBusinessType().name() : null);
+        if (form.getBusinessTypes() != null) {
+            form.getBusinessTypes().forEach(type -> body.add("businessTypes", type.name()));
+        }
         addIfPresent(body, "ownerName", form.getOwnerName());
         addIfPresent(body, "description", form.getDescription());
         addIfPresent(body, "contactEmail", form.getContactEmail());
@@ -135,6 +163,7 @@ public class BackendClient {
         body.add("acceptedTerms", String.valueOf(form.isAcceptedTerms()));
         addIfPresent(body, "recaptchaToken", form.getRecaptchaToken());
         addIfPresent(body, "referralCode", form.getReferralCode());
+        addIfPresent(body, "promoCode", form.getPromoCode());
         addFileIfPresent(body, "logo", logo);
         addFileIfPresent(body, "idCard", idCard);
         addFileIfPresent(body, "selfie", selfie);
@@ -510,7 +539,9 @@ public class BackendClient {
         addIfPresent(body, "businessName", form.getBusinessName());
         addIfPresent(body, "description", form.getDescription());
         addIfPresent(body, "ownerName", form.getOwnerName());
-        addIfPresent(body, "businessType", form.getBusinessType() != null ? form.getBusinessType().name() : null);
+        if (form.getBusinessTypes() != null) {
+            form.getBusinessTypes().forEach(type -> body.add("businessTypes", type.name()));
+        }
         addIfPresent(body, "contactEmail", form.getContactEmail());
         addIfPresent(body, "phoneNumber", form.getPhoneNumber());
         addIfPresent(body, "facebookPageUrl", form.getFacebookPageUrl());
@@ -520,7 +551,6 @@ public class BackendClient {
         addIfPresent(body, "state", form.getState());
         addIfPresent(body, "postalCode", form.getPostalCode());
         addIfPresent(body, "country", form.getCountry());
-        addIfPresent(body, "primaryCategory", form.getPrimaryCategory() != null ? form.getPrimaryCategory().name() : null);
         if (form.getMaxGuestCapacity() != null) {
             body.add("maxGuestCapacity", String.valueOf(form.getMaxGuestCapacity()));
         }
@@ -843,9 +873,48 @@ public class BackendClient {
                 .toBodilessEntity();
     }
 
+    /** The admin module's GCash payment-verification queue - see admin/subscription-payments.html. */
+    public List<BackendSubscriptionPayment> listSubscriptionPayments(String adminJwt) {
+        return get("/api/v1/admin/subscription-payments", adminJwt,
+                new ParameterizedTypeReference<List<BackendSubscriptionPayment>>() {});
+    }
+
+    public void verifySubscriptionPayment(String adminJwt, Long vendorUserId) {
+        backendRestClient.post()
+                .uri("/api/v1/admin/subscription-payments/" + vendorUserId + "/verify")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
+    public void rejectSubscriptionPayment(String adminJwt, Long vendorUserId, String reason) {
+        backendRestClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/admin/subscription-payments/" + vendorUserId + "/reject")
+                        .queryParam("reason", reason)
+                        .build())
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
     /** Whichever referral (if any) this vendor was the referred party on - null if they arrived unreferred. */
     public BackendAdminReferralItem getVendorReferral(String adminJwt, Long vendorUserId) {
         return get("/api/v1/admin/vendors/" + vendorUserId + "/referral", adminJwt, BackendAdminReferralItem.class);
+    }
+
+    /** The admin module's referral oversight page - see admin/referrals.html. */
+    public List<BackendAdminReferralItem> listReferralsForAdmin(String adminJwt) {
+        return get("/api/v1/admin/referrals", adminJwt, new ParameterizedTypeReference<List<BackendAdminReferralItem>>() {});
+    }
+
+    public void markReferralPaid(String adminJwt, Long referralId, String remarks, MultipartFile proof) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addIfPresent(body, "remarks", remarks);
+        addFileIfPresent(body, "proof", proof);
+        postMultipartBodiless("/api/v1/admin/referrals/" + referralId + "/mark-paid", adminJwt, body);
     }
 
     /** Support-desk fix for a referral that was never attributed at signup - see AdminVendorController#tagReferral. */
@@ -944,6 +1013,17 @@ public class BackendClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::raise)
                 .body(type);
+    }
+
+    private void postMultipartBodiless(String uri, String jwt, MultiValueMap<String, Object> body) {
+        backendRestClient.post()
+                .uri(uri)
+                .header("Authorization", "Bearer " + jwt)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(body)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
     }
 
     private void delete(String uri, String jwt) {

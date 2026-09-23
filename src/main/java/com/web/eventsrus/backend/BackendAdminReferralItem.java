@@ -15,4 +15,6 @@ public record BackendAdminReferralItem(
         BigDecimal commissionAmount,
         Instant createdAt,
         Instant convertedAt,
-        Instant paidAt) {}
+        Instant paidAt,
+        String paymentRemarks,
+        String paymentProofUrl) {}

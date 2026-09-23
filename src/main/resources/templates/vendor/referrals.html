@@ -114,6 +114,7 @@
 												<th>Status</th>
 												<th>Commission</th>
 												<th>Referred on</th>
+												<th>Payment Details</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -129,6 +130,17 @@
 													<span th:unless="${referral.commissionAmount() != null}" class="text-muted">&mdash;</span>
 												</td>
 												<td class="text-muted fs-sm" th:text="${#temporals.format(referral.createdAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
+												<td class="fs-sm">
+													<span th:if="${referral.status() == 'COMMISSION_PAID' and referral.paymentRemarks() != null}"
+														th:text="${referral.paymentRemarks()}" class="d-block text-muted">Remarks</span>
+													<a href="#" th:if="${referral.status() == 'COMMISSION_PAID' and referral.paymentProofUrl() != null}"
+														class="lightbox-trigger"
+														th:attr="data-lightbox-src=${referral.paymentProofUrl()},data-lightbox-caption='Payment proof'">
+														<i class="ph-image me-1"></i>View proof
+													</a>
+													<span th:if="${referral.status() != 'COMMISSION_PAID' or (referral.paymentRemarks() == null and referral.paymentProofUrl() == null)}"
+														class="text-muted">&mdash;</span>
+												</td>
 											</tr>
 										</tbody>
 									</table>
@@ -163,6 +175,8 @@
 
 	</div>
 	<!-- /page content -->
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
 
 	<script>
 		function copyReferral(inputId) {

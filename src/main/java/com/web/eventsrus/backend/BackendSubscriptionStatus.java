@@ -13,4 +13,13 @@ public record BackendSubscriptionStatus(
         int monthlyPrice,
         int quarterlyPrice,
         int semiAnnualPrice,
-        int annualPrice) {}
+        int annualPrice,
+        String billingSource,
+        String monthlyPlanId,
+        String quarterlyPlanId,
+        String semiAnnualPlanId,
+        String annualPlanId,
+        boolean showWelcomePopup,
+        boolean gcashAwaitingVerification,
+        boolean gcashRejected,
+        String gcashRejectionReason) {}

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('GCash Payments - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('subscription-payments')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">GCash Payments</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${paymentVerified}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Payment verified - the vendor's subscription is now active.
+					</div>
+
+					<div th:if="${paymentRejected}" class="alert alert-warning alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Payment rejected - the vendor will see the required plan popup again on their next login.
+					</div>
+
+					<div th:if="${paymentError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${paymentError}">Error</span>
+					</div>
+
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<div class="card" th:unless="${backendUnavailable}">
+
+						<div class="card-header">
+							<ul class="nav nav-tabs card-header-tabs" role="tablist">
+								<li class="nav-item">
+									<a href="#tab-pending" class="nav-link active" data-bs-toggle="tab" role="tab">
+										<i class="ph-hourglass-medium me-2"></i> Pending
+										<span class="badge bg-warning text-dark rounded-pill ms-2" th:text="${#lists.size(pendingPayments)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#tab-verified" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-check-circle me-2"></i> Verified
+										<span class="badge bg-success rounded-pill ms-2" th:text="${#lists.size(verifiedPayments)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#tab-rejected" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-x-circle me-2"></i> Rejected
+										<span class="badge bg-danger rounded-pill ms-2" th:text="${#lists.size(rejectedPayments)}">0</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<div class="card-body tab-content">
+
+							<!-- Awaiting admin review - the only tab with Verify/Reject actions. -->
+							<div class="tab-pane fade show active" id="tab-pending" role="tabpanel">
+								<div class="table-responsive">
+									<table id="pendingPaymentsTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business</th>
+												<th>Owner</th>
+												<th>Billing Cycle</th>
+												<th>Submitted</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="payment : ${pendingPayments}">
+												<td th:text="${payment.businessName()}">Business Name</td>
+												<td th:text="${payment.ownerName()}">Owner</td>
+												<td th:text="${payment.billingCycle()}">QUARTERLY</td>
+												<td th:text="${#temporals.format(payment.submittedAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td class="text-end">
+													<button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+														th:attr="data-bs-target='#reviewModal-' + ${payment.vendorUserId()}">
+														<i class="ph-magnifying-glass me-1"></i> Review
+													</button>
+													<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+														th:attr="data-bs-target='#historyModal-' + ${payment.vendorUserId()}">
+														<i class="ph-clock-counter-clockwise me-1"></i> History
+													</button>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+								<div class="text-center text-muted py-4" th:if="${#lists.isEmpty(pendingPayments)}">
+									No pending GCash payments.
+								</div>
+							</div>
+
+							<!-- Already verified - view-only, screenshot link opens in a new tab. -->
+							<div class="tab-pane fade" id="tab-verified" role="tabpanel">
+								<div class="table-responsive">
+									<table id="verifiedPaymentsTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business</th>
+												<th>Owner</th>
+												<th>Billing Cycle</th>
+												<th>Submitted</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="payment : ${verifiedPayments}">
+												<td th:text="${payment.businessName()}">Business Name</td>
+												<td th:text="${payment.ownerName()}">Owner</td>
+												<td th:text="${payment.billingCycle()}">QUARTERLY</td>
+												<td th:text="${#temporals.format(payment.submittedAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td class="text-end">
+													<a th:href="${payment.screenshotUrl()}" target="_blank" class="btn btn-outline-secondary btn-sm">
+														<i class="ph-image me-1"></i> Screenshot
+													</a>
+													<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+														th:attr="data-bs-target='#historyModal-' + ${payment.vendorUserId()}">
+														<i class="ph-clock-counter-clockwise me-1"></i> History
+													</button>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+								<div class="text-center text-muted py-4" th:if="${#lists.isEmpty(verifiedPayments)}">
+									No verified GCash payments yet.
+								</div>
+							</div>
+
+							<!-- Rejected - kept for audit/resubmission tracking, view-only. -->
+							<div class="tab-pane fade" id="tab-rejected" role="tabpanel">
+								<div class="table-responsive">
+									<table id="rejectedPaymentsTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business</th>
+												<th>Owner</th>
+												<th>Billing Cycle</th>
+												<th>Submitted</th>
+												<th>Reason</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="payment : ${rejectedPayments}">
+												<td th:text="${payment.businessName()}">Business Name</td>
+												<td th:text="${payment.ownerName()}">Owner</td>
+												<td th:text="${payment.billingCycle()}">QUARTERLY</td>
+												<td th:text="${#temporals.format(payment.submittedAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td class="fs-sm" th:text="${payment.rejectionReason()}">Reason</td>
+												<td class="text-end">
+													<a th:href="${payment.screenshotUrl()}" target="_blank" class="btn btn-outline-secondary btn-sm">
+														<i class="ph-image me-1"></i> Screenshot
+													</a>
+													<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal"
+														th:attr="data-bs-target='#historyModal-' + ${payment.vendorUserId()}">
+														<i class="ph-clock-counter-clockwise me-1"></i> History
+													</button>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+								<div class="text-center text-muted py-4" th:if="${#lists.isEmpty(rejectedPayments)}">
+									No rejected GCash payments.
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+					<!--/* One review modal per pending row - screenshot (a presigned
+					     URL, valid for an hour - see VendorSubscriptionService#
+					     listGcashPayments) plus Verify/Reject, mirroring
+					     admin/verification-detail.html's own Verify/Revoke buttons.
+					     Reject's reason textarea lives directly inside
+					     rejectForm (a real, visible submit) rather than going
+					     through window.confirmAction like Verify does - filling
+					     the required field and clicking Reject is itself the
+					     confirmation (same reasoning as admin/referrals.html's
+					     mark-paid modal), and it avoids native HTML5 validation
+					     trying to display inside a modal a prior confirm step
+					     already closed. */-->
+					<div class="modal fade" th:each="payment : ${pendingPayments}" th:id="'reviewModal-' + ${payment.vendorUserId()}" tabindex="-1">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title mb-0" th:text="${payment.businessName()}">Business Name</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body text-center">
+									<p class="text-muted fs-sm mb-2">
+										<span th:text="${payment.ownerName()}">Owner</span> -
+										<span th:text="${payment.billingCycle()}">QUARTERLY</span>
+									</p>
+									<a th:href="${payment.screenshotUrl()}" target="_blank">
+										<img th:src="${payment.screenshotUrl()}" alt="Payment screenshot" class="img-fluid rounded border">
+									</a>
+									<p class="text-muted fs-sm mt-2 mb-0 text-start" th:if="${payment.vendorRemarks() != null}">
+										<strong>Vendor remarks:</strong> <span th:text="${payment.vendorRemarks()}">Remarks</span>
+									</p>
+									<form th:id="'rejectForm-' + ${payment.vendorUserId()}"
+										th:action="@{'/admin/subscription-payments/' + ${payment.vendorUserId()} + '/reject'}" method="post"
+										class="text-start mt-3">
+										<label class="form-label fs-sm mb-1">Rejection reason (required to reject)</label>
+										<textarea name="reason" class="form-control form-control-sm" rows="2"
+											placeholder="e.g. Screenshot doesn't show the reference number" required></textarea>
+									</form>
+								</div>
+								<div class="modal-footer">
+									<button type="submit" th:form="'rejectForm-' + ${payment.vendorUserId()}" class="btn btn-outline-danger">
+										Reject
+									</button>
+									<form th:id="'verifyForm-' + ${payment.vendorUserId()}"
+										th:action="@{'/admin/subscription-payments/' + ${payment.vendorUserId()} + '/verify'}" method="post">
+									</form>
+									<button type="button" class="btn btn-primary gcash-verify-btn"
+										th:attr="data-form-id='verifyForm-' + ${payment.vendorUserId()}, data-business-name=${payment.businessName()}">
+										Verify
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!--/* One "History" modal per row across all three tabs - the full
+					     submit/verify/reject timeline for that vendor's GCash row
+					     (see VendorSubscriptionService#listGcashPayments), newest
+					     first. View-only, no actions. Inlined per-list (not a
+					     shared parameterized th:fragment) - a page-local
+					     th:fragment with a parameter still gets evaluated in
+					     place during the page's own normal top-down render
+					     (there's no "payment" in scope there), throwing a
+					     SpelEvaluationException on th:id before th:replace
+					     ever substitutes it. */-->
+					<div class="modal fade" th:each="payment : ${pendingPayments}"
+						th:id="'historyModal-' + ${payment.vendorUserId()}" tabindex="-1">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title mb-0" th:text="${payment.businessName()} + ' - History'">Business Name - History</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body">
+									<ul class="list-unstyled mb-0" th:if="${not #lists.isEmpty(payment.history())}">
+										<li th:each="entry : ${payment.history()}" class="border-bottom pb-2 mb-2">
+											<div class="d-flex justify-content-between">
+												<span class="fw-semibold" th:text="${entry.eventType()}">GCASH_SUBMITTED</span>
+												<span class="text-muted fs-sm" th:text="${#temporals.format(entry.occurredAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</span>
+											</div>
+											<div class="fs-sm text-muted" th:if="${entry.note() != null}" th:text="${entry.note()}">Note</div>
+										</li>
+									</ul>
+									<p class="text-muted text-center mb-0" th:if="${#lists.isEmpty(payment.history())}">No history recorded.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal fade" th:each="payment : ${verifiedPayments}"
+						th:id="'historyModal-' + ${payment.vendorUserId()}" tabindex="-1">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title mb-0" th:text="${payment.businessName()} + ' - History'">Business Name - History</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body">
+									<ul class="list-unstyled mb-0" th:if="${not #lists.isEmpty(payment.history())}">
+										<li th:each="entry : ${payment.history()}" class="border-bottom pb-2 mb-2">
+											<div class="d-flex justify-content-between">
+												<span class="fw-semibold" th:text="${entry.eventType()}">GCASH_SUBMITTED</span>
+												<span class="text-muted fs-sm" th:text="${#temporals.format(entry.occurredAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</span>
+											</div>
+											<div class="fs-sm text-muted" th:if="${entry.note() != null}" th:text="${entry.note()}">Note</div>
+										</li>
+									</ul>
+									<p class="text-muted text-center mb-0" th:if="${#lists.isEmpty(payment.history())}">No history recorded.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="modal fade" th:each="payment : ${rejectedPayments}"
+						th:id="'historyModal-' + ${payment.vendorUserId()}" tabindex="-1">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title mb-0" th:text="${payment.businessName()} + ' - History'">Business Name - History</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+								</div>
+								<div class="modal-body">
+									<ul class="list-unstyled mb-0" th:if="${not #lists.isEmpty(payment.history())}">
+										<li th:each="entry : ${payment.history()}" class="border-bottom pb-2 mb-2">
+											<div class="d-flex justify-content-between">
+												<span class="fw-semibold" th:text="${entry.eventType()}">GCASH_SUBMITTED</span>
+												<span class="text-muted fs-sm" th:text="${#temporals.format(entry.occurredAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</span>
+											</div>
+											<div class="fs-sm text-muted" th:if="${entry.note() != null}" th:text="${entry.note()}">Note</div>
+										</li>
+									</ul>
+									<p class="text-muted text-center mb-0" th:if="${#lists.isEmpty(payment.history())}">No history recorded.</p>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+				<div th:replace="~{fragments/common :: confirmActionModal}"></div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+	<!--/* Same lazy-init-on-tab-shown DataTables pattern as admin/vendors.html
+	     - only the Pending tab is visible on load, so Verified/Rejected defer
+	     their table init to the tab's own "shown" event (first time only),
+	     since DataTables measures column widths at init time and collapses
+	     everything to zero width inside a display:none tab pane. */-->
+	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			$('#pendingPaymentsTable').DataTable({ pageLength: 20 });
+			var verifiedTable = null;
+			var rejectedTable = null;
+
+			document.querySelector('a[href="#tab-verified"]').addEventListener('shown.bs.tab', function () {
+				if (!verifiedTable) {
+					verifiedTable = $('#verifiedPaymentsTable').DataTable({ pageLength: 20 });
+				}
+			});
+
+			document.querySelector('a[href="#tab-rejected"]').addEventListener('shown.bs.tab', function () {
+				if (!rejectedTable) {
+					rejectedTable = $('#rejectedPaymentsTable').DataTable({ pageLength: 20 });
+				}
+			});
+		});
+	</script>
+
+	<!--/* Verify immediately activates a real subscription - confirm first
+	     (see fragments/common.html's confirmActionModal) rather than
+	     submitting on a plain click, since it has no undo. Reject's
+	     confirmation is its own required reason field instead (see the
+	     reviewModal markup above). */-->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.gcash-verify-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					window.confirmAction(
+						'Verify this GCash payment for ' + btn.dataset.businessName + '? This activates their subscription immediately.',
+						function () { document.getElementById(btn.dataset.formId).submit(); },
+						{ label: 'Yes, Verify', btnClass: 'btn-primary' });
+				});
+			});
+		});
+	</script>
+
+</body>
+</html>

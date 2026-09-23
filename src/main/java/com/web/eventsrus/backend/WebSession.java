@@ -27,6 +27,11 @@ public final class WebSession {
     public static final String SUBSCRIPTION_EXPIRED = "auth.subscriptionExpired";
     public static final String SUBSCRIPTION_IN_GRACE_PERIOD = "auth.subscriptionInGracePeriod";
     public static final String SUBSCRIPTION_GRACE_ENDS_AT = "auth.subscriptionGraceEndsAt";
+    // "FREE_GRANT"/"PAYPAL"/"GCASH" (or null if never subscribed) - lets
+    // PaywallModelAttributes tell a vendor with a pending GCash screenshot
+    // awaiting admin review (GCASH, plan still null) apart from a real
+    // paid/promo plan, since both can otherwise look similar.
+    public static final String SUBSCRIPTION_BILLING_SOURCE = "auth.subscriptionBillingSource";
     // Shows the paywall modal once per login, not on every page navigation.
     public static final String PAYWALL_SHOWN = "auth.paywallShown";
     // Shows the "add your first package" nudge modal once per login too -
@@ -123,6 +128,7 @@ public final class WebSession {
         session.removeAttribute(SUBSCRIPTION_EXPIRED);
         session.removeAttribute(SUBSCRIPTION_IN_GRACE_PERIOD);
         session.removeAttribute(SUBSCRIPTION_GRACE_ENDS_AT);
+        session.removeAttribute(SUBSCRIPTION_BILLING_SOURCE);
         session.removeAttribute(PAYWALL_SHOWN);
         session.removeAttribute(FIRST_PACKAGE_NUDGE_SHOWN);
         session.removeAttribute(REFERRAL_CODE);
@@ -138,23 +144,28 @@ public final class WebSession {
         session.setAttribute(ROLE, auth.role());
         session.setAttribute(SIGNUP_INTENT, auth.signupIntent());
         // Login only knows plan/planExpiresAt (see BackendAuthResponse), not
-        // the finer expiringSoon/inGracePeriod detail - only the full
-        // subscription-status fetch computes those (see storeSubscription's
-        // other two callers). expired mirrors what it always has here: no
-        // live plan at all, which stays correctly false for a vendor still
-        // inside their grace period since plan() stays non-null for them.
-        storeSubscription(session, auth.plan(), auth.planExpiresAt(), false, auth.plan() == null, false, null);
+        // the finer expiringSoon/inGracePeriod/billingSource detail - only
+        // the full subscription-status fetch computes those (see
+        // storeSubscription's other callers, and VendorController#dashboard
+        // which now refreshes this on every dashboard load). expired is left
+        // false here even when plan() is null - a brand-new vendor with no
+        // subscription at all isn't "expired," they just haven't picked a
+        // plan yet (see PaywallModelAttributes#paywallRequiresPlanSelection),
+        // and the dashboard's fresh fetch supplies the real state before any
+        // paywall decision is made.
+        storeSubscription(session, auth.plan(), auth.planExpiresAt(), false, false, false, null, null);
     }
 
     public static void storeSubscription(
             HttpSession session, String plan, java.time.Instant expiresAt, boolean expiringSoon, boolean expired,
-            boolean inGracePeriod, java.time.Instant graceEndsAt) {
+            boolean inGracePeriod, java.time.Instant graceEndsAt, String billingSource) {
         session.setAttribute(SUBSCRIPTION_PLAN, plan);
         session.setAttribute(SUBSCRIPTION_EXPIRES_AT, expiresAt);
         session.setAttribute(SUBSCRIPTION_EXPIRING_SOON, expiringSoon);
         session.setAttribute(SUBSCRIPTION_EXPIRED, expired);
         session.setAttribute(SUBSCRIPTION_IN_GRACE_PERIOD, inGracePeriod);
         session.setAttribute(SUBSCRIPTION_GRACE_ENDS_AT, graceEndsAt);
+        session.setAttribute(SUBSCRIPTION_BILLING_SOURCE, billingSource);
     }
 
     public static boolean isSubscriptionExpired(HttpSession session) {
@@ -176,5 +187,9 @@ public final class WebSession {
 
     public static java.time.Instant subscriptionGraceEndsAt(HttpSession session) {
         return session == null ? null : (java.time.Instant) session.getAttribute(SUBSCRIPTION_GRACE_ENDS_AT);
+    }
+
+    public static String subscriptionBillingSource(HttpSession session) {
+        return session == null ? null : (String) session.getAttribute(SUBSCRIPTION_BILLING_SOURCE);
     }
 }

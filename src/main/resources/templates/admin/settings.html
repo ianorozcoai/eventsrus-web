@@ -54,8 +54,10 @@
 									<p class="text-muted fs-sm mb-3" th:text="${setting.description()}">Setting description</p>
 
 									<form th:action="@{'/admin/settings/' + ${setting.key()}}" method="post" class="d-flex align-items-center gap-2">
-										<input type="number" name="value" class="form-control" style="max-width:160px;"
+										<input th:if="${setting.numeric()}" type="number" name="value" class="form-control" style="max-width:160px;"
 											   th:value="${setting.value()}" min="0" step="1" required>
+										<input th:unless="${setting.numeric()}" type="text" name="value" class="form-control" style="max-width:240px;"
+											   th:value="${setting.value()}" required>
 										<button type="submit" class="btn btn-primary">Save</button>
 									</form>
 								</div>

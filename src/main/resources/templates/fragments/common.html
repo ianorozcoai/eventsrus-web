@@ -210,33 +210,40 @@
 							<span>Packages</span>
 						</a>
 					</li>
-					<li class="nav-item">
-						<a th:href="@{/vendor/leads}" class="nav-link" th:classappend="${activePage == 'leads'} ? 'active'">
-							<i class="ph-users"></i>
-							<span>Leads</span>
-							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navLeadsCount > 0}" th:text="${navLeadsCount}">0</span>
+					<li class="nav-item nav-item-submenu"
+						th:classappend="${activePage == 'leads' or activePage == 'messages' or activePage == 'quotations' or activePage == 'bookings'} ? 'nav-item-open'">
+						<a href="#" class="nav-link">
+							<i class="ph-users-three"></i>
+							<span>Customer Management</span>
 						</a>
-					</li>
-					<li class="nav-item">
-						<a th:href="@{/vendor/bookings}" class="nav-link" th:classappend="${activePage == 'bookings'} ? 'active'">
-							<i class="ph-calendar-check"></i>
-							<span>Bookings</span>
-							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navBookingsCount > 0}" th:text="${navBookingsCount}">0</span>
-						</a>
-					</li>
-					<li class="nav-item">
-						<a th:href="@{/vendor/messages}" class="nav-link" th:classappend="${activePage == 'messages'} ? 'active'">
-							<i class="ph-chat-circle-text"></i>
-							<span>Messages</span>
-							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navMessagesCount > 0}" th:text="${navMessagesCount}">0</span>
-						</a>
-					</li>
-					<li class="nav-item">
-						<a th:href="@{/vendor/quotations}" class="nav-link" th:classappend="${activePage == 'quotations'} ? 'active'">
-							<i class="ph-file-text"></i>
-							<span>Quotations</span>
-							<span class="badge bg-danger rounded-pill ms-auto" th:if="${navQuotationsCount > 0}" th:text="${navQuotationsCount}">0</span>
-						</a>
+						<ul class="nav-group-sub collapse"
+							th:classappend="${activePage == 'leads' or activePage == 'messages' or activePage == 'quotations' or activePage == 'bookings'} ? 'show'"
+							data-submenu-title="Customer Management">
+							<li class="nav-item">
+								<a th:href="@{/vendor/leads}" class="nav-link" th:classappend="${activePage == 'leads'} ? 'active'">
+									<span>Leads</span>
+									<span class="badge bg-danger rounded-pill ms-auto" th:if="${navLeadsCount > 0}" th:text="${navLeadsCount}">0</span>
+								</a>
+							</li>
+							<li class="nav-item">
+								<a th:href="@{/vendor/messages}" class="nav-link" th:classappend="${activePage == 'messages'} ? 'active'">
+									<span>Messages</span>
+									<span class="badge bg-danger rounded-pill ms-auto" th:if="${navMessagesCount > 0}" th:text="${navMessagesCount}">0</span>
+								</a>
+							</li>
+							<li class="nav-item">
+								<a th:href="@{/vendor/quotations}" class="nav-link" th:classappend="${activePage == 'quotations'} ? 'active'">
+									<span>Quotations</span>
+									<span class="badge bg-danger rounded-pill ms-auto" th:if="${navQuotationsCount > 0}" th:text="${navQuotationsCount}">0</span>
+								</a>
+							</li>
+							<li class="nav-item">
+								<a th:href="@{/vendor/bookings}" class="nav-link" th:classappend="${activePage == 'bookings'} ? 'active'">
+									<span>Bookings</span>
+									<span class="badge bg-danger rounded-pill ms-auto" th:if="${navBookingsCount > 0}" th:text="${navBookingsCount}">0</span>
+								</a>
+							</li>
+						</ul>
 					</li>
 					<li class="nav-item">
 						<a th:href="@{/vendor/calendar}" class="nav-link" th:classappend="${activePage == 'calendar'} ? 'active'">
@@ -399,6 +406,9 @@
 				<p id="paypal-button-error" class="text-danger fs-sm mb-0 mt-1" hidden>
 					Something went wrong starting your payment. Please try again.
 				</p>
+				<p id="paypal-button-cancelled" class="text-muted fs-sm mb-0 mt-1" hidden>
+					Payment cancelled - no charge was made. You can try again anytime.
+				</p>
 			</div>
 			<div class="col-12">
 				<button type="button" id="gcashPayButton" class="btn btn-outline-secondary payment-method-btn w-100 h-100 d-flex align-items-center justify-content-center gap-2 py-2 px-2">
@@ -444,8 +454,14 @@
 					}
 					container.dataset.rendered = 'true';
 
+					function resetPaymentMessages() {
+						document.getElementById('paypal-button-error').hidden = true;
+						document.getElementById('paypal-button-cancelled').hidden = true;
+					}
+
 					paypal.Buttons({
 						createSubscription: function (data, actions) {
+							resetPaymentMessages();
 							var selected = document.querySelector('input[name="billingCycle"]:checked');
 							return actions.subscription.create({ plan_id: selected.getAttribute('data-plan-id') });
 						},
@@ -467,7 +483,18 @@
 									document.getElementById('paypal-button-error').hidden = false;
 								});
 						},
+						// Fires when the buyer closes the popup or clicks PayPal's own
+						// "Cancel and return" link instead of approving - previously
+						// unhandled entirely, so backing out looked identical to the
+						// app being unresponsive (no message, no redirect, nothing).
+						// No backend call needed: onApprove never fired, so our side
+						// never recorded anything to undo.
+						onCancel: function () {
+							document.getElementById('paypal-button-error').hidden = true;
+							document.getElementById('paypal-button-cancelled').hidden = false;
+						},
 						onError: function () {
+							document.getElementById('paypal-button-cancelled').hidden = true;
 							document.getElementById('paypal-button-error').hidden = false;
 						}
 					}).render('#paypal-button-container');

@@ -17,8 +17,89 @@
 	<!-- /core JS files -->
 
 	<!-- Google Identity Services - the browser-side half of the one real
-	     login flow in this app; see AuthWebController for the server half. -->
-	<script src="https://accounts.google.com/gsi/client" async defer></script>
+	     login flow in this app; see AuthWebController for the server half.
+	     Its own load/completion timing (async - could finish before or
+	     after our bottom-of-body script runs) is handled where
+	     initGoogleSignIn() is called, not here. -->
+	<script id="gsi-script" src="https://accounts.google.com/gsi/client" async defer></script>
+
+	<style>
+		/* Same hover physics as landing.html's .role-card ("What brings you
+		   here today?" picker) - translateY(-6px) lift, that exact shadow,
+		   a border that pops to a brand color, and an icon circle that
+		   scales/rotates - so this page reads as one continuous moment with
+		   the picker a vendor just came from, not a different design system.
+
+		   Google controls its own button's internal pixels (it renders
+		   inside an iframe), so the lift/border/shadow lives on this
+		   wrapper card around it rather than the button itself - the inner
+		   #google-signin-container stays plain and is only what
+		   initGoogleSignIn() measures for width. */
+		.google-btn-card {
+			border: 2px solid #e9ecef;
+			border-radius: 50rem;
+			padding: 4px;
+			transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+		}
+		.google-btn-card:hover {
+			transform: translateY(-6px);
+			box-shadow: 0 16px 32px rgba(20, 20, 43, .12);
+			border-color: #0c83ff;
+		}
+		#google-signin-container {
+			width: 100%;
+		}
+
+		.demo-action-card {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: .65rem;
+			width: 100%;
+			padding: .55rem 1.25rem;
+			border: 2px solid #e9ecef;
+			border-radius: 50rem;
+			background: #fff;
+			text-decoration: none;
+			transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+		}
+		.demo-action-card:hover, .demo-action-card:focus-visible {
+			transform: translateY(-6px);
+			box-shadow: 0 16px 32px rgba(20, 20, 43, .12);
+			border-color: #f8512d;
+			text-decoration: none;
+		}
+		.demo-action-card__icon {
+			width: 36px;
+			height: 36px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: rgba(248, 81, 45, .12);
+			color: #f8512d;
+			font-size: 18px;
+			flex-shrink: 0;
+			transition: transform .25s ease;
+		}
+		.demo-action-card:hover .demo-action-card__icon {
+			transform: scale(1.1) rotate(-6deg);
+		}
+		.demo-action-card__label {
+			font-weight: 700;
+			font-size: .95rem;
+			color: #1a1a1a;
+		}
+
+		.login-divider-line {
+			flex: 1;
+			height: 1px;
+			background: linear-gradient(to right, transparent, rgba(16, 30, 54, .16));
+		}
+		.login-divider-line.reverse {
+			background: linear-gradient(to left, transparent, rgba(16, 30, 54, .16));
+		}
+	</style>
 </head>
 
 <body class="bg-body">
@@ -47,13 +128,15 @@
 
 				<div id="login-error" class="alert alert-danger d-none text-start mb-3"></div>
 
-				<div id="google-signin-container" class="d-flex justify-content-center">
-					<div id="g_id_onload"
-						th:attr="data-client_id=${googleClientId}"
-						data-callback="handleGoogleCredential"
-						data-auto_prompt="false">
-					</div>
-					<div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with" data-shape="pill"></div>
+				<!-- Rendered via the JS API (renderButton), not the older
+				     data-attribute auto-render, specifically so `width` can
+				     be computed from this container's real pixel width -
+				     Google's button only accepts a fixed pixel width, not a
+				     percentage, so without this it shrinks to fit its label
+				     and sits oddly small next to the full-width Book a Demo
+				     button below. See initGoogleSignIn() at the bottom. -->
+				<div class="google-btn-card">
+					<div id="google-signin-container" class="d-flex justify-content-center"></div>
 				</div>
 
 				<!-- Shown from the moment Google hands back a credential
@@ -68,10 +151,19 @@
 
 				<!-- Vendor-only - a prospective vendor not ready to sign up
 				     yet can instead book a real walkthrough of how listing
-				     on EventsRUs helps their business. -->
-				<div th:if="${intent == 'vendor'}" class="mt-3">
-					<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn btn-outline-primary w-100">
-						<i class="ph-calendar-plus me-1"></i> Book a Demo
+				     on EventsRUs helps their business. Orange accent matches
+				     the "I'm a Vendor" role card's own color (landing.html),
+				     same reasoning the Google card above borrows the
+				     planner card's blue. -->
+				<div th:if="${intent == 'vendor'}">
+					<div class="d-flex align-items-center gap-2 my-3">
+						<span class="login-divider-line"></span>
+						<span class="text-muted fs-xs text-uppercase fw-semibold" style="letter-spacing:.06em;">or</span>
+						<span class="login-divider-line reverse"></span>
+					</div>
+					<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="demo-action-card">
+						<span class="demo-action-card__icon"><i class="ph-calendar-plus"></i></span>
+						<span class="demo-action-card__label">Book a Demo</span>
 					</a>
 				</div>
 
@@ -83,6 +175,43 @@
 
 	<script th:inline="javascript">
 		var loginIntent = /*[[${intent}]]*/ 'planner';
+		var googleClientId = /*[[${googleClientId}]]*/ '';
+
+		function initGoogleSignIn() {
+			var container = document.getElementById('google-signin-container');
+			// Google's renderButton only accepts a fixed pixel width, not a
+			// percentage - clamped to Google's own supported range so an
+			// unusually narrow or wide card can't push it outside what
+			// Google will actually honor.
+			var width = Math.max(200, Math.min(400, container.offsetWidth));
+
+			google.accounts.id.initialize({
+				client_id: googleClientId,
+				callback: handleGoogleCredential
+			});
+			google.accounts.id.renderButton(container, {
+				type: 'standard',
+				theme: 'outline',
+				size: 'large',
+				shape: 'pill',
+				text: 'signin_with',
+				logo_alignment: 'left',
+				width: width
+			});
+		}
+
+		// This script sits at the bottom of the body, so the GSI <script>
+		// (async, in <head>) may have already finished loading and executing
+		// by now - or may not have, if it's still in flight over the
+		// network. Covers both: call immediately if `google` already exists,
+		// otherwise wait for that script element's own load event (fires
+		// exactly once, whenever it actually finishes, regardless of
+		// ordering relative to this script).
+		if (window.google && google.accounts && google.accounts.id) {
+			initGoogleSignIn();
+		} else {
+			document.getElementById('gsi-script').addEventListener('load', initGoogleSignIn);
+		}
 
 		function handleGoogleCredential(response) {
 			var errorBox = document.getElementById('login-error');

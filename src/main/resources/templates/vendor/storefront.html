@@ -65,9 +65,11 @@
 										<span class="badge bg-success text-white fw-bold px-3 py-2" th:if="${profile.identityVerified()}">
 											<i class="ph-shield-check me-1"></i> Verified Vendor
 										</span>
-										<span class="badge bg-purple text-white fw-bold px-3 py-2" th:unless="${profile.identityVerified()}">
-											<i class="ph-clock me-1"></i> Verification Pending
-										</span>
+										<!--/* Unverified vendors deliberately get no badge at all here (not a
+										     "Verification Pending" one) - showing that to a browsing planner
+										     reads as a red flag on the vendor's own storefront rather than
+										     a neutral in-progress status, which actively hurts a legitimate
+										     vendor still waiting on admin review. */-->
 									</div>
 
 									<h1 class="fw-bold mb-2" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
@@ -304,7 +306,12 @@
 							     and showing them to anonymous storefront visitors would be a
 							     real privacy/security exposure. The images themselves stay
 							     admin-only either way (see AdminVendorController). -->
-							<div class="card mb-3 mb-lg-0 border-0 shadow-sm">
+							<!-- Hidden, not removed, when a vendor has no documents on file -
+							     same reasoning as the Verified Vendor badge above: an empty
+							     "no documents yet" state reads as a red flag to a browsing
+							     planner rather than neutral, so this whole card just doesn't
+							     render for them instead of admitting the gap. -->
+							<div class="card mb-3 mb-lg-0 border-0 shadow-sm" th:if="${not #lists.isEmpty(profile.legalDocuments())}">
 								<div class="card-body p-4">
 									<h6 class="text-uppercase fw-bold text-muted mb-3" style="letter-spacing:.5px;">Verification &amp; Legalities</h6>
 

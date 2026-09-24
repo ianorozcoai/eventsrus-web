@@ -152,7 +152,7 @@
 					<button type="submit" class="dropdown-item d-flex align-items-start gap-2 py-2 border-bottom border-0 bg-transparent w-100 text-start"
 						th:classappend="${!n.read()} ? ' bg-light'">
 						<i class="fs-lg flex-shrink-0 mt-1"
-							th:classappend="${n.relatedEntityType() == 'BOOKING' ? ' ph-calendar-check text-primary' : (n.relatedEntityType() == 'CONVERSATION' ? ' ph-chat-circle-text text-info' : (n.relatedEntityType() == 'LEAD' ? ' ph-user-plus text-success' : (n.relatedEntityType() == 'QUOTATION' ? ' ph-file-text text-warning' : (n.relatedEntityType() == 'REVIEW' ? ' ph-star text-warning' : (n.relatedEntityType() == 'SUPPORT_TICKET' ? ' ph-lifebuoy text-danger' : ' ph-bell text-muted')))))}"></i>
+							th:classappend="${n.relatedEntityType() == 'BOOKING' ? ' ph-calendar-check text-primary' : (n.relatedEntityType() == 'CONVERSATION' ? ' ph-chat-circle-text text-info' : (n.relatedEntityType() == 'LEAD' ? ' ph-user-plus text-success' : (n.relatedEntityType() == 'QUOTATION' ? ' ph-file-text text-warning' : (n.relatedEntityType() == 'REVIEW' ? ' ph-star text-warning' : (n.relatedEntityType() == 'SUPPORT_TICKET' ? ' ph-lifebuoy text-danger' : (n.relatedEntityType() == 'SUBSCRIPTION' ? ' ph-credit-card text-danger' : ' ph-bell text-muted'))))))}"></i>
 						<span class="flex-grow-1">
 							<span class="d-block fw-semibold fs-sm" th:text="${n.title()}">Title</span>
 							<span class="d-block fs-sm text-muted" th:text="${n.body()}">Body</span>

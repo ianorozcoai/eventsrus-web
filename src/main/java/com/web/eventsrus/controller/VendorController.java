@@ -158,6 +158,7 @@ public class VendorController {
             case "LEAD" -> "/vendor/leads";
             case "QUOTATION" -> "/vendor/quotations";
             case "SUPPORT_TICKET" -> "/vendor/support";
+            case "SUBSCRIPTION" -> "/vendor/subscription";
             default -> "/vendor/dashboard";
         };
     }

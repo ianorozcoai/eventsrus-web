@@ -107,7 +107,29 @@
 	<div class="d-flex flex-column min-vh-100 align-items-center justify-content-center p-3">
 
 		<div class="card" style="max-width:380px;width:100%;">
-			<div class="card-body text-center p-4">
+			<!-- Facebook/Messenger/Instagram's built-in in-app browser blocks
+			     Google's Sign-In flow outright (Google's own anti-phishing
+			     policy against embedded WebViews, not something fixable on
+			     our end) - a vendor who taps a link shared in Messenger lands
+			     here, gets as far as picking their Google account, and then
+			     the callback that's supposed to bring them back to
+			     /vendor/onboarding never fires, leaving a blank page with no
+			     error. Detected before Google Sign-In is ever attempted, so
+			     they see actionable instructions instead of that dead end. -->
+			<div id="in-app-browser-notice" class="card-body text-center p-4" hidden>
+				<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:220px;max-width:80%;height:auto;" class="mb-3">
+				<h5 class="mb-2">Open this page in your browser</h5>
+				<p class="text-muted fs-sm mb-3">
+					Google Sign-In doesn't work inside this app's built-in browser. Tap the <strong>&#8942;</strong> or <strong>&#183;&#183;&#183;</strong> menu above and choose <strong>"Open in Browser"</strong> (or "Open in Chrome" / "Open in Safari") to continue - or copy the link below and paste it into your browser.
+				</p>
+				<div class="input-group mb-2">
+					<input type="text" id="currentPageUrl" class="form-control fs-sm" readonly>
+					<button type="button" id="copyPageUrlButton" class="btn btn-outline-secondary">Copy</button>
+				</div>
+				<div id="copyPageUrlConfirm" class="fs-xs text-success d-none">Link copied!</div>
+			</div>
+
+			<div id="login-card-content" class="card-body text-center p-4">
 				<!-- One card for the whole login moment - logo.svg already carries
 				     its own white backdrop, so it blends seamlessly on this
 				     card's own white surface without any extra wrapper. -->
@@ -177,7 +199,42 @@
 		var loginIntent = /*[[${intent}]]*/ 'planner';
 		var googleClientId = /*[[${googleClientId}]]*/ '';
 
+		// FBAN/FBAV/FB_IAB/FBIOS/FB4A cover Facebook and Messenger's shared
+		// in-app browser engine; Instagram's is the same underlying WebView
+		// and hits the identical Google block.
+		var isInAppBrowser = /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || '');
+
+		if (isInAppBrowser) {
+			document.getElementById('login-card-content').hidden = true;
+			var notice = document.getElementById('in-app-browser-notice');
+			notice.hidden = false;
+			var urlField = document.getElementById('currentPageUrl');
+			urlField.value = window.location.href;
+			document.getElementById('copyPageUrlButton').addEventListener('click', function () {
+				var confirm = document.getElementById('copyPageUrlConfirm');
+				function showCopied() {
+					confirm.classList.remove('d-none');
+				}
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(urlField.value).then(showCopied);
+				} else {
+					// Embedded WebViews often lack the Clipboard API entirely -
+					// select+execCommand is deprecated but still the only
+					// thing that reliably works there.
+					urlField.select();
+					document.execCommand('copy');
+					showCopied();
+				}
+			});
+		}
+
 		function initGoogleSignIn() {
+			// Never even attempt this inside the in-app browser - Google's
+			// own block makes it fail/blank regardless, and the notice above
+			// already tells the vendor what to do instead.
+			if (isInAppBrowser) {
+				return;
+			}
 			var container = document.getElementById('google-signin-container');
 			// Google's renderButton only accepts a fixed pixel width, not a
 			// percentage - clamped to Google's own supported range so an

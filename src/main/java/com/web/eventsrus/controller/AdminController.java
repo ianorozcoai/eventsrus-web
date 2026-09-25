@@ -5,6 +5,7 @@ import com.web.eventsrus.backend.BackendAdminVendorListItem;
 import com.web.eventsrus.backend.BackendApiException;
 import com.web.eventsrus.backend.BackendAuthResponse;
 import com.web.eventsrus.backend.BackendClient;
+import com.web.eventsrus.backend.BackendSubscriptionPayment;
 import com.web.eventsrus.backend.WebSession;
 import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.PhilippineProvinces;
@@ -108,6 +109,8 @@ public class AdminController {
             model.addAttribute("vendors", List.of());
             model.addAttribute("testVendors", List.of());
             model.addAttribute("incompleteSignups", List.of());
+            model.addAttribute("paymentOverdueVendors", List.of());
+            model.addAttribute("pendingGcashPayments", List.of());
             return "admin/vendors";
         }
         try {
@@ -121,11 +124,35 @@ public class AdminController {
             model.addAttribute("vendors", partitioned.get(false));
             model.addAttribute("testVendors", partitioned.get(true));
             model.addAttribute("incompleteSignups", backendClient.listIncompleteVendorSignups(jwt));
+            // A real (PAYPAL/GCASH) subscription that's lapsed or in its
+            // grace period - see BackendAdminVendorListItem#isPaymentOverdue,
+            // which mirrors VendorPlanService's grace-period logic rather
+            // than trusting a possibly-stale stored status column. Drawn
+            // from the real vendors list only, not the test-account tab.
+            model.addAttribute("paymentOverdueVendors", partitioned.get(false).stream()
+                    .filter(BackendAdminVendorListItem::isPaymentOverdue)
+                    .toList());
+            // Vendors mid-way through GCash's 7-day temporary-access window
+            // (see VendorSubscriptionService#submitGcashPayment) who an admin
+            // hasn't verified or rejected yet - same underlying queue as
+            // AdminSubscriptionPaymentController's "Pending" tab, surfaced
+            // here too so admins don't have to check two separate pages for
+            // at-risk accounts. A separate try/catch: this call failing
+            // shouldn't blank out the vendor list above it.
+            try {
+                model.addAttribute("pendingGcashPayments", backendClient.listSubscriptionPayments(jwt).stream()
+                        .filter(p -> "PAYMENT_VERIFICATION".equals(p.status()))
+                        .toList());
+            } catch (BackendApiException e) {
+                model.addAttribute("pendingGcashPayments", List.of());
+            }
         } catch (BackendApiException e) {
             model.addAttribute("backendUnavailable", true);
             model.addAttribute("vendors", List.of());
             model.addAttribute("testVendors", List.of());
             model.addAttribute("incompleteSignups", List.of());
+            model.addAttribute("paymentOverdueVendors", List.of());
+            model.addAttribute("pendingGcashPayments", List.of());
         }
         return "admin/vendors";
     }

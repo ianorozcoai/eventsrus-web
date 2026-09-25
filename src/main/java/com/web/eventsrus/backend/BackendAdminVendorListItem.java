@@ -31,4 +31,18 @@ public record BackendAdminVendorListItem(
         long referralCount,
         boolean fakeAccount,
         long bookingCount,
-        Instant lastLoginAt) {}
+        Instant lastLoginAt,
+        // Null means never subscribed at all - distinct from a real
+        // PAYPAL/GCASH subscription that lapsed, which is what the
+        // "Payment Overdue" tab on admin/vendors.html flags (see
+        // AdminController#vendors).
+        String billingSource,
+        boolean planExpired,
+        boolean planInGracePeriod,
+        Instant planOverdueSince) {
+
+    /** True for a vendor who has a real (non-free) subscription that's currently lapsed or in its grace period. */
+    public boolean isPaymentOverdue() {
+        return (planExpired || planInGracePeriod) && ("PAYPAL".equals(billingSource) || "GCASH".equals(billingSource));
+    }
+}

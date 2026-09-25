@@ -62,6 +62,18 @@
 										<span class="badge bg-warning text-dark rounded-pill ms-2" th:text="${#lists.size(testVendors)}">0</span>
 									</a>
 								</li>
+								<li class="nav-item">
+									<a href="#tab-payment-overdue" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-warning-circle me-2"></i> Payment Overdue
+										<span class="badge bg-danger rounded-pill ms-2" th:text="${#lists.size(paymentOverdueVendors)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item">
+									<a href="#tab-pending-gcash" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-hourglass-medium me-2"></i> Pending GCash Payment
+										<span class="badge bg-warning text-dark rounded-pill ms-2" th:text="${#lists.size(pendingGcashPayments)}">0</span>
+									</a>
+								</li>
 							</ul>
 						</div>
 
@@ -224,6 +236,101 @@
 								</div>
 							</div>
 
+							<!-- Vendors on a real (PAYPAL/GCASH) subscription whose current
+							     period has lapsed or is in its grace window - i.e. was
+							     supposed to be a paying customer but isn't currently paid
+							     up. Never a vendor on FREE_GRANT/promo, and never one who
+							     simply never subscribed at all - see
+							     BackendAdminVendorListItem#isPaymentOverdue and
+							     VendorPlanService (the real source of truth this is
+							     computed from, not the raw stored subscription status). -->
+							<div class="tab-pane fade" id="tab-payment-overdue" role="tabpanel">
+								<div class="table-responsive">
+									<table id="paymentOverdueTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business Name</th>
+												<th>Contact</th>
+												<th>Billing Source</th>
+												<th>Status</th>
+												<th>Overdue Since</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="vendor : ${paymentOverdueVendors}">
+												<td th:text="${vendor.businessName()}">Business Name</td>
+												<td>
+													<div th:text="${vendor.contactEmail()}">email@example.com</div>
+													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
+												</td>
+												<td>
+													<span class="badge bg-secondary" th:text="${vendor.billingSource()}">PAYPAL</span>
+												</td>
+												<td>
+													<span class="badge bg-warning text-dark" th:if="${vendor.planInGracePeriod()}">Grace Period</span>
+													<span class="badge bg-danger" th:if="${vendor.planExpired()}">Expired</span>
+												</td>
+												<td th:text="${vendor.planOverdueSince() != null} ? ${#temporals.format(vendor.planOverdueSince(), 'MMM d, yyyy')} : '-'">Jan 1, 2026</td>
+												<td class="text-end">
+													<div class="dropdown">
+														<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+															<i class="ph-list"></i>
+														</button>
+														<div class="dropdown-menu dropdown-menu-end">
+															<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="dropdown-item">
+																<i class="ph-storefront me-2"></i> View Storefront
+																<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
+															</a>
+															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
+																<button type="submit" class="dropdown-item">
+																	<i class="ph-squares-four me-2"></i> View Dashboard
+																</button>
+															</form>
+														</div>
+													</div>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Vendors mid-way through GCash's 7-day temporary-access window
+							     (see VendorSubscriptionService#submitGcashPayment) - they got
+							     immediate access on submission, but an admin hasn't verified
+							     the actual payment yet. Same underlying queue as
+							     admin/subscription-payments.html's own "Pending" tab, where
+							     the real verify/reject actions live - this tab is purely for
+							     visibility alongside the other at-risk-account tabs, not a
+							     second place to action them from. -->
+							<div class="tab-pane fade" id="tab-pending-gcash" role="tabpanel">
+								<div class="table-responsive">
+									<table id="pendingGcashTable" class="table table-hover w-100">
+										<thead>
+											<tr>
+												<th>Business Name</th>
+												<th>Owner</th>
+												<th>Billing Cycle</th>
+												<th>Submitted</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="payment : ${pendingGcashPayments}">
+												<td th:text="${payment.businessName()}">Business Name</td>
+												<td th:text="${payment.ownerName()}">Owner</td>
+												<td th:text="${payment.billingCycle()}">QUARTERLY</td>
+												<td th:text="${#temporals.format(payment.submittedAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td class="text-end">
+													<a th:href="@{/admin/subscription-payments}" class="btn btn-sm btn-outline-primary">Review</a>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
 							<!-- Signed up through "Become a Vendor" but never finished the
 							     onboarding form - no VendorProfile exists for these yet, so
 							     none of the columns above (business name, type, storefront...)
@@ -297,10 +404,24 @@
 			var vendorsTable = $('#vendorsTable').DataTable({ pageLength: 20 });
 			var incompleteTable = null;
 			var testVendorsTable = null;
+			var paymentOverdueTable = null;
+			var pendingGcashTable = null;
 
 			document.querySelector('a[href="#tab-test-vendors"]').addEventListener('shown.bs.tab', function () {
 				if (!testVendorsTable) {
 					testVendorsTable = $('#testVendorsTable').DataTable({ pageLength: 20 });
+				}
+			});
+
+			document.querySelector('a[href="#tab-pending-gcash"]').addEventListener('shown.bs.tab', function () {
+				if (!pendingGcashTable) {
+					pendingGcashTable = $('#pendingGcashTable').DataTable({ pageLength: 20 });
+				}
+			});
+
+			document.querySelector('a[href="#tab-payment-overdue"]').addEventListener('shown.bs.tab', function () {
+				if (!paymentOverdueTable) {
+					paymentOverdueTable = $('#paymentOverdueTable').DataTable({ pageLength: 20 });
 				}
 			});
 

@@ -65,7 +65,7 @@
 											</div>
 											<div class="col-lg-6">
 												<div class="mb-3">
-													<label class="form-label">Location <span class="text-muted fs-sm fw-normal">(helps us match nearby vendors)</span></label>
+													<label class="form-label">Location <span class="text-muted fs-sm fw-normal">(helps us match nearby suppliers)</span></label>
 													<select th:field="*{location}" class="form-select">
 														<option value="">Select a province</option>
 														<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
@@ -81,13 +81,13 @@
 													<i class="ph-microphone"></i>
 												</button>
 											</div>
-											<textarea th:field="*{description}" rows="6" class="form-control" placeholder="Guest count, theme, budget - anything that helps us match you with the right vendors."></textarea>
+											<textarea th:field="*{description}" rows="6" class="form-control" placeholder="Guest count, theme, budget - anything that helps us match you with the right suppliers."></textarea>
 										</div>
 
 										<button type="submit" id="intakeSubmitBtn" class="btn btn-primary w-100 fw-semibold py-3">
 											Continue
 										</button>
-										<p class="text-muted fs-sm text-center mt-3 mb-0">By continuing, you agree that payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
+										<p class="text-muted fs-sm text-center mt-3 mb-0">By continuing, you agree that payment for any services is handled directly between you and the supplier. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 									</form>
 								</div>
 							</div>
@@ -221,7 +221,7 @@
 												</th:block>
 
 												<p class="text-muted mb-0" th:if="${selectedEvent.aiIdeaText() == null and #lists.isEmpty(coordinatorHistory.questions())}">
-													Ask for event ideas, themes, or general planning advice below - the coordinator won't discuss vendor pricing or availability, that stays in your Chats with each vendor.
+													Ask for event ideas, themes, or general planning advice below - the coordinator won't discuss supplier pricing or availability, that stays in your Chats with each supplier.
 												</p>
 											</div>
 											<div class="border-top p-3" th:if="${coordinatorHistory.questionsRemainingToday() > 0}">
@@ -282,7 +282,7 @@
 											<div class="card-body overflow-auto flex-grow-1" style="max-height:50vh;">
 												<div id="suppliersSpinner" class="text-center py-5 d-none">
 													<div class="spinner-border text-primary mb-2" role="status"></div>
-													<div class="text-muted fs-sm">Matching Vendors&hellip;</div>
+													<div class="text-muted fs-sm">Matching Suppliers&hellip;</div>
 												</div>
 												<div id="suppliersResultWrapper">
 													<!--/* th:remove="tag" so the AJAX endpoint (returning just this
@@ -292,7 +292,7 @@
 														<p class="text-muted mb-0" th:if="${suppliersError != null}" th:text="${suppliersError}">Error</p>
 														<th:block th:if="${suppliersError == null}">
 															<p class="text-muted mb-0" th:if="${selectedEvent.location() == null}">
-																Waiting for location before we can match you with relevant vendors.
+																Waiting for location before we can match you with relevant suppliers.
 															</p>
 															<th:block th:if="${selectedEvent.location() != null}">
 																<div th:if="${supplierGroups != null and not #lists.isEmpty(supplierGroups)}">
@@ -301,7 +301,7 @@
 																	     as "here's roughly what's available" before the detail. */-->
 																	<div class="d-flex align-items-center justify-content-between mb-3">
 																		<span class="fs-sm text-muted">
-																			<span class="fw-semibold text-body" th:text="${supplierMatchTotal}">0</span> vendors match this event<span class="supplier-shown-note"></span>
+																			<span class="fw-semibold text-body" th:text="${supplierMatchTotal}">0</span> suppliers match this event<span class="supplier-shown-note"></span>
 																		</span>
 																		<span class="fs-sm text-success" th:if="${supplierVerifiedTotal > 0}">
 																			<i class="ph-shield-check"></i> <span th:text="${supplierVerifiedTotal}">0</span> verified
@@ -367,8 +367,8 @@
 														th:text="${#strings.substring(conversation.otherPartyName(), 0, 1)}">V</div>
 
 													<div class="ms-3 flex-grow-1 overflow-hidden">
-														<div class="fw-semibold text-truncate" th:text="${conversation.otherPartyName()}">Vendor</div>
-														<div class="text-truncate text-muted fs-sm" th:text="${conversation.otherPartyBusinessType() != null} ? ${conversation.otherPartyBusinessType().label} : 'Vendor'">Business type</div>
+														<div class="fw-semibold text-truncate" th:text="${conversation.otherPartyName()}">Supplier</div>
+														<div class="text-truncate text-muted fs-sm" th:text="${conversation.otherPartyBusinessType() != null} ? ${conversation.otherPartyBusinessType().label} : 'Supplier'">Business type</div>
 													</div>
 												</a>
 											</div>
@@ -381,10 +381,10 @@
 													th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
 													th:text="${#strings.substring(selectedConversation.otherPartyName(), 0, 1)}">V</div>
 												<div class="ms-3">
-													<span class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Vendor name</span>
+													<span class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Supplier name</span>
 													<div class="text-muted fs-sm">
 														<i class="ph-user-circle me-1"></i>
-														<span th:text="${selectedConversation.otherPartyBusinessType() != null} ? ${selectedConversation.otherPartyBusinessType().label} : 'Vendor'">Vendor</span>
+														<span th:text="${selectedConversation.otherPartyBusinessType() != null} ? ${selectedConversation.otherPartyBusinessType().label} : 'Supplier'">Supplier</span>
 													</div>
 												</div>
 												<a th:if="${selectedConversation.otherPartySlug() != null}"
@@ -459,12 +459,12 @@
 
 								<div th:if="${quotationAccepted}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									<span th:if="${bookingIncludedScreenshot}">Quote accepted and payment screenshot submitted - the vendor will confirm once they've verified it.</span>
+									<span th:if="${bookingIncludedScreenshot}">Quote accepted and payment screenshot submitted - the supplier will confirm once they've verified it.</span>
 									<span th:unless="${bookingIncludedScreenshot}">Quote accepted. You can upload a payment screenshot anytime from here once you're ready to pay.</span>
 								</div>
 								<div th:if="${screenshotSubmitted}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Payment screenshot submitted - the vendor will confirm once they've verified it.
+									Payment screenshot submitted - the supplier will confirm once they've verified it.
 								</div>
 								<div th:if="${quotationDeclined}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -472,11 +472,11 @@
 								</div>
 								<div th:if="${quotationRevised}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Revision request sent to the vendor - they'll send an updated quotation.
+									Revision request sent to the supplier - they'll send an updated quotation.
 								</div>
 								<div th:if="${attachmentSent}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Attachment sent to the vendor.
+									Attachment sent to the supplier.
 								</div>
 								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -493,7 +493,7 @@
 										<table class="table table-hover">
 											<thead>
 												<tr>
-													<th>Vendor</th>
+													<th>Supplier</th>
 													<th>Target date</th>
 													<th>Message</th>
 													<th>Status</th>
@@ -504,8 +504,8 @@
 											<tbody>
 												<tr th:each="quotation : ${quotations}">
 													<td>
-														<a th:if="${quotation.vendorSlug() != null}" th:href="@{'/vendor/storefront/' + ${quotation.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${quotation.vendorBusinessName()}">Vendor</a>
-														<span th:if="${quotation.vendorSlug() == null}" th:text="${quotation.vendorBusinessName()}">Vendor</span>
+														<a th:if="${quotation.vendorSlug() != null}" th:href="@{'/vendor/storefront/' + ${quotation.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${quotation.vendorBusinessName()}">Supplier</a>
+														<span th:if="${quotation.vendorSlug() == null}" th:text="${quotation.vendorBusinessName()}">Supplier</span>
 													</td>
 													<td th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">-</td>
 													<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
@@ -526,7 +526,7 @@
 														     one-off group, no Prev/Next into the PDF above or
 														     anything else. */-->
 														<a th:if="${not #lists.isEmpty(quotation.responseImageUrls())}" href="#" class="btn btn-light btn-sm ms-1 lightbox-trigger"
-															th:attr="data-lightbox-src=${quotation.responseImageUrls().get(0)},data-lightbox-caption='Vendor images - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-resp-menu'">
+															th:attr="data-lightbox-src=${quotation.responseImageUrls().get(0)},data-lightbox-caption='Supplier images - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-resp-menu'">
 															<i class="ph-image me-1"></i> Images
 														</a>
 													</td>
@@ -653,14 +653,14 @@
 													<p class="text-muted fs-sm mt-3">Accepting locks in the version you choose above. You can pay the deposit now or come back once you're ready.</p>
 
 													<div class="mb-3">
-														<label class="form-label">Message to the vendor <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-														<textarea name="message" rows="2" class="form-control" placeholder="Anything you'd like the vendor to know..."></textarea>
+														<label class="form-label">Message to the supplier <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<textarea name="message" rows="2" class="form-control" placeholder="Anything you'd like the supplier to know..."></textarea>
 													</div>
 
 													<div class="mb-0">
 														<label class="form-label">Payment screenshot <span class="text-muted fs-sm fw-normal">(Optional - you can also upload this later)</span></label>
 														<input type="file" name="screenshot" class="form-control accept-quote-screenshot-input" accept="image/png,image/jpeg">
-														<div class="fs-sm text-muted mt-1">PNG or JPEG only. Upload proof of payment now if you've already paid, so the vendor can confirm right away.</div>
+														<div class="fs-sm text-muted mt-1">PNG or JPEG only. Upload proof of payment now if you've already paid, so the supplier can confirm right away.</div>
 													</div>
 												</div>
 												<div class="modal-footer">
@@ -715,7 +715,7 @@
 												</div>
 
 												<div class="mb-3">
-													<div class="fs-sm fw-semibold text-muted mb-1">Your message to the vendor</div>
+													<div class="fs-sm fw-semibold text-muted mb-1">Your message to the supplier</div>
 													<p id="acceptQuoteConfirmMessage" class="mb-0 fst-italic text-muted">No message added.</p>
 												</div>
 
@@ -742,7 +742,7 @@
 													<div class="form-check mb-0">
 														<input class="form-check-input" type="checkbox" id="acceptQuoteConfirmPolicyAck">
 														<label class="form-check-label fs-sm" for="acceptQuoteConfirmPolicyAck">
-															I've read and am aware of the vendor's cancellation and refund policy.
+															I've read and am aware of the supplier's cancellation and refund policy.
 														</label>
 													</div>
 													<p class="text-danger fs-sm mt-2 mb-0 d-none" id="acceptQuoteConfirmPolicyHint">Please confirm you're aware of the policy above before continuing.</p>
@@ -779,7 +779,7 @@
 													</p>
 													<label class="form-label">Screenshot</label>
 													<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg" required>
-													<div class="fs-sm text-muted mt-1">PNG or JPEG only. The vendor will confirm once they've verified it.</div>
+													<div class="fs-sm text-muted mt-1">PNG or JPEG only. The supplier will confirm once they've verified it.</div>
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -807,7 +807,7 @@
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
-													<p class="text-muted fs-sm">This sends the quotation back to <span th:text="${quotation.vendorBusinessName()}">the vendor</span> for an updated quote - e.g. a different package, guest count, or date.</p>
+													<p class="text-muted fs-sm">This sends the quotation back to <span th:text="${quotation.vendorBusinessName()}">the supplier</span> for an updated quote - e.g. a different package, guest count, or date.</p>
 													<div class="mb-3">
 														<label class="form-label">Target date <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
 														<input type="date" name="targetDate" th:value="${quotation.targetDate()}" class="form-control">
@@ -848,7 +848,7 @@
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
-													<p class="mb-0">Not going with <span th:text="${quotation.vendorBusinessName()}">this vendor</span> for this quote? This closes it out - it won't affect any other quotations for this event.</p>
+													<p class="mb-0">Not going with <span th:text="${quotation.vendorBusinessName()}">this supplier</span> for this quote? This closes it out - it won't affect any other quotations for this event.</p>
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Never mind</button>
@@ -950,8 +950,8 @@
 														</a>
 														<div th:if="${not #lists.isEmpty(quotation.responseImageUrls()) and historyEntry.pdfUrl() != null}" class="d-flex flex-wrap gap-1 mt-1 mb-1">
 															<a th:each="imgUrl, imgStat : ${quotation.responseImageUrls()}" href="#" class="lightbox-trigger"
-																th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Vendor image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-resp-' + ${imgStat.count}">
-																<img th:src="${imgUrl}" alt="Vendor image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+																th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Supplier image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-resp-' + ${imgStat.count}">
+																<img th:src="${imgUrl}" alt="Supplier image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
 															</a>
 														</div>
 														<a th:if="${historyEntry.paymentScreenshotUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
@@ -986,7 +986,7 @@
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
-													<p class="text-muted fs-sm">Share a photo or document with <span th:text="${quotation.vendorBusinessName()}">the vendor</span> anytime - this doesn't change the quotation's status.</p>
+													<p class="text-muted fs-sm">Share a photo or document with <span th:text="${quotation.vendorBusinessName()}">the supplier</span> anytime - this doesn't change the quotation's status.</p>
 													<div class="mb-3">
 														<label class="form-label">File</label>
 														<input type="file" name="file" accept="image/png,image/jpeg,application/pdf" class="form-control" required>
@@ -1018,15 +1018,15 @@
 
 								<div th:if="${screenshotSubmitted}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Your payment screenshot has been submitted for the vendor's review.
+									Your payment screenshot has been submitted for the supplier's review.
 								</div>
 								<div th:if="${bookingCancelled}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Booking cancelled. The vendor has been notified.
+									Booking cancelled. The supplier has been notified.
 								</div>
 								<div th:if="${reviewSubmitted}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-									Thanks - your review has been posted to the vendor's storefront.
+									Thanks - your review has been posted to the supplier's storefront.
 								</div>
 								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -1043,7 +1043,7 @@
 										<table class="table table-hover">
 											<thead>
 												<tr>
-													<th>Vendor</th>
+													<th>Supplier</th>
 													<th>Event date</th>
 													<th>Price</th>
 													<th>Status</th>
@@ -1054,8 +1054,8 @@
 												<tr th:each="booking : ${bookings}">
 													<td>
 														<div>
-															<a th:if="${booking.vendorSlug() != null}" class="fw-semibold text-body" th:href="@{'/vendor/storefront/' + ${booking.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${booking.vendorBusinessName()}">Vendor</a>
-															<span th:if="${booking.vendorSlug() == null}" th:text="${booking.vendorBusinessName()}">Vendor</span>
+															<a th:if="${booking.vendorSlug() != null}" class="fw-semibold text-body" th:href="@{'/vendor/storefront/' + ${booking.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank" th:text="${booking.vendorBusinessName()}">Supplier</a>
+															<span th:if="${booking.vendorSlug() == null}" th:text="${booking.vendorBusinessName()}">Supplier</span>
 														</div>
 														<div class="text-muted fs-sm" th:text="${booking.agreementDetails()}">Details</div>
 														<div class="text-danger fs-sm mt-1" th:if="${booking.paymentRejectionReason() != null}">
@@ -1064,7 +1064,7 @@
 														</div>
 														<div class="text-muted fs-sm mt-1" th:if="${booking.status().name() == 'CANCELLED'}">
 															<i class="ph-x-circle me-1"></i>
-															Cancelled by <span th:text="${booking.cancelledByUserId() == plannerUserId} ? 'you' : 'the vendor'">who</span>:
+															Cancelled by <span th:text="${booking.cancelledByUserId() == plannerUserId} ? 'you' : 'the supplier'">who</span>:
 															<span th:text="${booking.cancellationReason()}">Reason</span>
 														</div>
 													</td>
@@ -1145,7 +1145,7 @@
 												<div class="modal-body">
 													<label class="form-label">Screenshot</label>
 													<input type="file" name="screenshot" class="form-control" accept="image/png,image/jpeg" required>
-													<div class="fs-sm text-muted mt-1">PNG or JPEG only. The vendor will confirm once they've verified it.</div>
+													<div class="fs-sm text-muted mt-1">PNG or JPEG only. The supplier will confirm once they've verified it.</div>
 												</div>
 												<div class="modal-footer">
 													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -1171,9 +1171,9 @@
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
-													<p class="text-muted fs-sm">This marks the booking as <strong>CANCELLED</strong> and notifies the vendor. This can't be undone.</p>
+													<p class="text-muted fs-sm">This marks the booking as <strong>CANCELLED</strong> and notifies the supplier. This can't be undone.</p>
 													<label class="form-label">Reason for cancellation</label>
-													<textarea name="reason" rows="3" class="form-control" placeholder="e.g., Change of plans, going with another vendor..." required></textarea>
+													<textarea name="reason" rows="3" class="form-control" placeholder="e.g., Change of plans, going with another supplier..." required></textarea>
 
 													<!--/* Only shown when the vendor has actually uploaded at least
 													     one of these two documents - a vendor with neither on file
@@ -1195,7 +1195,7 @@
 														<div class="form-check mb-0">
 															<input class="form-check-input cancel-policy-ack-checkbox" type="checkbox" th:id="'cancelPolicyAck-' + ${booking.id()}">
 															<label class="form-check-label fs-sm" th:for="'cancelPolicyAck-' + ${booking.id()}">
-																I'm aware of the vendor's cancellation and refund policy.
+																I'm aware of the supplier's cancellation and refund policy.
 															</label>
 														</div>
 														<p class="text-danger fs-sm mt-2 mb-0 d-none cancel-policy-ack-hint">Please confirm you're aware of the policy above before continuing.</p>
@@ -1223,7 +1223,7 @@
 												<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 											</div>
 											<div class="modal-body">
-												<label class="form-label">Message from the vendor</label>
+												<label class="form-label">Message from the supplier</label>
 												<div class="alert alert-danger mb-3" th:text="${booking.paymentRejectionReason()}">Rejection reason</div>
 
 												<div th:if="${booking.paymentScreenshotUrl() != null}">
@@ -1258,7 +1258,7 @@
 													: @{'/planner/events/' + ${selectedEvent.id()} + '/bookings/' + ${booking.id()} + '/review'}"
 												method="post">
 												<div class="modal-header">
-													<h5 class="modal-title" th:text="'Review ' + ${booking.vendorBusinessName()}">Review vendor</h5>
+													<h5 class="modal-title" th:text="'Review ' + ${booking.vendorBusinessName()}">Review supplier</h5>
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 												</div>
 												<div class="modal-body">
@@ -1274,7 +1274,7 @@
 													<div>
 														<label class="form-label">Your review</label>
 														<textarea name="comment" rows="4" maxlength="2000" class="form-control" required
-															placeholder="How did the vendor do? What should other planners know?"
+															placeholder="How did the supplier do? What should other planners know?"
 															th:text="${booking.reviewComment()}"></textarea>
 													</div>
 												</div>
@@ -1309,7 +1309,7 @@
 						<ul class="nav ms-auto">
 							<li class="nav-item">
 								<a th:href="@{/vendor/onboarding}" class="navbar-nav-link">
-									Are you a vendor? Get listed
+									Are you a supplier? Get listed
 								</a>
 							</li>
 						</ul>
@@ -1401,7 +1401,7 @@
 				function refreshSuppliers() {
 					var location = locationInput.value;
 					if (!location) {
-						resultWrapper.innerHTML = '<p class="text-muted mb-0">Waiting for location before we can match you with relevant vendors.</p>';
+						resultWrapper.innerHTML = '<p class="text-muted mb-0">Waiting for location before we can match you with relevant suppliers.</p>';
 						return;
 					}
 
@@ -1420,7 +1420,7 @@
 							resultWrapper.innerHTML = html;
 						})
 						.catch(function () {
-							resultWrapper.innerHTML = '<p class="text-muted mb-0">Couldn\'t update vendor matches. Please try again.</p>';
+							resultWrapper.innerHTML = '<p class="text-muted mb-0">Couldn\'t update supplier matches. Please try again.</p>';
 						})
 						.finally(function () {
 							spinner.classList.add('d-none');
@@ -1857,7 +1857,7 @@
 				}
 				return {
 					title: 'Upload Payment Screenshot',
-					intro: 'The vendor will confirm once they’ve verified it.',
+					intro: 'The supplier will confirm once they’ve verified it.',
 					rows: rows,
 					confirmLabel: 'Upload',
 					confirmClass: 'btn-primary',
@@ -1879,7 +1879,7 @@
 				}
 				return {
 					title: 'Send Revision Request',
-					intro: 'This sends the quotation back to the vendor for an updated quote.',
+					intro: 'This sends the quotation back to the supplier for an updated quote.',
 					rows: rows,
 					confirmLabel: 'Send Revision Request',
 					confirmClass: 'btn-outline-secondary',
@@ -1899,7 +1899,7 @@
 				}
 				return {
 					title: 'Send Attachment',
-					intro: 'The vendor will see this right away - the quotation\'s status won\'t change.',
+					intro: 'The supplier will see this right away - the quotation\'s status won\'t change.',
 					rows: rows,
 					confirmLabel: 'Send Attachment',
 					confirmClass: 'btn-primary',
@@ -1915,7 +1915,7 @@
 				}
 				return {
 					title: 'Upload Payment Screenshot',
-					intro: 'The vendor will confirm once they’ve verified it.',
+					intro: 'The supplier will confirm once they’ve verified it.',
 					rows: rows,
 					confirmLabel: 'Upload',
 					confirmClass: 'btn-primary',
@@ -1935,7 +1935,7 @@
 				}
 				return {
 					title: 'Cancel Booking',
-					intro: 'This marks the booking as CANCELLED and notifies the vendor. This can’t be undone.',
+					intro: 'This marks the booking as CANCELLED and notifies the supplier. This can’t be undone.',
 					rows: [{ label: 'Reason', value: form.querySelector('[name="reason"]').value.trim() }],
 					confirmLabel: 'Cancel Booking',
 					confirmClass: 'btn-outline-danger',

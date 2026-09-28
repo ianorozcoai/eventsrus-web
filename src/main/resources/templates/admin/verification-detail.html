@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/admin-shell :: head('Review Vendor - EventsRUs Admin')}"></head>
+<head th:replace="~{fragments/admin-shell :: head('Review Supplier - EventsRUs Admin')}"></head>
 
 <body>
 
@@ -21,7 +21,7 @@
 				<div class="page-header page-header-light shadow">
 					<div class="page-header-content d-lg-flex">
 						<div class="d-flex">
-							<h4 class="page-title mb-0">Review Vendor</h4>
+							<h4 class="page-title mb-0">Review Supplier</h4>
 						</div>
 					</div>
 					<div class="page-header-content d-lg-flex border-top">
@@ -44,15 +44,15 @@
 					</div>
 					<div th:if="${loadError}" class="alert alert-danger d-flex align-items-center">
 						<i class="ph-warning me-3"></i>
-						<span th:text="${loadError}">Could not load this vendor.</span>
+						<span th:text="${loadError}">Could not load this supplier.</span>
 					</div>
 					<div th:if="${vendorVerified}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						This vendor is now verified - the storefront badge will show right away.
+						This supplier is now verified - the storefront badge will show right away.
 					</div>
 					<div th:if="${vendorUnverified}" class="alert alert-secondary alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Verification revoked. The storefront badge is gone until this vendor is verified again.
+						Verification revoked. The storefront badge is gone until this supplier is verified again.
 					</div>
 					<div th:if="${verificationError}" class="alert alert-danger alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -60,7 +60,7 @@
 					</div>
 					<div th:if="${topVendorUpdated}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Top Vendor status updated.
+						Top Supplier status updated.
 					</div>
 					<div th:if="${reviewModerated}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -94,7 +94,7 @@
 											<i class="ph-clock me-1"></i> Pending Review
 										</span>
 										<span class="badge bg-warning text-dark fs-sm px-3 py-2" th:if="${documents.topVendor()}">
-											<i class="ph-crown-simple me-1"></i> Top Vendor
+											<i class="ph-crown-simple me-1"></i> Top Supplier
 										</span>
 									</div>
 									<div class="fs-sm text-muted" th:if="${documents.verified()}">
@@ -118,7 +118,7 @@
 											<input type="hidden" name="topVendor" th:value="${!documents.topVendor()}">
 											<button type="submit" class="btn" th:classappend="${documents.topVendor()} ? 'btn-outline-secondary' : 'btn-warning text-dark'">
 												<i class="ph-crown-simple me-1"></i>
-												<span th:text="${documents.topVendor()} ? 'Remove Top Vendor' : 'Mark as Top Vendor'">Mark as Top Vendor</span>
+												<span th:text="${documents.topVendor()} ? 'Remove Top Supplier' : 'Mark as Top Supplier'">Mark as Top Supplier</span>
 											</button>
 										</form>
 									</div>
@@ -171,7 +171,7 @@
 										<button type="submit" class="btn btn-primary w-100">Tag Referral</button>
 									</div>
 									<p class="text-muted fs-sm mt-2 mb-0">
-										This vendor wasn't attributed to a referrer at signup - use this if they complain about a missing referral.
+										This supplier wasn't attributed to a referrer at signup - use this if they complain about a missing referral.
 									</p>
 								</form>
 							</div>

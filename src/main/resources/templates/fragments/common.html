@@ -58,7 +58,7 @@
 	     logout, which would kill the admin's own session too. */-->
 	<div th:if="${impersonatingByAdmin}" class="bg-warning text-dark text-center py-2 fs-sm fw-semibold">
 		<i class="ph-eye me-1"></i>
-		Viewing <span th:text="${vendorBusinessName}">this vendor</span> as admin
+		Viewing <span th:text="${vendorBusinessName}">this supplier</span> as admin
 		<form th:action="@{/admin/vendors/exit-impersonation}" method="post" class="d-inline ms-2">
 			<button type="submit" class="btn btn-dark btn-sm py-0 px-2">Exit</button>
 		</form>
@@ -101,7 +101,7 @@
 							<i class="ph-user-circle ph-2x"></i>
 							<span class="status-indicator bg-success"></span>
 						</div>
-						<span class="d-none d-lg-inline-block mx-lg-2" th:text="${vendorOwnerName ?: currentUserFullName}">Vendor</span>
+						<span class="d-none d-lg-inline-block mx-lg-2" th:text="${vendorOwnerName ?: currentUserFullName}">Supplier</span>
 					</a>
 
 					<div class="dropdown-menu dropdown-menu-end">

@@ -488,8 +488,8 @@
 											</a>
 											<div th:if="${not #lists.isEmpty(quotation.responseImageUrls()) and historyEntry.pdfUrl() != null}" class="d-flex flex-wrap gap-1 mt-1 mb-1">
 												<a th:each="imgUrl, imgStat : ${quotation.responseImageUrls()}" href="#" class="lightbox-trigger"
-													th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Vendor image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-resp-' + ${imgStat.count}">
-													<img th:src="${imgUrl}" alt="Vendor image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+													th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Supplier image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-resp-' + ${imgStat.count}">
+													<img th:src="${imgUrl}" alt="Supplier image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
 												</a>
 											</div>
 											<a th:if="${historyEntry.paymentScreenshotUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()} + '-payment'">

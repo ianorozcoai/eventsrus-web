@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<title>Become a Vendor - EventsRUs</title>
+	<title>Become a Supplier - EventsRUs</title>
 
 	<!-- Global stylesheets -->
 	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
@@ -79,7 +79,7 @@
 									<div class="card-body">
 										<div class="text-center mb-3">
 											<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:140px;height:auto;" class="mb-3 mt-2">
-											<h5 class="mb-0">Become a Vendor</h5>
+											<h5 class="mb-0">Become a Supplier</h5>
 											<span class="d-block text-muted">Tell us about your business — most fields can be edited later</span>
 											<!-- Dev/testing convenience only, not a real product feature - fills
 											     the plain text inputs with plausible sample data so the form can
@@ -345,7 +345,7 @@
 														You're signing up through a referral link, so this is locked in.
 													</div>
 													<div class="fs-sm text-muted mt-1" th:unless="${vendorOnboardingForm.referralCode != null and not #strings.isEmpty(vendorOnboardingForm.referralCode)}">
-														If another vendor referred you, enter their code here.
+														If another supplier referred you, enter their code here.
 													</div>
 												</div>
 											</div>
@@ -364,7 +364,7 @@
 
 										<label class="form-check mt-2">
 											<input type="checkbox" th:field="*{acceptedTerms}" class="form-check-input" required>
-											<span class="form-check-label">Accept <a th:href="@{/terms}" target="_blank">&nbsp;vendor terms of service</a></span>
+											<span class="form-check-label">Accept <a th:href="@{/terms}" target="_blank">&nbsp;supplier terms of service</a></span>
 										</label>
 									</div>
 

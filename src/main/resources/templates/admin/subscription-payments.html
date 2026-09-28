@@ -32,12 +32,12 @@
 
 					<div th:if="${paymentVerified}" class="alert alert-success alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Payment verified - the vendor's subscription is now active.
+						Payment verified - the supplier's subscription is now active.
 					</div>
 
 					<div th:if="${paymentRejected}" class="alert alert-warning alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-						Payment rejected - the vendor will see the required plan popup again on their next login.
+						Payment rejected - the supplier will see the required plan popup again on their next login.
 					</div>
 
 					<div th:if="${paymentError}" class="alert alert-danger alert-dismissible">
@@ -222,7 +222,7 @@
 										<img th:src="${payment.screenshotUrl()}" alt="Payment screenshot" class="img-fluid rounded border">
 									</a>
 									<p class="text-muted fs-sm mt-2 mb-0 text-start" th:if="${payment.vendorRemarks() != null}">
-										<strong>Vendor remarks:</strong> <span th:text="${payment.vendorRemarks()}">Remarks</span>
+										<strong>Supplier remarks:</strong> <span th:text="${payment.vendorRemarks()}">Remarks</span>
 									</p>
 									<form th:id="'rejectForm-' + ${payment.vendorUserId()}"
 										th:action="@{'/admin/subscription-payments/' + ${payment.vendorUserId()} + '/reject'}" method="post"

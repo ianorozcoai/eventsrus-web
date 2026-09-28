@@ -60,8 +60,8 @@
                         <span class="text-muted fw-normal">(<span th:text="${vendor.reviewCount()}">12</span>)</span>
                     </span>
                     <span th:if="${vendor.topVendor()}" class="badge rounded-pill text-white"
-                          style="background-color:#b8860b;" title="Top Vendor">
-                        <i class="ph-crown-simple me-1"></i>Top Vendor
+                          style="background-color:#b8860b;" title="Top Supplier">
+                        <i class="ph-crown-simple me-1"></i>Top Supplier
                     </span>
                     <span th:if="${vendor.verified()}" class="badge rounded-pill bg-success text-white"
                           title="Verified by EventsRUs">
@@ -71,7 +71,7 @@
             </div>
 
             <a th:href="@{'/vendor/storefront/' + ${vendor.slug()}(eventId=${eventId})}" target="_blank"
-               class="btn btn-primary btn-sm flex-shrink-0 ms-2">View Vendor</a>
+               class="btn btn-primary btn-sm flex-shrink-0 ms-2">View Supplier</a>
         </li>
 
         <li th:if="${group.matchCount() > 3}" class="list-group-item p-0">

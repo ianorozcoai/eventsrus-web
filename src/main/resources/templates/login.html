@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<title th:text="${intent == 'vendor'} ? 'Vendor Login - EventsRUs' : 'Planner Login - EventsRUs'">Login - EventsRUs</title>
+	<title th:text="${intent == 'vendor'} ? 'Supplier Login - EventsRUs' : 'Planner Login - EventsRUs'">Login - EventsRUs</title>
 
 	<!-- Global stylesheets -->
 	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
@@ -136,7 +136,7 @@
 				<a th:href="@{/}" class="d-inline-block mb-3">
 					<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:260px;max-width:85%;height:auto;">
 				</a>
-				<h5 class="mb-1" th:text="${intent == 'vendor'} ? 'Vendor Login' : 'Planner Login'">Login</h5>
+				<h5 class="mb-1" th:text="${intent == 'vendor'} ? 'Supplier Login' : 'Planner Login'">Login</h5>
 				<p class="text-muted fs-sm mb-4"
 					th:text="${intent == 'vendor'} ? 'Sign in to manage your storefront, bookings, and subscription.' : 'Sign in to start planning your event.'">
 					Sign in to continue.

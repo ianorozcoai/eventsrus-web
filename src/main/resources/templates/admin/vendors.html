@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/admin-shell :: head('Vendors - EventsRUs Admin')}"></head>
+<head th:replace="~{fragments/admin-shell :: head('Suppliers - EventsRUs Admin')}"></head>
 
 <body>
 
@@ -21,7 +21,7 @@
 				<div class="page-header page-header-light shadow">
 					<div class="page-header-content d-lg-flex">
 						<div class="d-flex">
-							<h4 class="page-title mb-0">Vendors</h4>
+							<h4 class="page-title mb-0">Suppliers</h4>
 						</div>
 					</div>
 				</div>
@@ -46,7 +46,7 @@
 							<ul class="nav nav-tabs card-header-tabs" role="tablist">
 								<li class="nav-item">
 									<a href="#tab-vendors" class="nav-link active" data-bs-toggle="tab" role="tab">
-										<i class="ph-storefront me-2"></i> Vendors
+										<i class="ph-storefront me-2"></i> Suppliers
 										<span class="badge bg-primary rounded-pill ms-2" th:text="${#lists.size(vendors)}">0</span>
 									</a>
 								</li>

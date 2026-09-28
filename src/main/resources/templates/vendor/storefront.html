@@ -57,13 +57,13 @@
 								<div class="col-md-8">
 									<div class="d-flex align-items-center gap-2 flex-wrap mb-3">
 										<span class="badge bg-warning text-dark fw-bold px-3 py-2 text-uppercase" style="letter-spacing:.5px;" th:if="${profile.tierLabel() != null}">
-											<i class="ph-trophy me-1"></i> <span th:text="${profile.tierLabel()}">Top Tier Vendor</span>
+											<i class="ph-trophy me-1"></i> <span th:text="${profile.tierLabel()}">Top Tier Supplier</span>
 										</span>
 										<!--/* Real, admin-reviewed verification (VendorDirectoryService#getPublicProfile
 										     -> profile.isVerified()) - NOT just "has this vendor uploaded an ID card
 										     and selfie". See AdminVendorController for the actual review workflow. */-->
 										<span class="badge bg-success text-white fw-bold px-3 py-2" th:if="${profile.identityVerified()}">
-											<i class="ph-shield-check me-1"></i> Verified Vendor
+											<i class="ph-shield-check me-1"></i> Verified Supplier
 										</span>
 										<!--/* Unverified vendors deliberately get no badge at all here (not a
 										     "Verification Pending" one) - showing that to a browsing planner
@@ -202,7 +202,7 @@
 									<i class="ph-package ph-3x text-muted mb-3 d-block"></i>
 									<p class="text-muted mb-0">
 										No packages listed yet. Use the form below to ask
-										<span th:text="${profile.businessName()}">this vendor</span> about pricing directly.
+										<span th:text="${profile.businessName()}">this supplier</span> about pricing directly.
 									</p>
 								</div>
 								<div class="card-body" th:if="${not #lists.isEmpty(profile.packages())}">
@@ -454,7 +454,7 @@
 										</div>
 									</div>
 
-									<p class="text-muted fs-sm mt-3 mb-0"><i class="ph-shield-check me-1"></i> Verified by EventsRUs. Payment is handled directly between you and the vendor.</p>
+									<p class="text-muted fs-sm mt-3 mb-0"><i class="ph-shield-check me-1"></i> Verified by EventsRUs. Payment is handled directly between you and the supplier.</p>
 								</div>
 							</div>
 							<!-- /payment methods -->
@@ -481,7 +481,7 @@
 									     startGuidedFlow()/Modal A/B/C script near the bottom of this
 									     page. */-->
 									<div th:if="${not isOwnStorefront and (not plannerLoggedIn or eventId == null)}" class="text-center py-2">
-										<p class="text-muted fs-sm mb-3">Sign up free (or log in) to request a quote from <strong th:text="${profile.businessName()}">this vendor</strong> - takes less than a minute.</p>
+										<p class="text-muted fs-sm mb-3">Sign up free (or log in) to request a quote from <strong th:text="${profile.businessName()}">this supplier</strong> - takes less than a minute.</p>
 										<button type="button" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;" onclick="startGuidedFlow()">
 											Request a Quote
 										</button>
@@ -515,9 +515,9 @@
 										<div class="mb-4">
 											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Reference Images <span class="fw-normal normal-case">(Optional)</span></label>
 											<input type="file" name="referenceImages" multiple accept="image/png,image/jpeg" class="form-control bg-light border-0 px-3 py-2">
-											<div class="fs-sm text-muted mt-1">Show your vendor exactly what you're picturing - up to 5 images.</div>
+											<div class="fs-sm text-muted mt-1">Show your supplier exactly what you're picturing - up to 5 images.</div>
 										</div>
-										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
+										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the supplier. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 										<button type="submit" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;" th:disabled="${isOwnStorefront}">
 											Submit Quotation Request
 										</button>
@@ -542,7 +542,7 @@
 									</div>
 
 									<div th:if="${not isOwnStorefront and (not plannerLoggedIn or eventId == null)}" class="text-center py-2">
-										<p class="text-muted fs-sm mb-3">Sign up free (or log in) to send a message to <strong th:text="${profile.businessName()}">this vendor</strong>.</p>
+										<p class="text-muted fs-sm mb-3">Sign up free (or log in) to send a message to <strong th:text="${profile.businessName()}">this supplier</strong>.</p>
 										<button type="button" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;" onclick="startGuidedFlow()">
 											Send an Inquiry
 										</button>
@@ -568,7 +568,7 @@
 											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Attach an Image <span class="fw-normal normal-case">(Optional)</span></label>
 											<input type="file" name="attachment" accept="image/png,image/jpeg" class="form-control px-3 py-2">
 										</div>
-										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
+										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the supplier. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 										<button type="submit" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;" th:disabled="${isOwnStorefront}">
 											Submit Availability Inquiry
 										</button>

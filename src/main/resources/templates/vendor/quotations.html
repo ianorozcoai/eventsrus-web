@@ -57,6 +57,11 @@
 						Booking confirmed! The planner has been notified.
 					</div>
 
+					<div th:if="${attachmentSent}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Attachment sent to the planner.
+					</div>
+
 					<div th:if="${quotationsError}" class="alert alert-danger alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 						<span th:text="${quotationsError}">Error</span>
@@ -82,7 +87,12 @@
 					     alphabetically by the first column. Same lazy-init-on-
 					     shown.bs.tab pattern as admin/vendors.html. */-->
 					<div class="card">
-						<div class="card-header">
+						<!--/* Only shown once at least one quotation exists at all - the
+						     "No quotation requests yet" block below covers the truly-empty
+						     case on its own; showing both together (this and, say, the
+						     In-Progress tab's own "Nothing in progress right now") was two
+						     messages saying the same thing. */-->
+						<div class="card-header" th:if="${not #lists.isEmpty(quotations)}">
 							<ul class="nav nav-tabs card-header-tabs" role="tablist">
 								<li class="nav-item">
 									<a href="#tab-in-progress" class="nav-link active" data-bs-toggle="tab" role="tab">
@@ -105,7 +115,7 @@
 							</ul>
 						</div>
 
-						<div class="card-body tab-content">
+						<div class="card-body tab-content" th:if="${not #lists.isEmpty(quotations)}">
 							<div class="tab-pane fade show active" id="tab-in-progress" role="tabpanel">
 								<div class="table-responsive" th:if="${not #lists.isEmpty(quotationsInProgress)}">
 									<table id="quotationsInProgressTable" class="table table-hover w-100">
@@ -161,7 +171,7 @@
 					<div hidden>
 					<thead th:fragment="quotationsTableHead">
 						<tr>
-							<th>Event</th>
+							<th>Planner</th>
 							<th>Target date</th>
 							<th>Message</th>
 							<th>Status</th>
@@ -172,8 +182,8 @@
 					<tbody th:fragment="quotationsTableBody(rows)">
 						<tr th:each="quotation : ${rows}">
 								<td>
-									<div th:text="${quotation.eventName() != null} ? ${quotation.eventName()} : 'Untitled event'">Event</div>
-									<div class="text-muted fs-sm" th:text="'Planner: ' + ${quotation.plannerName()}">Planner</div>
+									<div th:text="${quotation.plannerName()}">Planner</div>
+									<div class="text-muted fs-sm" th:text="${quotation.eventName() != null} ? ${quotation.eventName()} : 'Untitled event'">Event</div>
 								</td>
 								<td th:text="${#temporals.format(quotation.targetDate(), 'MMM dd, yyyy')}">-</td>
 								<td class="text-truncate" style="max-width:280px;" th:text="${quotation.requestMessage()}">Message</td>
@@ -194,13 +204,21 @@
 											<i class="ph-list"></i>
 										</button>
 										<div class="dropdown-menu dropdown-menu-end">
-											<!--/* Opens in-page (see fragments/common.html's imageLightbox)
-											     with the same data-lightbox-group as this quotation's
-											     History entries below, so Next/Prev here already cycles
-											     through every version's PDF, not just this one. */-->
+											<!--/* Opens in-page (see fragments/common.html's imageLightbox) -
+											     each of these gets its own one-off group (never shared with
+											     any other trigger) so clicking one never lets Prev/Next
+											     browse into a different image or file. */-->
 											<a th:if="${quotation.pdfUrl() != null}" href="#" class="dropdown-item lightbox-trigger"
-												th:attr="data-lightbox-src=${quotation.pdfUrl()},data-lightbox-caption='Quote v' + ${quotation.version()} + ' - ' + ${quotation.eventName()},data-lightbox-group='quotation-' + ${quotation.id()}">
+												th:attr="data-lightbox-src=${quotation.pdfUrl()},data-lightbox-caption='Quote v' + ${quotation.version()} + ' - ' + ${quotation.eventName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-pdf'">
 												<i class="ph-file-pdf me-2"></i> View Quote
+											</a>
+											<a th:if="${not #lists.isEmpty(quotation.referenceImageUrls())}" href="#" class="dropdown-item lightbox-trigger"
+												th:attr="data-lightbox-src=${quotation.referenceImageUrls().get(0)},data-lightbox-caption='Reference image - ' + ${quotation.eventName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-ref-menu'">
+												<i class="ph-image me-2"></i> View Reference Images
+											</a>
+											<a th:if="${not #lists.isEmpty(quotation.responseImageUrls())}" href="#" class="dropdown-item lightbox-trigger"
+												th:attr="data-lightbox-src=${quotation.responseImageUrls().get(0)},data-lightbox-caption='Your attached image - ' + ${quotation.eventName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-resp-menu'">
+												<i class="ph-image me-2"></i> View My Attached Images
 											</a>
 											<button th:if="${#sets.contains({'REQUEST_FOR_QUOTE','REVISION_REQUESTED'}, quotation.status().name())}" type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#respondQuotationModal-' + ${quotation.id()}">
 												<i class="ph-upload-simple me-2 text-primary"></i> Respond
@@ -220,6 +238,12 @@
 											     ask is itself a version worth seeing, not just the vendor's side. -->
 											<button type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#quotationHistoryModal-' + ${quotation.id()}">
 												<i class="ph-clock-counter-clockwise me-2"></i> History
+											</button>
+											<!-- Also always available - a free-standing attachment (see
+											     QuotationService#addAttachment) has no status prerequisite,
+											     unlike every other action here. -->
+											<button type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#sendAttachmentModal-' + ${quotation.id()}">
+												<i class="ph-paperclip me-2"></i> Send Attachment
 											</button>
 										</div>
 									</div>
@@ -262,11 +286,25 @@
 											</div>
 											<div class="fs-sm fw-semibold text-muted mb-1">Planner's message</div>
 											<p class="mb-0" th:text="${quotation.requestMessage()}">Message</p>
+											<!--/* Reference photos the planner attached to their request (e.g.
+											     "this cake, but blue") - see QuotationService#requestQuotation.
+											     Each photo gets its own one-off group - no Prev/Next between
+											     them or into any other file. */-->
+											<div th:if="${not #lists.isEmpty(quotation.referenceImageUrls())}" class="d-flex flex-wrap gap-2 mt-2">
+												<a href="#" class="lightbox-trigger" th:each="url, urlStat : ${quotation.referenceImageUrls()}"
+													th:attr="data-lightbox-src=${url},data-lightbox-caption='Reference image - ' + ${quotation.eventName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-ref-' + ${urlStat.count}">
+													<img th:src="${url}" alt="Reference image" class="rounded border" style="height:70px;width:70px;object-fit:cover;">
+												</a>
+											</div>
 										</div>
 
 										<p class="text-muted fs-sm">Upload your quote as a PDF - the planner will be notified and can review it, ask for changes, or accept it.</p>
 										<label class="form-label">Quote PDF</label>
 										<input type="file" name="pdf" class="form-control mb-3" accept=".pdf" required>
+
+										<label class="form-label">Additional Images <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+										<input type="file" name="images" multiple accept="image/png,image/jpeg" class="form-control mb-1">
+										<div class="fs-sm text-muted mb-3">Show sample work or extra detail alongside your PDF - up to 5 images.</div>
 
 										<label class="form-label">Quoted Amount (&#8369;)</label>
 										<input type="number" name="quotedAmount" class="form-control mb-3" min="0" step="0.01" placeholder="e.g. 50000" required>
@@ -382,9 +420,10 @@
 								<div class="modal-body">
 									<div th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}" class="d-flex mb-3 pb-3 border-bottom">
 										<div class="flex-shrink-0 me-3">
-											<span class="badge"
+											<span class="badge" th:if="${historyEntry.entryType().name() == 'STATUS_CHANGE'}"
 												th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'CANCELLED'} ? 'bg-danger' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning'))))"
 												th:text="${historyEntry.toStatus()}">STATUS</span>
+											<span class="badge bg-light text-dark" th:if="${historyEntry.entryType().name() == 'ATTACHMENT'}">Attachment</span>
 										</div>
 										<div class="flex-grow-1">
 											<div class="fs-sm text-muted mb-1">
@@ -411,22 +450,52 @@
 											<div th:if="${not #lists.isEmpty(historyEntry.packageNames()) and not #sets.contains({'QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT','QUOTE_ACCEPTED','BOOKED'}, historyEntry.toStatus().name())}" class="mb-1">
 												<span class="badge bg-secondary me-1" th:each="packageName : ${historyEntry.packageNames()}" th:text="${packageName}">Package</span>
 											</div>
-											<!--/* Each of these three gets its own one-off lightbox group
-											     (keyed by this history row's id) rather than sharing the
-											     quotation-wide group used elsewhere on this page - the
-											     lightbox fragment only shows Prev/Next when a group has more
-											     than one member, so a group of exactly one is how "just this
-											     file, no browsing to a different status's attachment" is
-											     expressed, without needing a whole separate no-nav lightbox
-											     mode. */-->
-											<a th:if="${historyEntry.pdfUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${historyEntry.toStatus()},data-lightbox-group='history-' + ${historyEntry.id()}">
+											<!--/* Reference/response images aren't snapshotted per version
+											     the way the PDF is (see QuotationService#requestQuotation/
+											     respondWithPdf) - they belong to the quotation as a whole,
+											     split only by side. Showing them here - reference images on
+											     the original ask, same as packages above, and response
+											     images alongside whichever entry carries that response's
+											     PDF - is the closest honest mapping onto this per-version
+											     list without implying a precision the data doesn't have. */-->
+											<div th:if="${historyEntry.entryType().name() == 'STATUS_CHANGE' and not #lists.isEmpty(quotation.referenceImageUrls()) and not #sets.contains({'QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT','QUOTE_ACCEPTED','BOOKED'}, historyEntry.toStatus().name())}" class="d-flex flex-wrap gap-1 mb-1">
+												<a th:each="imgUrl, imgStat : ${quotation.referenceImageUrls()}" href="#" class="lightbox-trigger"
+													th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Reference image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-ref-' + ${imgStat.count}">
+													<img th:src="${imgUrl}" alt="Reference image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+												</a>
+											</div>
+											<!--/* A free-standing attachment (see QuotationService#addAttachment). */-->
+											<a th:if="${historyEntry.entryType().name() == 'ATTACHMENT' and historyEntry.attachmentFileType() == 'PDF'}" href="#" class="btn btn-light btn-sm lightbox-trigger"
+												th:attr="data-lightbox-src=${historyEntry.attachmentUrl()},data-lightbox-caption='Attachment - ' + ${historyEntry.changedByName()},data-lightbox-group='history-' + ${historyEntry.id()} + '-attachment'">
+												<i class="ph-file-pdf me-1"></i> View Attachment
+											</a>
+											<div th:if="${historyEntry.entryType().name() == 'ATTACHMENT' and historyEntry.attachmentFileType() == 'IMAGE'}" class="d-flex flex-wrap gap-1 mb-1">
+												<a href="#" class="lightbox-trigger"
+													th:attr="data-lightbox-src=${historyEntry.attachmentUrl()},data-lightbox-caption='Attachment - ' + ${historyEntry.changedByName()},data-lightbox-group='history-' + ${historyEntry.id()} + '-attachment'">
+													<img th:src="${historyEntry.attachmentUrl()}" alt="Attachment" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+												</a>
+											</div>
+											<!-- Each of these gets its own one-off lightbox group
+											     (keyed by this history row's id plus a role/index suffix) so
+											     nothing on this row shares navigation with anything else -
+											     the lightbox fragment only shows Prev/Next when a group has
+											     more than one member, so a group of exactly one is how "just
+											     this file, no browsing to anything else" is expressed,
+											     without needing a whole separate no-nav lightbox mode. -->
+											<a th:if="${historyEntry.pdfUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${historyEntry.toStatus()},data-lightbox-group='history-' + ${historyEntry.id()} + '-pdf'">
 												<i class="ph-file-pdf me-1"></i>
 												<span th:text="${historyEntry.toStatus().name() == 'QUOTE_ACCEPTED'} ? 'View Accepted Quote' : 'View this version\'s PDF'">View this version's PDF</span>
 											</a>
-											<a th:if="${historyEntry.paymentScreenshotUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()}">
+											<div th:if="${not #lists.isEmpty(quotation.responseImageUrls()) and historyEntry.pdfUrl() != null}" class="d-flex flex-wrap gap-1 mt-1 mb-1">
+												<a th:each="imgUrl, imgStat : ${quotation.responseImageUrls()}" href="#" class="lightbox-trigger"
+													th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Vendor image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-resp-' + ${imgStat.count}">
+													<img th:src="${imgUrl}" alt="Vendor image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+												</a>
+											</div>
+											<a th:if="${historyEntry.paymentScreenshotUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()} + '-payment'">
 												<i class="ph-image me-1"></i> View Payment
 											</a>
-											<a th:if="${historyEntry.invoiceUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.invoiceUrl()},data-lightbox-caption='Invoice - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()}">
+											<a th:if="${historyEntry.invoiceUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger" th:attr="data-lightbox-src=${historyEntry.invoiceUrl()},data-lightbox-caption='Invoice - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()} + '-invoice'">
 												<i class="ph-file-text me-1"></i> View Invoice
 											</a>
 										</div>
@@ -440,6 +509,41 @@
 						</div>
 					</div>
 					<!-- /per-quotation "Version History" modals -->
+
+					<!-- Per-quotation "Send Attachment" modals - a free-standing
+					     image/PDF, no status prerequisite (see
+					     QuotationService#addAttachment). -->
+					<div class="modal fade" th:each="quotation : ${quotations}" th:id="'sendAttachmentModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+						<div class="modal-dialog modal-dialog-centered">
+							<div class="modal-content">
+								<form th:action="@{'/vendor/quotations/' + ${quotation.id()} + '/attachments'}" method="post" enctype="multipart/form-data">
+									<div class="modal-header">
+										<h5 class="modal-title" th:text="'Send Attachment - ' + ${quotation.eventName()}">Send Attachment</h5>
+										<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+									</div>
+									<div class="modal-body">
+										<p class="text-muted fs-sm">Share a photo or document with the planner anytime - this doesn't change the quotation's status.</p>
+										<div class="mb-3">
+											<label class="form-label">File</label>
+											<input type="file" name="file" accept="image/png,image/jpeg,application/pdf" class="form-control" required>
+										</div>
+										<div class="mb-0">
+											<label class="form-label">Message <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+											<textarea name="message" rows="2" class="form-control" placeholder="e.g., Here's an updated copy of the invoice."></textarea>
+										</div>
+									</div>
+									<div class="modal-footer">
+										<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+										<button type="button" class="btn btn-primary send-attachment-review-btn">
+											<i class="ph-paper-plane-tilt me-2"></i>
+											Send Attachment
+										</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					<!-- /per-quotation "Send Attachment" modals -->
 
 				</div>
 				<!-- /content area -->
@@ -547,6 +651,26 @@
 					confirmLabel: 'Reject Payment',
 					confirmClass: 'btn-outline-danger',
 					confirmIcon: 'ph-x-circle'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.send-attachment-review-btn', function (btn, form) {
+				var rows = [];
+				var file = form.querySelector('[name="file"]').files[0];
+				if (file) {
+					rows.push({ label: 'File', file: file });
+				}
+				var message = form.querySelector('[name="message"]').value.trim();
+				if (message) {
+					rows.push({ label: 'Message', value: message });
+				}
+				return {
+					title: 'Send Attachment',
+					intro: 'The planner will see this right away - the quotation\'s status won\'t change.',
+					rows: rows,
+					confirmLabel: 'Send Attachment',
+					confirmClass: 'btn-primary',
+					confirmIcon: 'ph-paper-plane-tilt'
 				};
 			});
 		});

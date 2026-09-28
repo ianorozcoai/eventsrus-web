@@ -22,6 +22,7 @@ import com.web.eventsrus.model.VendorDashboard;
 import com.web.eventsrus.model.VendorLead;
 import com.web.eventsrus.model.VendorOnboardingForm;
 import com.web.eventsrus.model.VendorPackageForm;
+import com.web.eventsrus.model.VendorPackageImageItem;
 import com.web.eventsrus.model.VendorPackageItem;
 import com.web.eventsrus.model.VendorLegalDocumentForm;
 import com.web.eventsrus.model.VendorPaymentMethodForm;
@@ -247,7 +248,8 @@ public class VendorController {
 
     @PostMapping("/leads/{eventId}/message")
     public String sendLeadMessage(
-            @PathVariable Long eventId, @RequestParam String message, HttpSession session,
+            @PathVariable Long eventId, @RequestParam String message,
+            @RequestParam(required = false) MultipartFile attachment, HttpSession session,
             RedirectAttributes redirectAttributes) {
         // Mirrors ConversationService#sendVendorMessage's subscription
         // requirement client-side too, so an expired vendor gets a clear
@@ -258,7 +260,7 @@ public class VendorController {
             return "redirect:/vendor/leads";
         }
         try {
-            backendClient.sendVendorMessage(WebSession.token(session), eventId, message);
+            backendClient.sendVendorMessage(WebSession.token(session), eventId, message, attachment);
             redirectAttributes.addFlashAttribute("leadMessageSent", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("leadsError", e.getMessage());
@@ -480,6 +482,7 @@ public class VendorController {
             @PathVariable Long conversationId, @RequestParam(required = false) LocalDate targetDate,
             @RequestParam(required = false) String message, @RequestParam(required = false) List<Long> packageIds,
             @RequestParam(required = false) MultipartFile pdf, @RequestParam BigDecimal quotedAmount,
+            @RequestParam(required = false) List<MultipartFile> images,
             HttpSession session, RedirectAttributes redirectAttributes) {
         if (WebSession.isSubscriptionExpired(session)) {
             redirectAttributes.addFlashAttribute(
@@ -496,7 +499,8 @@ public class VendorController {
                     .filter(c -> c.id() == conversationId)
                     .findFirst()
                     .orElseThrow(() -> new BackendApiException("Conversation not found", 404));
-            backendClient.createQuoteFromChat(jwt, conversation.eventId(), targetDate, message, packageIds, pdf, quotedAmount);
+            backendClient.createQuoteFromChat(
+                    jwt, conversation.eventId(), targetDate, message, packageIds, pdf, quotedAmount, images);
             redirectAttributes.addFlashAttribute("quoteCreatedFromChat", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("messagesError", e.getMessage());
@@ -506,7 +510,8 @@ public class VendorController {
 
     @PostMapping("/messages/{conversationId}/reply")
     public String replyToConversation(
-            @PathVariable Long conversationId, @RequestParam String body, HttpSession session,
+            @PathVariable Long conversationId, @RequestParam String body,
+            @RequestParam(required = false) MultipartFile attachment, HttpSession session,
             RedirectAttributes redirectAttributes) {
         // Mirrors ConversationService#sendMessage's vendor-side
         // subscription requirement client-side too.
@@ -516,7 +521,7 @@ public class VendorController {
             return "redirect:/vendor/messages?conversationId=" + conversationId;
         }
         try {
-            backendClient.replyToConversation(WebSession.token(session), conversationId, body);
+            backendClient.replyToConversation(WebSession.token(session), conversationId, body, attachment);
             redirectAttributes.addFlashAttribute("replySent", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("messagesError", e.getMessage());
@@ -563,6 +568,7 @@ public class VendorController {
     public String respondToQuotation(
             @PathVariable Long quotationId, @RequestParam(required = false) MultipartFile pdf,
             @RequestParam(required = false) String message, @RequestParam(required = false) BigDecimal quotedAmount,
+            @RequestParam(required = false) List<MultipartFile> images,
             HttpSession session, RedirectAttributes redirectAttributes) {
         // Same subscription-required check as acknowledgeBookingPayment above
         // (mirrors QuotationService#respondWithPdf's own server-side check) -
@@ -582,7 +588,7 @@ public class VendorController {
             return "redirect:/vendor/quotations";
         }
         try {
-            backendClient.respondToQuotation(WebSession.token(session), quotationId, pdf, message, quotedAmount);
+            backendClient.respondToQuotation(WebSession.token(session), quotationId, pdf, message, quotedAmount, images);
             redirectAttributes.addFlashAttribute("quotationResponded", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
@@ -626,6 +632,24 @@ public class VendorController {
             backendClient.acceptBooking(
                     WebSession.token(session), quotationId, confirmationMessage, paymentType.name(), invoice);
             redirectAttributes.addFlashAttribute("bookingAccepted", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
+        }
+        return "redirect:/vendor/quotations";
+    }
+
+    @PostMapping("/quotations/{quotationId}/attachments")
+    public String addQuotationAttachment(
+            @PathVariable Long quotationId, @RequestParam MultipartFile file,
+            @RequestParam(required = false) String message, HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (file == null || file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("quotationsError", "A file is required to send an attachment.");
+            return "redirect:/vendor/quotations";
+        }
+        try {
+            backendClient.sendQuotationAttachment(WebSession.token(session), quotationId, file, message);
+            redirectAttributes.addFlashAttribute("attachmentSent", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("quotationsError", e.getMessage());
         }
@@ -745,13 +769,26 @@ public class VendorController {
         }
     }
 
+    // Standalone Gallery Management page - every image a vendor has
+    // (gallery photos + every package's photos), plus their own tags, all
+    // in one place. Moved here from Account Settings; see gallery.html.
+    @GetMapping("/gallery")
+    public String gallery(HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        model.addAttribute("taggableImages", backendClient.getTaggableImages(jwt));
+        model.addAttribute("imageTags", backendClient.getImageTags(jwt));
+        model.addAttribute("galleryPhotoLimit", backendClient.getGalleryPhotoLimit(jwt));
+        model.addAttribute("activePage", "gallery");
+        return "vendor/gallery";
+    }
+
     // Immediate upload (no queue-until-Save-Changes, unlike package photos) -
     // the vendor's profile always already exists by the time they reach
-    // Settings, so there's no "brand new, not-yet-persisted parent" case to
+    // this page, so there's no "brand new, not-yet-persisted parent" case to
     // work around here. Dropzone posts one file per request; the page
-    // reloads back into the Gallery tab (see settings.html) once its queue
-    // finishes so the grid below always reflects the real, saved state.
-    @PostMapping("/settings/gallery")
+    // reloads once its queue finishes so the grid below always reflects the
+    // real, saved state.
+    @PostMapping("/gallery/photos")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> addGalleryPhoto(
             @RequestParam(required = false) MultipartFile image, @RequestParam(required = false) String caption,
@@ -770,11 +807,59 @@ public class VendorController {
     // AJAX (JSON), not a redirect - same reasoning as deletePackageImage
     // below: called via fetch() after the vendor confirms in the shared
     // confirmation modal, which then reloads the page itself.
-    @PostMapping("/settings/gallery/{photoId}/delete")
+    @PostMapping("/gallery/photos/{photoId}/delete")
     @ResponseBody
     public ResponseEntity<Map<String, Object>> deleteGalleryPhoto(@PathVariable Long photoId, HttpSession session) {
         try {
             backendClient.deleteGalleryPhoto(WebSession.token(session), photoId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/gallery/tags")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> createImageTag(@RequestParam String name, HttpSession session) {
+        try {
+            backendClient.createImageTag(WebSession.token(session), name);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/gallery/tags/{tagId}/delete")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteImageTag(@PathVariable Long tagId, HttpSession session) {
+        try {
+            backendClient.deleteImageTag(WebSession.token(session), tagId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/gallery/photos/{photoId}/tags")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> setGalleryPhotoTags(
+            @PathVariable Long photoId, @RequestParam(required = false) List<Long> tagIds, HttpSession session) {
+        try {
+            backendClient.setGalleryPhotoTags(WebSession.token(session), photoId, tagIds == null ? List.of() : tagIds);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/gallery/packages/{packageId}/images/{imageId}/tags")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> setPackageImageTags(
+            @PathVariable Long packageId, @PathVariable Long imageId,
+            @RequestParam(required = false) List<Long> tagIds, HttpSession session) {
+        try {
+            backendClient.setPackageImageTags(
+                    WebSession.token(session), packageId, imageId, tagIds == null ? List.of() : tagIds);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (BackendApiException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -867,6 +952,17 @@ public class VendorController {
         }
         VendorPublicProfile profile = backendClient.getVendorProfile(jwt, slug, eventId);
         model.addAttribute("profile", profile);
+        // Server-side per-tag filtering (rather than inline Thymeleaf stream
+        // expressions) - one map, keyed by tag name, built once here so the
+        // storefront's Gallery filter tabs can just th:each over a
+        // pre-filtered list, same as every other tabbed list in this app.
+        Map<String, List<VendorPackageImageItem>> imagesByTag = profile.availableImageTags().stream()
+                .collect(Collectors.toMap(
+                        tag -> tag,
+                        tag -> profile.galleryImages().stream()
+                                .filter(img -> img.tags().contains(tag))
+                                .toList()));
+        model.addAttribute("imagesByTag", imagesByTag);
         model.addAttribute("redirectSlug", slug);
         model.addAttribute("eventId", eventId);
         // A vendor previewing their OWN storefront ("View My Page") has no
@@ -907,6 +1003,7 @@ public class VendorController {
             @RequestParam(required = false) String redirectSlug,
             @RequestParam(required = false) Long eventId,
             @RequestParam Long vendorUserId,
+            @RequestParam(required = false) List<MultipartFile> referenceImages,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         String loginError = requirePlannerLogin(session, eventId);
@@ -918,7 +1015,7 @@ public class VendorController {
             backendClient.submitQuotationRequest(
                     WebSession.token(session), eventId, vendorUserId, quotationRequestForm.getPlannerName(),
                     quotationRequestForm.getTargetDate(), quotationRequestForm.getMessage(),
-                    quotationRequestForm.getPackageIds());
+                    quotationRequestForm.getPackageIds(), referenceImages);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("storefrontFormError", e.getMessage());
             return redirectAfterStorefrontFailure(redirectSlug, eventId);
@@ -932,6 +1029,7 @@ public class VendorController {
             @RequestParam(required = false) String redirectSlug,
             @RequestParam(required = false) Long eventId,
             @RequestParam Long vendorUserId,
+            @RequestParam(required = false) MultipartFile attachment,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         String loginError = requirePlannerLogin(session, eventId);
@@ -942,7 +1040,7 @@ public class VendorController {
         try {
             backendClient.submitInquiry(
                     WebSession.token(session), eventId, vendorUserId, inquiryForm.getPlannerName(),
-                    inquiryForm.getTargetDate(), inquiryForm.getMessage());
+                    inquiryForm.getTargetDate(), inquiryForm.getMessage(), attachment);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("storefrontFormError", e.getMessage());
             return redirectAfterStorefrontFailure(redirectSlug, eventId);
@@ -1015,7 +1113,6 @@ public class VendorController {
         }
         model.addAttribute("legalDocuments", backendClient.getLegalDocuments(jwt));
         model.addAttribute("documentTypes", LegalDocumentType.values());
-        model.addAttribute("galleryPhotos", backendClient.getGalleryPhotos(jwt));
         model.addAttribute("businessTypes", BusinessType.displayOrder());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
         model.addAttribute("operatingAreaOptions", PhilippineProvinces.OPERATING_AREA_OPTIONS);

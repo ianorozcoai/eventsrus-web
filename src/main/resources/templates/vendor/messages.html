@@ -146,9 +146,15 @@
 												th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
 												th:text="${#strings.substring(message.senderName(), 0, 1)}">P</div>
 
-											<div class="rounded-4 px-3 py-2" style="max-width:60%;white-space:pre-wrap;"
-												th:classappend="${message.senderUserId() == vendorUserId} ? 'bg-purple text-white' : 'bg-light'"
-												th:text="${message.body()}">Message body</div>
+											<div style="max-width:60%;">
+												<div class="rounded-4 px-3 py-2" style="white-space:pre-wrap;"
+													th:classappend="${message.senderUserId() == vendorUserId} ? 'bg-purple text-white' : 'bg-light'"
+													th:text="${message.body()}">Message body</div>
+												<a href="#" class="d-block mt-1 lightbox-trigger" th:if="${message.attachmentUrl() != null}"
+													th:attr="data-lightbox-src=${message.attachmentUrl()},data-lightbox-caption='Attached image',data-lightbox-group='conversation-' + ${selectedConversation.id()}">
+													<img th:src="${message.attachmentUrl()}" alt="Attached image" class="img-fluid rounded border" style="max-height:160px;">
+												</a>
+											</div>
 										</div>
 
 									</th:block>
@@ -160,11 +166,18 @@
 								</div>
 
 								<div class="border-top p-3">
-									<form th:action="@{/vendor/messages/{id}/reply(id=${selectedConversation.id()})}" method="post" class="d-flex align-items-center gap-2">
-										<input type="text" name="body" class="form-control rounded-pill" placeholder="Type a message..." required>
-										<button type="submit" class="btn btn-purple btn-icon rounded-circle flex-shrink-0">
-											<i class="ph-paper-plane-tilt"></i>
-										</button>
+									<form th:action="@{/vendor/messages/{id}/reply(id=${selectedConversation.id()})}" method="post" enctype="multipart/form-data" class="vendor-message-reply-form">
+										<div class="d-flex align-items-center gap-2">
+											<input type="text" name="body" class="form-control rounded-pill" placeholder="Type a message..." required>
+											<label class="btn btn-flat-secondary btn-icon rounded-circle flex-shrink-0 mb-0" title="Attach an image">
+												<i class="ph-paperclip"></i>
+												<input type="file" name="attachment" accept="image/png,image/jpeg" class="d-none vendor-message-reply-attachment">
+											</label>
+											<button type="submit" class="btn btn-purple btn-icon rounded-circle flex-shrink-0">
+												<i class="ph-paper-plane-tilt"></i>
+											</button>
+										</div>
+										<div class="fs-sm text-muted mt-1 vendor-message-reply-attachment-name d-none"></div>
 									</form>
 								</div>
 
@@ -244,6 +257,26 @@
 	<div th:replace="~{fragments/common :: imageLightbox}"></div>
 	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
 	<div th:replace="~{fragments/common :: quoteReviewConfirmModal}"></div>
+
+	<!-- Reply attachment - shows the picked filename under the reply box,
+	     since a bare file input has no visible feedback once it's hidden
+	     behind the paperclip icon button. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.vendor-message-reply-attachment').forEach(function (input) {
+				var nameEl = input.closest('form').querySelector('.vendor-message-reply-attachment-name');
+				input.addEventListener('change', function () {
+					if (input.files && input.files[0]) {
+						nameEl.textContent = 'Attached: ' + input.files[0].name;
+						nameEl.classList.remove('d-none');
+					} else {
+						nameEl.classList.add('d-none');
+					}
+				});
+			});
+		});
+	</script>
+	<!-- /reply attachment -->
 
 	<!-- Review-before-send for the Create a Quote modal above - target
 	     date here is a live editable input (unlike Respond's fixed one),

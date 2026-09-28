@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<title th:text="${isNotFound} ? 'Page Not Found - EventsRUs' : 'Something Went Wrong - EventsRUs'">Error - EventsRUs</title>
+	<title th:text="${isNotFound} ? 'Page Not Found - EventsRUs' : (${uploadTooLarge} ? 'File Too Large - EventsRUs' : 'Something Went Wrong - EventsRUs')">Error - EventsRUs</title>
 
 	<!-- Global stylesheets -->
 	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
@@ -31,9 +31,9 @@
 					<i class="ph-warning-circle ph-2x text-danger"></i>
 				</div>
 
-				<h5 class="mb-1" th:text="${isNotFound} ? 'Page not found' : 'Oops, something went wrong'">Something went wrong</h5>
+				<h5 class="mb-1" th:text="${isNotFound} ? 'Page not found' : (${uploadTooLarge} ? 'Submission too large' : 'Oops, something went wrong')">Something went wrong</h5>
 				<p class="text-muted fs-sm mb-4"
-					th:text="${isNotFound} ? 'That link does not exist, or was mistyped.' : 'Something broke on our end, not you.'">
+					th:text="${isNotFound} ? 'That link does not exist, or was mistyped.' : (${uploadTooLarge} ? 'That submission was too large for the server to accept - this can happen with a large file, or simply a lot of fields/selections at once. Please try again.' : 'Something broke on our end, not you.')">
 					Please try again.
 				</p>
 

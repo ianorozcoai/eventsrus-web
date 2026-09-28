@@ -28,6 +28,7 @@ public class CustomErrorController implements ErrorController {
         Object statusAttr = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         int status = statusAttr != null ? Integer.parseInt(statusAttr.toString()) : 500;
         model.addAttribute("isNotFound", status == 404);
+        model.addAttribute("uploadTooLarge", status == 413);
 
         if (AdminSession.isLoggedIn(session)) {
             model.addAttribute("dashboardUrl", "/admin/dashboard");

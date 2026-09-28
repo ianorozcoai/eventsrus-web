@@ -127,12 +127,6 @@
 								Payment Methods
 							</a>
 						</li>
-						<li class="nav-item">
-							<a href="#tab-gallery" class="nav-link" data-bs-toggle="tab">
-								<i class="ph-images me-2"></i>
-								Gallery
-							</a>
-						</li>
 					</ul>
 					<!-- /tabs -->
 
@@ -554,54 +548,6 @@
 							</div>
 							<!-- /payment methods -->
 
-							<!--/* Storefront Gallery - standalone sample-work photos, not
-							     tied to any package (see backend VendorGalleryPhotoService).
-							     Combined with every package's own photos into the same
-							     single Gallery section a planner sees on the storefront
-							     (VendorDirectoryService#getPublicProfile) - a vendor whose
-							     packages don't have much to hang photos off of can still
-							     showcase their work here. Upload is immediate (no
-							     queue-until-Save-Changes the way package photos work)
-							     since the vendor's profile always already exists by the
-							     time they reach Settings - see the gallery-photo script at
-							     the bottom of this page. */-->
-							<div class="tab-pane fade" id="tab-gallery">
-								<div class="card">
-									<div class="card-header">
-										<h6 class="mb-0">Storefront Gallery</h6>
-									</div>
-									<div class="card-body">
-
-										<p class="text-muted fs-sm mb-4">Sample-work photos for your storefront that aren't tied to a specific package - shown together with your package photos in the same Gallery section planners see.</p>
-
-										<div class="row g-3 mb-3" id="galleryPhotosGrid" th:classappend="${#lists.isEmpty(galleryPhotos)} ? 'd-none'">
-											<div class="col-lg-3 col-md-4 col-6" th:each="photo : ${galleryPhotos}">
-												<div class="position-relative">
-													<a href="#" class="d-block lightbox-trigger"
-														th:attr="data-lightbox-src=${photo.imageUrl()},data-lightbox-caption=${photo.caption() != null ? photo.caption() : 'Gallery photo'}">
-														<img th:src="${photo.imageUrl()}" alt="Gallery photo" class="img-fluid rounded border" style="height:130px;width:100%;object-fit:cover;">
-													</a>
-													<!--/* Plain button + AJAX, same nested-form hazard as every
-													     other delete button on this page - this card sits
-													     inside #settingsForm. */-->
-													<button type="button" class="btn btn-danger btn-icon btn-sm rounded-circle position-absolute top-0 end-0 m-1 gallery-photo-delete-btn"
-														style="width:24px;height:24px;padding:0;" title="Remove photo"
-														th:attr="data-delete-url=@{'/vendor/settings/gallery/' + ${photo.id()} + '/delete'}">
-														<i class="ph-x fs-xs"></i>
-													</button>
-												</div>
-											</div>
-										</div>
-										<p class="text-muted fs-sm mb-3" id="galleryPhotosEmpty" th:classappend="${not #lists.isEmpty(galleryPhotos)} ? 'd-none'">No gallery photos yet. Add sample-work photos to showcase on your storefront.</p>
-
-										<label class="form-label">Add photos</label>
-										<div class="dropzone" id="galleryPhotosDropzone"></div>
-										<div class="fs-sm text-muted mt-1">PNG or JPEG only. Uploaded right away - not part of Save Changes.</div>
-
-									</div>
-								</div>
-							</div>
-							<!-- /storefront gallery -->
 
 						</div>
 
@@ -737,11 +683,108 @@
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
 				jQuery('.multiselect-business-types').multiselect();
 				jQuery('.multiselect-operating-areas').multiselect();
-				jQuery('.multiselect-event-types').multiselect();
+				jQuery('.multiselect-event-types').multiselect({ includeSelectAllOption: true });
 			}
 		});
 	</script>
 	<!-- /operating area multiselect -->
+
+	<!-- Warn about a leftover file selection before submitting - Bootstrap
+	     tabs never disable a hidden pane's inputs (see the comment on
+	     #settingsForm above), so a file picked in Logo/ID card/Selfie/
+	     Cancellation policy/Refund terms earlier in this page's lifetime,
+	     on a tab you've since navigated away from, silently rides along on
+	     every later Save Changes click - including one that only meant to
+	     change something unrelated like Event types. Catching that here,
+	     client-side, means you find out which field and how large BEFORE
+	     a round trip to the server, rather than getting back a generic
+	     "file too large" error with no indication one was attached at all. -->
+	<script>
+		document.getElementById('settingsForm').addEventListener('submit', function (e) {
+			var fileFieldLabels = {
+				logo: 'Logo', idCard: 'ID card', selfie: 'Selfie',
+				cancellationPolicyFile: 'Cancellation policy', refundTermsFile: 'Refund terms'
+			};
+			var attached = [];
+			Object.keys(fileFieldLabels).forEach(function (name) {
+				var input = document.querySelector('#settingsForm input[type="file"][name="' + name + '"]');
+				if (input && input.files && input.files.length > 0) {
+					var file = input.files[0];
+					attached.push(fileFieldLabels[name] + ' (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB)');
+				}
+			});
+			if (attached.length > 0
+					&& !window.confirm('You\'re about to upload:\n\n' + attached.join('\n')
+						+ '\n\nIf you didn\'t mean to replace one of these, cancel and clear that field first (it may be left over from earlier on this page). Continue?')) {
+				e.preventDefault();
+			}
+		});
+	</script>
+	<!-- /leftover file selection warning -->
+
+	<!-- Shrink Logo/ID card/Selfie photos in the browser before they're ever
+	     sent - a full-resolution phone photo can be 15-40MB, well past what
+	     any reasonable upload limit should have to allow for. Resizing to
+	     the same 1600px max dimension S3UploadService already applies
+	     server-side (see its own resize step) means this does the same work
+	     earlier, so the upload itself is small from the start instead of
+	     being rejected for being large. Cancellation policy/Refund terms
+	     aren't covered - they're PDFs, which can't be shrunk this way. -->
+	<script>
+		(function () {
+			var MAX_DIMENSION = 1600;
+			var JPEG_QUALITY = 0.85;
+			var SKIP_BELOW_BYTES = 2 * 1024 * 1024;
+
+			function compressImage(file) {
+				return new Promise(function (resolve) {
+					if (!file.type || file.type.indexOf('image/') !== 0 || file.type === 'image/gif') {
+						resolve(file);
+						return;
+					}
+					var objectUrl = URL.createObjectURL(file);
+					var img = new Image();
+					img.onload = function () {
+						URL.revokeObjectURL(objectUrl);
+						var scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
+						if (scale >= 1 && file.size <= SKIP_BELOW_BYTES) {
+							resolve(file); // already small enough - don't bother re-encoding
+							return;
+						}
+						var canvas = document.createElement('canvas');
+						canvas.width = Math.round(img.width * scale);
+						canvas.height = Math.round(img.height * scale);
+						canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+						canvas.toBlob(function (blob) {
+							resolve(blob ? new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }) : file);
+						}, 'image/jpeg', JPEG_QUALITY);
+					};
+					img.onerror = function () {
+						URL.revokeObjectURL(objectUrl);
+						resolve(file); // not a browser-decodable image - let server-side validation handle it
+					};
+					img.src = objectUrl;
+				});
+			}
+
+			['logo', 'idCard', 'selfie'].forEach(function (name) {
+				var input = document.querySelector('#settingsForm input[type="file"][name="' + name + '"]');
+				if (!input) return;
+				input.addEventListener('change', function () {
+					if (!input.files || input.files.length === 0) return;
+					var originalFile = input.files[0];
+					compressImage(originalFile).then(function (compressed) {
+						if (compressed !== originalFile) {
+							var dataTransfer = new DataTransfer();
+							dataTransfer.items.add(compressed);
+							input.files = dataTransfer.files;
+						}
+					});
+				});
+			});
+		})();
+	</script>
+	<!-- /image compression on select -->
 
 
 	<!-- Add Document / Add Payment Method - queued client-side, not saved
@@ -947,166 +990,6 @@
 		});
 	</script>
 	<!-- /legal document delete -->
-
-
-	<!-- Storefront Gallery - upload and delete, both immediate (no
-	     queue-until-Save-Changes). Dropzone posts one file per request, so
-	     "success" fires per-file, not once for the whole drop - reload only
-	     after the WHOLE queue settles (queuecomplete), and only if at least
-	     one file actually made it through; if every file in the batch was
-	     rejected (e.g. already at the photo limit), stay put so the
-	     Dropzone's own inline error message on each rejected thumbnail
-	     stays visible instead of vanishing under a reload. -->
-	<script>
-		document.addEventListener('DOMContentLoaded', function () {
-			var galleryDropzoneEl = document.getElementById('galleryPhotosDropzone');
-			if (galleryDropzoneEl) {
-				var galleryUploadCount = 0;
-				// Dropzone's own per-thumbnail error message only shows on
-				// hover - easy to miss entirely (e.g. hitting the 20-photo
-				// limit gave no visible feedback until you happened to hover
-				// the rejected thumbnail). One toast per drop batch surfaces
-				// it immediately instead; galleryErrorShown caps it at one
-				// even when several files in the same batch are all
-				// rejected for the same reason.
-				var galleryErrorShown = false;
-				var galleryDropzone = new Dropzone('#galleryPhotosDropzone', {
-					url: '/vendor/settings/gallery',
-					paramName: 'image',
-					acceptedFiles: '.jpg,.jpeg,.png,image/jpeg,image/png',
-					addRemoveLinks: false,
-					dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
-					dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
-				});
-				galleryDropzone.on('addedfiles', function () {
-					galleryErrorShown = false;
-				});
-				galleryDropzone.on('success', function () {
-					galleryUploadCount++;
-				});
-				galleryDropzone.on('error', function (file, response) {
-					var message = response && response.error ? response.error : 'Upload failed. Please try again.';
-					var errorEl = file.previewElement && file.previewElement.querySelector('.dz-error-message span');
-					if (errorEl) {
-						errorEl.textContent = message;
-					}
-					if (!galleryErrorShown) {
-						galleryErrorShown = true;
-						window.showGalleryToastNow(message, 'danger');
-					}
-				});
-				galleryDropzone.on('queuecomplete', function () {
-					if (galleryUploadCount > 0) {
-						window.setGalleryToast(galleryUploadCount === 1
-							? 'Photo added to your gallery.'
-							: galleryUploadCount + ' photos added to your gallery.');
-						// A plain location.href assignment here would only
-						// differ from the current URL by its fragment
-						// (this page loads at plain /vendor/settings, no
-						// hash) - browsers treat that as a same-document
-						// anchor jump, not a real navigation, so the page
-						// never actually reloads and the spinner never
-						// clears. Force a real reload instead.
-						window.location.hash = 'tab-gallery';
-						window.location.reload();
-					}
-				});
-			}
-
-			document.querySelectorAll('.gallery-photo-delete-btn').forEach(function (btn) {
-				btn.addEventListener('click', function () {
-					if (btn.dataset.armed === '1') {
-						return;
-					}
-					window.confirmAction('Remove this photo permanently? This cannot be undone.', function () {
-						btn.dataset.armed = '1';
-						window.showPageSpinner('Removing…');
-						fetch(btn.getAttribute('data-delete-url'), { method: 'POST' })
-							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
-							.then(function (result) {
-								if (!result.ok) {
-									throw new Error(result.body.error || 'Could not remove this photo. Please try again.');
-								}
-								window.setGalleryToast('Photo removed from your gallery.');
-								// See the queuecomplete handler above for why
-								// this can't be a plain location.href assignment.
-								window.location.hash = 'tab-gallery';
-								window.location.reload();
-							})
-							.catch(function (err) {
-								delete btn.dataset.armed;
-								window.hidePageSpinner();
-								alert(err.message || 'Could not reach the server. Please try again.');
-							});
-					});
-				});
-			});
-
-			// Restore whichever tab was active before a reload (e.g. right
-			// after adding/removing a gallery photo) - Bootstrap tabs
-			// default back to the first one otherwise.
-			if (window.location.hash) {
-				var tabLink = document.querySelector('a[data-bs-toggle="tab"][href="' + window.location.hash + '"]');
-				if (tabLink) {
-					bootstrap.Tab.getOrCreateInstance(tabLink).show();
-				}
-			}
-
-			// A gallery add/delete finishes with a full page reload (see
-			// above), which wipes any in-memory state - so the confirmation
-			// message is stashed in sessionStorage right before reloading,
-			// then picked up and shown here on the page that comes back.
-			window.setGalleryToast = function (message) {
-				try {
-					sessionStorage.setItem('galleryToastMessage', message);
-				} catch (e) {
-					// Storage unavailable (e.g. private browsing) - reload
-					// still happens, just without the toast.
-				}
-			};
-			// For feedback that doesn't involve a reload (e.g. an upload
-			// rejected for being over the gallery limit) - shows right away
-			// instead of round-tripping through sessionStorage.
-			window.showGalleryToastNow = function (message, variant) {
-				var toastEl = document.getElementById('galleryToast');
-				toastEl.classList.remove('bg-success', 'bg-danger');
-				toastEl.classList.add(variant === 'danger' ? 'bg-danger' : 'bg-success');
-				document.getElementById('galleryToastBody').textContent = message;
-				bootstrap.Toast.getOrCreateInstance(toastEl).show();
-			};
-			var pendingGalleryToast = null;
-			try {
-				pendingGalleryToast = sessionStorage.getItem('galleryToastMessage');
-				if (pendingGalleryToast) {
-					sessionStorage.removeItem('galleryToastMessage');
-				}
-			} catch (e) {
-				pendingGalleryToast = null;
-			}
-			if (pendingGalleryToast) {
-				// Always success-styled - setGalleryToast (above) is only
-				// ever called before a reload on a successful add/delete.
-				var galleryToastEl = document.getElementById('galleryToast');
-				galleryToastEl.classList.remove('bg-danger');
-				galleryToastEl.classList.add('bg-success');
-				document.getElementById('galleryToastBody').textContent = pendingGalleryToast;
-				bootstrap.Toast.getOrCreateInstance(galleryToastEl).show();
-			}
-		});
-	</script>
-	<!-- /storefront gallery -->
-
-	<!-- Confirmation toast for gallery add/remove - see the sessionStorage
-	     handoff in the script above for why this can't just be an
-	     th:if-on-a-flash-attribute banner like the rest of this page. -->
-	<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2100;">
-		<div id="galleryToast" class="toast align-items-center bg-success text-white border-0" role="status" aria-live="polite" aria-atomic="true">
-			<div class="d-flex">
-				<div class="toast-body" id="galleryToastBody"></div>
-				<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-			</div>
-		</div>
-	</div>
 
 
 	<div th:replace="~{fragments/common :: imageLightbox}"></div>

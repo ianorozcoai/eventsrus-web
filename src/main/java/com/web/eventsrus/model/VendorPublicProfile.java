@@ -57,4 +57,5 @@ public record VendorPublicProfile(
         int reviewCount,
         String paymentInstructions,
         List<VendorPaymentMethodItem> paymentMethods,
-        List<VendorPackageImageItem> galleryImages) {}
+        List<VendorPackageImageItem> galleryImages,
+        List<String> availableImageTags) {}

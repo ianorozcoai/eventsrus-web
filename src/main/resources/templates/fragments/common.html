@@ -252,6 +252,12 @@
 						</a>
 					</li>
 					<li class="nav-item">
+						<a th:href="@{/vendor/gallery}" class="nav-link" th:classappend="${activePage == 'gallery'} ? 'active'">
+							<i class="ph-image"></i>
+							<span>Gallery</span>
+						</a>
+					</li>
+					<li class="nav-item">
 						<a th:href="@{/vendor/support}" class="nav-link" th:classappend="${activePage == 'support'} ? 'active'">
 							<i class="ph-lifebuoy"></i>
 							<span>Support</span>
@@ -806,7 +812,17 @@
 	     imageLightbox}" once per page (it wires up all triggers globally,
 	     so it doesn't matter which section on the page includes it). */-->
 	<th:block th:fragment="imageLightbox">
-		<div class="modal fade" id="imageLightboxModal" tabindex="-1" aria-hidden="true">
+		<!--/* A lightbox-trigger link can live INSIDE another already-open
+		     modal (e.g. the "File" row in genericConfirmSubmitModal/
+		     quoteReviewConfirmModal) - Bootstrap gives every .modal the
+		     same static z-index (1055) regardless of open order, so which
+		     one paints on top then comes down to DOM source order, not
+		     which was opened more recently. Since this modal's whole job is
+		     "preview something while something else might already be
+		     open," it needs to always win that stacking fight - bumped
+		     comfortably above the default (and above Bootstrap's own
+		     dynamic backdrop z-index bump for a second nested modal). */-->
+		<div class="modal fade" id="imageLightboxModal" tabindex="-1" aria-hidden="true" style="z-index:1075;">
 			<div class="modal-dialog modal-dialog-centered modal-xl">
 				<div class="modal-content bg-dark border-0">
 					<button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" style="z-index:5;" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1065,6 +1081,13 @@
 								</a>
 								<span id="quoteReviewConfirmNoPdf" class="fs-sm text-danger d-none">No PDF selected.</span>
 							</div>
+							<!--/* Only the Respond modal has an "images" field - Create a
+							     Quote from chat doesn't, so this stays hidden there since
+							     the querySelector below just finds nothing. */-->
+							<div class="mt-2 mb-0 d-none" id="quoteReviewConfirmImagesRow">
+								<span class="fs-sm fw-semibold text-muted d-block mb-1">Additional Images</span>
+								<span id="quoteReviewConfirmImagesCount" class="fs-sm">-</span>
+							</div>
 						</div>
 						<div class="mb-0">
 							<div class="fs-sm fw-semibold text-muted mb-1">Your message</div>
@@ -1133,6 +1156,17 @@
 
 						var message = messageInput ? messageInput.value.trim() : '';
 						document.getElementById('quoteReviewConfirmMessage').textContent = message || 'No message added.';
+
+						var imagesInput = form.querySelector('input[name="images"]');
+						var imagesRow = document.getElementById('quoteReviewConfirmImagesRow');
+						if (imagesInput && imagesInput.files.length > 0) {
+							var count = imagesInput.files.length;
+							document.getElementById('quoteReviewConfirmImagesCount').textContent =
+								count + (count === 1 ? ' image' : ' images');
+							imagesRow.classList.remove('d-none');
+						} else {
+							imagesRow.classList.add('d-none');
+						}
 
 						activeSourceModal.hide();
 						confirmModal.show();

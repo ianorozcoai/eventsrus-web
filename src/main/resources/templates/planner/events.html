@@ -404,9 +404,15 @@
 
 												<th:block th:each="message : ${thread}">
 													<div class="d-flex mb-2" th:classappend="${message.senderUserId() == plannerUserId} ? 'justify-content-end' : 'justify-content-start'">
-														<div class="rounded-4 px-3 py-2" style="max-width:60%;white-space:pre-wrap;"
-															th:classappend="${message.senderUserId() == plannerUserId} ? 'bg-primary text-white' : 'bg-light'"
-															th:text="${message.body()}">Message body</div>
+														<div style="max-width:60%;">
+															<div class="rounded-4 px-3 py-2" style="white-space:pre-wrap;"
+																th:classappend="${message.senderUserId() == plannerUserId} ? 'bg-primary text-white' : 'bg-light'"
+																th:text="${message.body()}">Message body</div>
+															<a href="#" class="d-block mt-1 lightbox-trigger" th:if="${message.attachmentUrl() != null}"
+																th:attr="data-lightbox-src=${message.attachmentUrl()},data-lightbox-caption='Attached image',data-lightbox-group='conversation-' + ${selectedConversation.id()}">
+																<img th:src="${message.attachmentUrl()}" alt="Attached image" class="img-fluid rounded border" style="max-height:160px;">
+															</a>
+														</div>
 													</div>
 												</th:block>
 
@@ -416,14 +422,21 @@
 											</div>
 
 											<div class="border-top p-3">
-												<form th:action="@{/planner/events/{eventId}/conversations/{id}/reply(eventId=${selectedEvent.id()}, id=${selectedConversation.id()})}" method="post" class="d-flex align-items-center gap-2">
-													<input type="text" id="chatReplyInput" name="body" class="form-control rounded-pill" placeholder="Type a message..." required>
-													<button type="button" class="btn btn-light btn-icon rounded-circle flex-shrink-0 voice-input-btn" data-target-input="chatReplyInput" title="Speak instead of typing">
-														<i class="ph-microphone"></i>
-													</button>
-													<button type="submit" class="btn btn-primary btn-icon rounded-circle flex-shrink-0">
-														<i class="ph-paper-plane-tilt"></i>
-													</button>
+												<form th:action="@{/planner/events/{eventId}/conversations/{id}/reply(eventId=${selectedEvent.id()}, id=${selectedConversation.id()})}" method="post" enctype="multipart/form-data" class="planner-chat-reply-form">
+													<div class="d-flex align-items-center gap-2">
+														<input type="text" id="chatReplyInput" name="body" class="form-control rounded-pill" placeholder="Type a message..." required>
+														<button type="button" class="btn btn-light btn-icon rounded-circle flex-shrink-0 voice-input-btn" data-target-input="chatReplyInput" title="Speak instead of typing">
+															<i class="ph-microphone"></i>
+														</button>
+														<label class="btn btn-flat-secondary btn-icon rounded-circle flex-shrink-0 mb-0" title="Attach an image">
+															<i class="ph-paperclip"></i>
+															<input type="file" name="attachment" accept="image/png,image/jpeg" class="d-none planner-chat-reply-attachment">
+														</label>
+														<button type="submit" class="btn btn-primary btn-icon rounded-circle flex-shrink-0">
+															<i class="ph-paper-plane-tilt"></i>
+														</button>
+													</div>
+													<div class="fs-sm text-muted mt-1 planner-chat-reply-attachment-name d-none"></div>
 												</form>
 											</div>
 
@@ -460,6 +473,10 @@
 								<div th:if="${quotationRevised}" class="alert alert-success alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 									Revision request sent to the vendor - they'll send an updated quotation.
+								</div>
+								<div th:if="${attachmentSent}" class="alert alert-success alert-dismissible">
+									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+									Attachment sent to the vendor.
 								</div>
 								<div th:if="${bookingsError}" class="alert alert-danger alert-dismissible">
 									<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -500,10 +517,18 @@
 													</td>
 													<td>
 														<a th:if="${quotation.pdfUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
-															th:attr="data-lightbox-src=${quotation.pdfUrl()},data-lightbox-caption='Quote v' + ${quotation.version()} + ' - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()}">
+															th:attr="data-lightbox-src=${quotation.pdfUrl()},data-lightbox-caption='Quote v' + ${quotation.version()} + ' - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-pdf'">
 															<i class="ph-file-pdf me-1"></i> View
 														</a>
 														<span th:if="${quotation.pdfUrl() == null}" class="text-muted fs-sm">Not sent yet</span>
+														<!--/* Supplementary photos the vendor attached alongside their
+														     PDF (see QuotationService#respondWithPdf) - its own
+														     one-off group, no Prev/Next into the PDF above or
+														     anything else. */-->
+														<a th:if="${not #lists.isEmpty(quotation.responseImageUrls())}" href="#" class="btn btn-light btn-sm ms-1 lightbox-trigger"
+															th:attr="data-lightbox-src=${quotation.responseImageUrls().get(0)},data-lightbox-caption='Vendor images - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-resp-menu'">
+															<i class="ph-image me-1"></i> Images
+														</a>
 													</td>
 													<td class="text-end">
 														<!--/* One action menu instead of a growing row of buttons - see
@@ -550,6 +575,13 @@
 																	<i class="ph-clock-counter-clockwise me-2"></i>
 																	History
 																</button>
+																<!-- Also always available - a free-standing attachment
+																     (see QuotationService#addAttachment) has no status
+																     prerequisite, unlike every other action here. -->
+																<button type="button" class="dropdown-item" data-bs-toggle="modal" th:attr="data-bs-target='#sendAttachmentModal-' + ${quotation.id()}">
+																	<i class="ph-paperclip me-2"></i>
+																	Send Attachment
+																</button>
 															</div>
 														</div>
 													</td>
@@ -591,7 +623,7 @@
 													<label class="form-label">Which version would you like to accept?</label>
 													<div class="border rounded p-3 mb-2"
 														th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}"
-														th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, historyEntry.toStatus().name())}">
+														th:if="${historyEntry.entryType().name() == 'STATUS_CHANGE' and #sets.contains({'QUOTE_SENT','REVISION_SENT'}, historyEntry.toStatus().name())}">
 														<div class="form-check">
 															<input class="form-check-input accept-version-radio" type="radio" name="acceptedVersion"
 																th:id="'acceptVersion-' + ${quotation.id()} + '-' + ${historyEntry.version()}"
@@ -613,7 +645,7 @@
 															</label>
 														</div>
 														<a th:if="${historyEntry.pdfUrl() != null}" href="#" class="fs-sm ms-4 lightbox-trigger"
-															th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()}">
+															th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${quotation.vendorBusinessName()},data-lightbox-group='quotation-' + ${quotation.id()} + '-version-' + ${historyEntry.id()}">
 															<i class="ph-file-pdf me-1"></i> View this version's PDF
 														</a>
 													</div>
@@ -769,7 +801,7 @@
 								<div class="modal fade" th:each="quotation : ${quotations}" th:if="${#sets.contains({'QUOTE_SENT','REVISION_SENT'}, quotation.status().name())}" th:id="'reviseQuotationModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
 									<div class="modal-dialog modal-dialog-centered">
 										<div class="modal-content">
-											<form th:action="@{/planner/events/{eventId}/quotations/{id}/revise(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/revise(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
 												<div class="modal-header">
 													<h5 class="modal-title" th:text="'Request Revision - ' + ${quotation.vendorBusinessName()}">Request Revision</h5>
 													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -780,9 +812,14 @@
 														<label class="form-label">Target date <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
 														<input type="date" name="targetDate" th:value="${quotation.targetDate()}" class="form-control">
 													</div>
-													<div class="mb-0">
+													<div class="mb-3">
 														<label class="form-label">What would you like changed?</label>
 														<textarea name="message" rows="3" class="form-control" placeholder="e.g., Please drop the photobooth package and add catering for 100 guests instead." required></textarea>
+													</div>
+													<div class="mb-0">
+														<label class="form-label">Reference Images <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<input type="file" name="images" multiple accept="image/png,image/jpeg" class="form-control mb-1">
+														<div class="fs-sm text-muted">Show what you have in mind - up to 5 images.</div>
 													</div>
 												</div>
 												<div class="modal-footer">
@@ -841,9 +878,10 @@
 											<div class="modal-body">
 												<div th:each="historyEntry : ${historyByQuotationId.get(quotation.id())}" class="d-flex mb-3 pb-3 border-bottom">
 													<div class="flex-shrink-0 me-3">
-														<span class="badge"
+														<span class="badge" th:if="${historyEntry.entryType().name() == 'STATUS_CHANGE'}"
 															th:classappend="${historyEntry.toStatus().name() == 'BOOKED'} ? 'bg-success' : (${historyEntry.toStatus().name() == 'CANCELLED'} ? 'bg-danger' : (${historyEntry.toStatus().name() == 'DECLINED' or historyEntry.toStatus().name() == 'PAYMENT_REJECTED'} ? 'bg-secondary' : (${historyEntry.toStatus().name() == 'QUOTE_SENT' or historyEntry.toStatus().name() == 'REVISION_SENT'} ? 'bg-info' : (${historyEntry.toStatus().name() == 'PENDING_DEPOSIT' or historyEntry.toStatus().name() == 'PAYMENT_REVIEW'} ? 'bg-primary' : 'bg-warning'))))"
 															th:text="${historyEntry.toStatus()}">STATUS</span>
+														<span class="badge bg-light text-dark" th:if="${historyEntry.entryType().name() == 'ATTACHMENT'}">Attachment</span>
 													</div>
 													<div class="flex-grow-1">
 														<div class="fs-sm text-muted mb-1">
@@ -875,22 +913,53 @@
 														<div th:if="${not #lists.isEmpty(historyEntry.packageNames()) and not #sets.contains({'QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT','QUOTE_ACCEPTED','BOOKED'}, historyEntry.toStatus().name())}" class="mb-1">
 															<span class="badge bg-secondary me-1" th:each="packageName : ${historyEntry.packageNames()}" th:text="${packageName}">Package</span>
 														</div>
-														<!--/* One-off lightbox group per history row (see the same
-														     pattern and reasoning on vendor/quotations.html's copy of
-														     this History modal) - the lightbox only shows Prev/Next
-														     when a group has more than one member, so a group of
-														     exactly one keeps this to just this row's own file. */-->
+														<!--/* Reference/response images aren't snapshotted per version
+														     the way the PDF is (see QuotationService#requestQuotation/
+														     respondWithPdf) - they belong to the quotation as a whole,
+														     split only by side. Showing them here - reference images on
+														     the original ask, same as packages above, and response
+														     images alongside whichever entry carries that response's
+														     PDF - is the closest honest mapping onto this per-version
+														     list without implying a precision the data doesn't have. */-->
+														<div th:if="${historyEntry.entryType().name() == 'STATUS_CHANGE' and not #lists.isEmpty(quotation.referenceImageUrls()) and not #sets.contains({'QUOTE_SENT','REVISION_REQUESTED','REVISION_SENT','QUOTE_ACCEPTED','BOOKED'}, historyEntry.toStatus().name())}" class="d-flex flex-wrap gap-1 mb-1">
+															<a th:each="imgUrl, imgStat : ${quotation.referenceImageUrls()}" href="#" class="lightbox-trigger"
+																th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Reference image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-ref-' + ${imgStat.count}">
+																<img th:src="${imgUrl}" alt="Reference image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+															</a>
+														</div>
+														<!--/* A free-standing attachment (see QuotationService#addAttachment). */-->
+														<a th:if="${historyEntry.entryType().name() == 'ATTACHMENT' and historyEntry.attachmentFileType() == 'PDF'}" href="#" class="btn btn-light btn-sm lightbox-trigger"
+															th:attr="data-lightbox-src=${historyEntry.attachmentUrl()},data-lightbox-caption='Attachment - ' + ${historyEntry.changedByName()},data-lightbox-group='history-' + ${historyEntry.id()} + '-attachment'">
+															<i class="ph-file-pdf me-1"></i> View Attachment
+														</a>
+														<div th:if="${historyEntry.entryType().name() == 'ATTACHMENT' and historyEntry.attachmentFileType() == 'IMAGE'}" class="d-flex flex-wrap gap-1 mb-1">
+															<a href="#" class="lightbox-trigger"
+																th:attr="data-lightbox-src=${historyEntry.attachmentUrl()},data-lightbox-caption='Attachment - ' + ${historyEntry.changedByName()},data-lightbox-group='history-' + ${historyEntry.id()} + '-attachment'">
+																<img th:src="${historyEntry.attachmentUrl()}" alt="Attachment" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+															</a>
+														</div>
+														<!-- Each of these gets its own one-off lightbox group
+														     (keyed by this history row's id plus a role/index
+														     suffix - see the same pattern on vendor/quotations.html's
+														     copy of this History modal) so nothing on this row
+														     shares navigation with anything else. -->
 														<a th:if="${historyEntry.pdfUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
-															th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${historyEntry.toStatus()},data-lightbox-group='history-' + ${historyEntry.id()}">
+															th:attr="data-lightbox-src=${historyEntry.pdfUrl()},data-lightbox-caption='v' + ${historyEntry.version()} + ' - ' + ${historyEntry.toStatus()},data-lightbox-group='history-' + ${historyEntry.id()} + '-pdf'">
 															<i class="ph-file-pdf me-1"></i>
 															<span th:text="${historyEntry.toStatus().name() == 'QUOTE_ACCEPTED'} ? 'View Accepted Quote' : 'View this version\'s PDF'">View this version's PDF</span>
 														</a>
+														<div th:if="${not #lists.isEmpty(quotation.responseImageUrls()) and historyEntry.pdfUrl() != null}" class="d-flex flex-wrap gap-1 mt-1 mb-1">
+															<a th:each="imgUrl, imgStat : ${quotation.responseImageUrls()}" href="#" class="lightbox-trigger"
+																th:attr="data-lightbox-src=${imgUrl},data-lightbox-caption='Vendor image ' + ${imgStat.count},data-lightbox-group='history-' + ${historyEntry.id()} + '-resp-' + ${imgStat.count}">
+																<img th:src="${imgUrl}" alt="Vendor image" class="rounded border" style="width:48px;height:48px;object-fit:cover;">
+															</a>
+														</div>
 														<a th:if="${historyEntry.paymentScreenshotUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
-															th:attr="data-lightbox-src=${historyEntry.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()}">
+															th:attr="data-lightbox-src=${historyEntry.paymentScreenshotUrl()},data-lightbox-caption='Payment screenshot - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()} + '-payment'">
 															<i class="ph-image me-1"></i> View Payment
 														</a>
 														<a th:if="${historyEntry.invoiceUrl() != null}" href="#" class="btn btn-light btn-sm lightbox-trigger"
-															th:attr="data-lightbox-src=${historyEntry.invoiceUrl()},data-lightbox-caption='Invoice - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()}">
+															th:attr="data-lightbox-src=${historyEntry.invoiceUrl()},data-lightbox-caption='Invoice - v' + ${historyEntry.version()},data-lightbox-group='history-' + ${historyEntry.id()} + '-invoice'">
 															<i class="ph-file-text me-1"></i> View Invoice
 														</a>
 													</div>
@@ -904,6 +973,41 @@
 									</div>
 								</div>
 								<!-- /per-quotation "Version History" modals -->
+
+								<!-- Per-quotation "Send Attachment" modals - a free-standing
+								     image/PDF, no status prerequisite (see
+								     QuotationService#addAttachment). -->
+								<div class="modal fade" th:each="quotation : ${quotations}" th:id="'sendAttachmentModal-' + ${quotation.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered">
+										<div class="modal-content">
+											<form th:action="@{/planner/events/{eventId}/quotations/{id}/attachments(eventId=${selectedEvent.id()}, id=${quotation.id()})}" method="post" enctype="multipart/form-data">
+												<div class="modal-header">
+													<h5 class="modal-title" th:text="'Send Attachment - ' + ${quotation.vendorBusinessName()}">Send Attachment</h5>
+													<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+												</div>
+												<div class="modal-body">
+													<p class="text-muted fs-sm">Share a photo or document with <span th:text="${quotation.vendorBusinessName()}">the vendor</span> anytime - this doesn't change the quotation's status.</p>
+													<div class="mb-3">
+														<label class="form-label">File</label>
+														<input type="file" name="file" accept="image/png,image/jpeg,application/pdf" class="form-control" required>
+													</div>
+													<div class="mb-0">
+														<label class="form-label">Message <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+														<textarea name="message" rows="2" class="form-control" placeholder="e.g., Here's a reference photo of what I have in mind."></textarea>
+													</div>
+												</div>
+												<div class="modal-footer">
+													<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+													<button type="button" class="btn btn-primary send-attachment-review-btn">
+														<i class="ph-paper-plane-tilt me-2"></i>
+														Send Attachment
+													</button>
+												</div>
+											</form>
+										</div>
+									</div>
+								</div>
+								<!-- /per-quotation "Send Attachment" modals -->
 
 							</div>
 							<!-- /quotations -->
@@ -1720,6 +1824,26 @@
 	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
 	<div th:replace="~{fragments/common :: genericConfirmModal}"></div>
 
+	<!-- Chat reply attachment - shows the picked filename under the reply
+	     box, since a bare file input has no visible feedback once it's
+	     hidden behind the paperclip icon button. -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('.planner-chat-reply-attachment').forEach(function (input) {
+				var nameEl = input.closest('form').querySelector('.planner-chat-reply-attachment-name');
+				input.addEventListener('change', function () {
+					if (input.files && input.files[0]) {
+						nameEl.textContent = 'Attached: ' + input.files[0].name;
+						nameEl.classList.remove('d-none');
+					} else {
+						nameEl.classList.add('d-none');
+					}
+				});
+			});
+		});
+	</script>
+	<!-- /chat reply attachment -->
+
 	<!-- Review-before-submit for the remaining planner-side quotation/booking
 	     actions that don't already have their own dedicated confirm modal
 	     (Accept Quote above has its own, richer one). -->
@@ -1749,6 +1873,10 @@
 					rows.push({ label: 'Target date', value: parsed.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) });
 				}
 				rows.push({ label: 'What would you like changed?', value: form.querySelector('[name="message"]').value.trim() });
+				var imagesInput = form.querySelector('[name="images"]');
+				if (imagesInput && imagesInput.files.length > 0) {
+					rows.push({ label: 'Reference images', value: imagesInput.files.length + (imagesInput.files.length === 1 ? ' image' : ' images') });
+				}
 				return {
 					title: 'Send Revision Request',
 					intro: 'This sends the quotation back to the vendor for an updated quote.',
@@ -1756,6 +1884,26 @@
 					confirmLabel: 'Send Revision Request',
 					confirmClass: 'btn-outline-secondary',
 					confirmIcon: 'ph-pencil-simple'
+				};
+			});
+
+			window.armConfirmSubmitButtons('.send-attachment-review-btn', function (btn, form) {
+				var rows = [];
+				var file = form.querySelector('[name="file"]').files[0];
+				if (file) {
+					rows.push({ label: 'File', file: file });
+				}
+				var message = form.querySelector('[name="message"]').value.trim();
+				if (message) {
+					rows.push({ label: 'Message', value: message });
+				}
+				return {
+					title: 'Send Attachment',
+					intro: 'The vendor will see this right away - the quotation\'s status won\'t change.',
+					rows: rows,
+					confirmLabel: 'Send Attachment',
+					confirmClass: 'btn-primary',
+					confirmIcon: 'ph-paper-plane-tilt'
 				};
 			});
 

@@ -120,21 +120,72 @@
 							     script at the bottom of this page), same as the per-package
 							     thumbnails further down - clicking any photo on this whole
 							     page opens one continuous left/right browsing session across
-							     all of them, not scoped to just this section. -->
+							     all of them, not scoped to just this section.
+							     Filter tabs mirror every tag the vendor has CREATED
+							     (availableImageTags - see VendorDirectoryService), not just
+							     ones currently applied to a photo, so a freshly-created tag
+							     gets its own tab right away, empty until tagged. A vendor
+							     with no tags at all keeps today's exact plain-grid behavior
+							     unchanged; see VendorController for the pre-filtered
+							     imagesByTag map. -->
 							<div class="card mb-3">
-								<div class="card-header">
+								<div class="card-header" th:if="${not #lists.isEmpty(profile.galleryImages()) and not #lists.isEmpty(profile.availableImageTags())}">
+									<h6 class="mb-2">Gallery</h6>
+									<ul class="nav nav-tabs card-header-tabs" role="tablist">
+										<li class="nav-item">
+											<a href="#tab-gallery-all" class="nav-link active" data-bs-toggle="tab" role="tab">All</a>
+										</li>
+										<li class="nav-item" th:each="tag : ${profile.availableImageTags()}">
+											<a href="#" th:href="'#tab-gallery-' + ${#strings.replace(tag, ' ', '-')}" class="nav-link" data-bs-toggle="tab" role="tab" th:text="${tag}">Tag</a>
+										</li>
+									</ul>
+								</div>
+								<div class="card-header" th:if="${#lists.isEmpty(profile.galleryImages()) or #lists.isEmpty(profile.availableImageTags())}">
 									<h6 class="mb-0">Gallery</h6>
 								</div>
 								<div class="card-body text-center py-5" th:if="${#lists.isEmpty(profile.galleryImages())}">
 									<i class="ph-image ph-3x text-muted mb-3 d-block"></i>
 									<p class="text-muted mb-0">No photos yet.</p>
 								</div>
-								<div class="card-body" th:if="${not #lists.isEmpty(profile.galleryImages())}">
+								<!-- Plain grid - unchanged from before tags existed - shown
+								     whenever there are photos but the vendor hasn't created any
+								     tags at all yet. -->
+								<div class="card-body" th:if="${not #lists.isEmpty(profile.galleryImages()) and #lists.isEmpty(profile.availableImageTags())}">
 									<div class="row g-3">
 										<div class="col-6 col-md-4" th:each="img : ${profile.galleryImages()}">
 											<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${img.caption()}">
 												<img th:src="${img.imageUrl()}" alt="Gallery photo" class="rounded w-100" style="height:130px;object-fit:cover;" loading="lazy">
 											</a>
+										</div>
+									</div>
+								</div>
+								<!-- Tabbed grid - "All" is always non-empty (this whole block
+								     only renders once galleryImages itself is non-empty), but an
+								     individual tag's tab can genuinely have zero photos (created
+								     but not yet applied to anything), so it gets its own
+								     empty-state - same mutually-exclusive-content pattern already
+								     used for quotations.html/bookings.html's tabs. -->
+								<div class="card-body tab-content" th:if="${not #lists.isEmpty(profile.galleryImages()) and not #lists.isEmpty(profile.availableImageTags())}">
+									<div class="tab-pane fade show active" id="tab-gallery-all" role="tabpanel">
+										<div class="row g-3">
+											<div class="col-6 col-md-4" th:each="img : ${profile.galleryImages()}">
+												<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${img.caption()}">
+													<img th:src="${img.imageUrl()}" alt="Gallery photo" class="rounded w-100" style="height:130px;object-fit:cover;" loading="lazy">
+												</a>
+											</div>
+										</div>
+									</div>
+									<div class="tab-pane fade" th:each="tag : ${profile.availableImageTags()}" th:id="'tab-gallery-' + ${#strings.replace(tag, ' ', '-')}" role="tabpanel">
+										<div class="row g-3" th:if="${not #lists.isEmpty(imagesByTag.get(tag))}">
+											<div class="col-6 col-md-4" th:each="img : ${imagesByTag.get(tag)}">
+												<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${img.caption()}">
+													<img th:src="${img.imageUrl()}" alt="Gallery photo" class="rounded w-100" style="height:130px;object-fit:cover;" loading="lazy">
+												</a>
+											</div>
+										</div>
+										<div class="text-center py-5" th:if="${#lists.isEmpty(imagesByTag.get(tag))}">
+											<i class="ph-image ph-3x text-muted mb-3 d-block"></i>
+											<p class="text-muted mb-0">No photos tagged with <span th:text="${tag}">this</span> yet.</p>
 										</div>
 									</div>
 								</div>
@@ -436,7 +487,7 @@
 										</button>
 									</div>
 
-									<form th:if="${isOwnStorefront or (plannerLoggedIn and eventId != null)}" th:action="@{/vendor/storefront/quotation-request}" th:object="${quotationRequestForm}" method="post">
+									<form th:if="${isOwnStorefront or (plannerLoggedIn and eventId != null)}" th:action="@{/vendor/storefront/quotation-request}" th:object="${quotationRequestForm}" method="post" enctype="multipart/form-data">
 										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
 										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
 										<input type="hidden" name="vendorUserId" th:value="${profile.vendorUserId()}">
@@ -460,6 +511,11 @@
 										<div class="mb-4">
 											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Details &amp; Specifications</label>
 											<textarea th:field="*{message}" rows="3" class="form-control bg-light border-0 px-3 py-2" style="border-radius:16px;" placeholder="Tell us about your event, guest count, and any special requests..." required></textarea>
+										</div>
+										<div class="mb-4">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Reference Images <span class="fw-normal normal-case">(Optional)</span></label>
+											<input type="file" name="referenceImages" multiple accept="image/png,image/jpeg" class="form-control bg-light border-0 px-3 py-2">
+											<div class="fs-sm text-muted mt-1">Show your vendor exactly what you're picturing - up to 5 images.</div>
 										</div>
 										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 										<button type="submit" class="btn w-100 fw-bold text-uppercase text-white py-3" style="background-color:#ff6b35;border-radius:50px;letter-spacing:.5px;" th:disabled="${isOwnStorefront}">
@@ -492,7 +548,7 @@
 										</button>
 									</div>
 
-									<form th:if="${isOwnStorefront or (plannerLoggedIn and eventId != null)}" th:action="@{/vendor/storefront/inquiry}" th:object="${inquiryForm}" method="post">
+									<form th:if="${isOwnStorefront or (plannerLoggedIn and eventId != null)}" th:action="@{/vendor/storefront/inquiry}" th:object="${inquiryForm}" method="post" enctype="multipart/form-data">
 										<input type="hidden" name="redirectSlug" th:if="${redirectSlug != null}" th:value="${redirectSlug}">
 										<input type="hidden" name="eventId" th:if="${eventId != null}" th:value="${eventId}">
 										<input type="hidden" name="vendorUserId" th:value="${profile.vendorUserId()}">
@@ -507,6 +563,10 @@
 										<div class="mb-4">
 											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Message</label>
 											<textarea th:field="*{message}" rows="3" class="form-control px-3 py-2" style="border-radius:16px;" placeholder="Ask a quick question..." required></textarea>
+										</div>
+										<div class="mb-4">
+											<label class="form-label text-uppercase fs-sm fw-semibold text-muted">Attach an Image <span class="fw-normal normal-case">(Optional)</span></label>
+											<input type="file" name="attachment" accept="image/png,image/jpeg" class="form-control px-3 py-2">
 										</div>
 										<p class="text-muted fs-sm mb-3">Payment for any services is handled directly between you and the vendor. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 										<button type="submit" class="btn btn-dark w-100 fw-bold text-uppercase py-3" style="border-radius:50px;letter-spacing:.5px;" th:disabled="${isOwnStorefront}">

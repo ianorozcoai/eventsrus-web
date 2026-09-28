@@ -546,6 +546,7 @@ public class PlannerController {
             @PathVariable Long quotationId,
             @RequestParam String message,
             @RequestParam(required = false) LocalDate targetDate,
+            @RequestParam(required = false) List<MultipartFile> images,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         if (message == null || message.isBlank()) {
@@ -555,8 +556,33 @@ public class PlannerController {
             return "redirect:/planner/events";
         }
         try {
-            backendClient.reviseQuotation(WebSession.token(session), quotationId, targetDate, message, null);
+            backendClient.reviseQuotation(WebSession.token(session), quotationId, targetDate, message, null, images);
             redirectAttributes.addFlashAttribute("quotationRevised", true);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
+        }
+        redirectAttributes.addAttribute("eventId", eventId);
+        redirectAttributes.addAttribute("tab", "quotations");
+        return "redirect:/planner/events";
+    }
+
+    @PostMapping("/{eventId}/quotations/{quotationId}/attachments")
+    public String addQuotationAttachment(
+            @PathVariable Long eventId,
+            @PathVariable Long quotationId,
+            @RequestParam MultipartFile file,
+            @RequestParam(required = false) String message,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (file == null || file.isEmpty()) {
+            redirectAttributes.addFlashAttribute("bookingsError", "A file is required to send an attachment.");
+            redirectAttributes.addAttribute("eventId", eventId);
+            redirectAttributes.addAttribute("tab", "quotations");
+            return "redirect:/planner/events";
+        }
+        try {
+            backendClient.sendQuotationAttachment(WebSession.token(session), quotationId, file, message);
+            redirectAttributes.addFlashAttribute("attachmentSent", true);
         } catch (BackendApiException e) {
             redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
         }
@@ -662,13 +688,14 @@ public class PlannerController {
             @PathVariable Long eventId,
             @PathVariable Long conversationId,
             @RequestParam String body,
+            @RequestParam(required = false) MultipartFile attachment,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         if (body == null || body.isBlank()) {
             redirectAttributes.addFlashAttribute("bookingsError", "A message is required.");
         } else {
             try {
-                backendClient.replyToConversation(WebSession.token(session), conversationId, body);
+                backendClient.replyToConversation(WebSession.token(session), conversationId, body, attachment);
                 redirectAttributes.addFlashAttribute("replySent", true);
             } catch (BackendApiException e) {
                 redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());

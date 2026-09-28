@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/common :: head('Gallery - EventsRUs')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/common :: topnavbar}"></div>
+	<div th:replace="~{fragments/common :: paywallModal}"></div>
+	<div th:replace="~{fragments/common :: gcashRejectedModal}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/common :: sidebar('gallery')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Gallery</h4>
+						</div>
+					</div>
+
+					<div class="page-header-content d-lg-flex border-top">
+						<div class="d-flex">
+							<div class="breadcrumb py-2">
+								<a th:href="@{/vendor/dashboard}" class="breadcrumb-item"><i class="ph-house"></i></a>
+								<span class="breadcrumb-item active">Gallery</span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+
+				<!-- Content area -->
+				<div class="content">
+
+					<!-- Tags - vendor-created labels, multiple per image, surfaced as
+					     filter tabs on the public storefront (see
+					     VendorDirectoryService#getPublicProfile). Deleting one only
+					     removes the association, never the photos. -->
+					<div class="card mb-3">
+						<div class="card-header">
+							<h6 class="mb-0">Tags</h6>
+						</div>
+						<div class="card-body">
+							<p class="text-muted fs-sm mb-3">Create tags and apply them to your photos below - planners can then filter your storefront gallery by tag.</p>
+							<div class="d-flex flex-wrap gap-2 mb-3" id="imageTagsGrid" th:classappend="${#lists.isEmpty(imageTags)} ? 'd-none'">
+								<span class="badge bg-purple text-white d-inline-flex align-items-center gap-2 py-2 px-3" th:each="tag : ${imageTags}" th:attr="data-tag-id=${tag.id()}">
+									<span th:text="${tag.name()}">Tag</span>
+									<button type="button" class="btn-close btn-close-white image-tag-delete-btn" style="font-size:0.6rem;" th:attr="data-tag-id=${tag.id()},data-tag-name=${tag.name()}" aria-label="Delete tag"></button>
+								</span>
+							</div>
+							<p class="text-muted fs-sm mb-3" id="imageTagsEmpty" th:classappend="${not #lists.isEmpty(imageTags)} ? 'd-none'">No tags yet - add one below.</p>
+							<!--/* autocomplete="off" - without it, Chrome/Firefox restore
+							     this field's last-typed value on the reload that follows
+							     a successful add (see the script below), making it look
+							     like the tag never actually got created even though it
+							     did (already in the chip list above by then). */-->
+							<form id="addTagForm" class="d-flex gap-2" style="max-width:360px;">
+								<input type="text" name="name" class="form-control" placeholder="e.g., Weddings" maxlength="50" autocomplete="off" required>
+								<button type="submit" class="btn btn-primary text-nowrap">
+									<i class="ph-plus me-1"></i> Add Tag
+								</button>
+							</form>
+						</div>
+					</div>
+					<!-- /tags -->
+
+					<!-- Storefront Gallery - standalone sample-work photos, not tied
+					     to any package (see backend VendorGalleryPhotoService).
+					     Combined with every package's own photos into the same
+					     single Gallery section a planner sees on the storefront
+					     (VendorDirectoryService#getPublicProfile) - a vendor whose
+					     packages don't have much to hang photos off of can still
+					     showcase their work here. Upload is immediate. Moved here
+					     from Account Settings, since this page is now the one home
+					     for every image a vendor has, package photos included. -->
+					<div class="card mb-3">
+						<div class="card-header">
+							<h6 class="mb-0">Add Photos</h6>
+						</div>
+						<div class="card-body">
+							<p class="text-muted fs-sm mb-3">Sample-work photos for your storefront that aren't tied to a specific package - shown together with your package photos below and on your storefront.</p>
+							<p class="fs-sm mb-3" th:classappend="${galleryPhotoLimit.used() >= galleryPhotoLimit.limit()} ? 'text-danger' : 'text-muted'">
+								<span th:text="${galleryPhotoLimit.used()}">0</span> of <span th:text="${galleryPhotoLimit.limit()}">20</span> standalone photos used.
+							</p>
+							<div class="dropzone" id="galleryPhotosDropzone" th:if="${galleryPhotoLimit.used() &lt; galleryPhotoLimit.limit()}"></div>
+							<div class="alert alert-warning mb-0" th:if="${galleryPhotoLimit.used() >= galleryPhotoLimit.limit()}">
+								You've reached your standalone photo limit. Delete a photo below to add a new one.
+							</div>
+							<div class="fs-sm text-muted mt-1" th:if="${galleryPhotoLimit.used() &lt; galleryPhotoLimit.limit()}">PNG or JPEG only. Uploaded right away.</div>
+						</div>
+					</div>
+					<!-- /add photos -->
+
+					<!-- Every image a vendor has - standalone gallery photos and
+					     every package's own photos, combined (see
+					     VendorImageTagService#listAllTaggableImages). Package
+					     photos are tag-editable here but only uploadable/deletable
+					     from the Packages page itself - this page isn't where
+					     their lifecycle is managed, just where they're organized. -->
+					<div class="card">
+						<div class="card-header d-flex align-items-center flex-wrap gap-2">
+							<h6 class="mb-0">All Images</h6>
+							<!--/* Client-side only - every image's tag ids are already in the
+							     DOM (data-tag-ids below), so this is a plain show/hide filter,
+							     no round trip needed. One dropdown rather than a separate
+							     "untagged only" checkbox - filtering to "Untagged" and to a
+							     specific tag are mutually exclusive by definition (no photo is
+							     both untagged and carries that tag), so a single control avoids
+							     a contradictory combined state. */-->
+							<div class="d-flex align-items-center gap-2 ms-auto" th:if="${not #lists.isEmpty(taggableImages)}">
+								<label for="imageTagFilter" class="form-label mb-0 fs-sm text-muted text-nowrap">Filter by:</label>
+								<select class="form-select form-select-sm" id="imageTagFilter" style="max-width:220px;">
+									<option value="">All Images</option>
+									<option value="untagged">Untagged only</option>
+									<option th:each="tag : ${imageTags}" th:value="${tag.id()}" th:text="${tag.name()}">Tag</option>
+								</select>
+							</div>
+						</div>
+						<div class="card-body text-center py-5" id="taggableImagesEmpty" th:if="${#lists.isEmpty(taggableImages)}">
+							<i class="ph-image ph-3x text-muted mb-3 d-block"></i>
+							<p class="text-muted mb-0">No images yet. Add photos above, or attach photos to a package.</p>
+						</div>
+						<div class="card-body" th:if="${not #lists.isEmpty(taggableImages)}">
+							<p class="text-muted fs-sm mb-3 d-none" id="noFilteredImages">No photos match this filter.</p>
+							<div class="row g-3" id="taggableImagesGrid">
+								<div class="col-lg-3 col-md-4 col-6" th:each="img : ${taggableImages}" th:attr="data-tag-ids=${#strings.listJoin(img.tags().![id()], ',') ?: ''}">
+									<div class="border rounded p-2 h-100 d-flex flex-column">
+										<a href="#" class="d-block lightbox-trigger mb-2"
+											th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${img.caption() != null ? img.caption() : 'Photo'}">
+											<img th:src="${img.imageUrl()}" alt="Photo" class="img-fluid rounded" style="height:110px;width:100%;object-fit:cover;">
+										</a>
+										<div class="fs-sm text-muted mb-1" th:text="${img.source().name() == 'PACKAGE'} ? ('Package: ' + ${img.packageName()}) : 'Standalone photo'">Source</div>
+										<div class="d-flex flex-wrap gap-1 mb-2 flex-grow-1">
+											<span class="badge bg-purple" th:each="tag : ${img.tags()}" th:text="${tag.name()}">Tag</span>
+										</div>
+										<div class="d-flex gap-1 mt-auto">
+											<!--/* Disabled rather than letting it open a modal with
+											     nothing to actually check - a vendor with no tags yet
+											     has nothing to edit here until they create one above. */-->
+											<button type="button" class="btn btn-purple btn-icon btn-sm edit-tags-btn"
+												th:disabled="${#lists.isEmpty(imageTags)}"
+												th:attr="title=${#lists.isEmpty(imageTags)} ? 'Create a tag above first' : 'Edit Tags',data-source=${img.source()},data-image-id=${img.id()},data-package-id=${img.packageId()},data-current-tag-ids=${#strings.listJoin(img.tags().![id()], ',') ?: ''}">
+												<i class="ph-tag"></i>
+											</button>
+											<button th:if="${img.source().name() == 'GALLERY'}" type="button" class="btn btn-danger btn-icon btn-sm gallery-photo-delete-btn"
+												title="Remove photo" th:attr="data-delete-url=@{'/vendor/gallery/photos/' + ${img.id()} + '/delete'}">
+												<i class="ph-x"></i>
+											</button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!-- /all images -->
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+	<!-- Edit Tags modal - one shared modal, populated via JS for whichever
+	     image's "Edit Tags" button was clicked, rather than one modal per
+	     image (a vendor could have dozens). -->
+	<div class="modal fade" id="editTagsModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Edit Tags</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted fs-sm" th:if="${#lists.isEmpty(imageTags)}">You haven't created any tags yet - add one above first.</p>
+					<div id="editTagsCheckboxes" class="d-flex flex-column gap-2">
+						<div class="form-check" th:each="tag : ${imageTags}">
+							<input class="form-check-input edit-tags-checkbox" type="checkbox" th:value="${tag.id()}" th:id="'editTagCheckbox-' + ${tag.id()}">
+							<label class="form-check-label" th:for="'editTagCheckbox-' + ${tag.id()}" th:text="${tag.name()}">Tag</label>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="editTagsSaveBtn">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /edit tags modal -->
+
+	<div th:replace="~{fragments/common :: imageLightbox}"></div>
+	<div th:replace="~{fragments/common :: confirmActionModal}"></div>
+	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
+
+	<!-- Confirmation toast - matches the sessionStorage-then-reload pattern
+	     every add/delete/save action on this page uses (each one reloads to
+	     reflect real, saved state, which wipes any in-memory banner). -->
+	<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2100;">
+		<div id="galleryToast" class="toast align-items-center bg-success text-white border-0" role="status" aria-live="polite" aria-atomic="true">
+			<div class="d-flex">
+				<div class="toast-body" id="galleryToastBody"></div>
+				<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+
+			// --- Filter by tag / untagged ---
+			var imageTagFilter = document.getElementById('imageTagFilter');
+			if (imageTagFilter) {
+				imageTagFilter.addEventListener('change', function () {
+					var mode = imageTagFilter.value;
+					var items = document.querySelectorAll('#taggableImagesGrid > div');
+					var visibleCount = 0;
+					items.forEach(function (item) {
+						var tagIds = (item.getAttribute('data-tag-ids') || '').split(',').filter(Boolean);
+						var matches = mode === '' || (mode === 'untagged' ? tagIds.length === 0 : tagIds.indexOf(mode) !== -1);
+						item.classList.toggle('d-none', !matches);
+						if (matches) { visibleCount++; }
+					});
+					document.getElementById('noFilteredImages').classList.toggle('d-none', visibleCount > 0 || mode === '');
+				});
+			}
+
+			function setToast(message) {
+				try { sessionStorage.setItem('galleryToastMessage', message); } catch (e) {}
+			}
+			function showToastNow(message, variant) {
+				var toastEl = document.getElementById('galleryToast');
+				toastEl.classList.remove('bg-success', 'bg-danger');
+				toastEl.classList.add(variant === 'danger' ? 'bg-danger' : 'bg-success');
+				document.getElementById('galleryToastBody').textContent = message;
+				bootstrap.Toast.getOrCreateInstance(toastEl).show();
+			}
+			var pending = null;
+			try {
+				pending = sessionStorage.getItem('galleryToastMessage');
+				if (pending) { sessionStorage.removeItem('galleryToastMessage'); }
+			} catch (e) { pending = null; }
+			if (pending) { showToastNow(pending, 'success'); }
+
+			// --- Add photo (Dropzone, immediate upload) ---
+			var dropzoneEl = document.getElementById('galleryPhotosDropzone');
+			if (dropzoneEl) {
+				var uploadCount = 0;
+				var errorShown = false;
+				var dropzone = new Dropzone('#galleryPhotosDropzone', {
+					url: '/vendor/gallery/photos',
+					paramName: 'image',
+					acceptedFiles: '.jpg,.jpeg,.png,image/jpeg,image/png',
+					addRemoveLinks: false,
+					dictDefaultMessage: 'Drop photos here <div>or CLICK</div>',
+					dictInvalidFileType: 'Only JPEG and PNG images are accepted.'
+				});
+				dropzone.on('addedfiles', function () { errorShown = false; });
+				dropzone.on('success', function () { uploadCount++; });
+				dropzone.on('error', function (file, response) {
+					var message = response && response.error ? response.error : 'Upload failed. Please try again.';
+					var errorEl = file.previewElement && file.previewElement.querySelector('.dz-error-message span');
+					if (errorEl) { errorEl.textContent = message; }
+					if (!errorShown) { errorShown = true; showToastNow(message, 'danger'); }
+				});
+				dropzone.on('queuecomplete', function () {
+					if (uploadCount > 0) {
+						setToast(uploadCount === 1 ? 'Photo added to your gallery.' : uploadCount + ' photos added to your gallery.');
+						window.location.reload();
+					}
+				});
+			}
+
+			// --- Delete a standalone gallery photo ---
+			document.querySelectorAll('.gallery-photo-delete-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') { return; }
+					window.confirmAction('Remove this photo permanently? This cannot be undone.', function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner('Removing…');
+						fetch(btn.getAttribute('data-delete-url'), { method: 'POST' })
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) { throw new Error(result.body.error || 'Could not remove this photo. Please try again.'); }
+								setToast('Photo removed from your gallery.');
+								window.location.reload();
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+
+			// --- Add tag ---
+			var addTagForm = document.getElementById('addTagForm');
+			if (addTagForm) {
+				addTagForm.addEventListener('submit', function (e) {
+					e.preventDefault();
+					var name = addTagForm.querySelector('[name="name"]').value.trim();
+					if (!name) { return; }
+					window.showPageSpinner('Adding tag…');
+					fetch('/vendor/gallery/tags', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: 'name=' + encodeURIComponent(name)
+					})
+						.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+						.then(function (result) {
+							if (!result.ok) { throw new Error(result.body.error || 'Could not add this tag. Please try again.'); }
+							setToast('Tag added.');
+							window.location.reload();
+						})
+						.catch(function (err) {
+							window.hidePageSpinner();
+							alert(err.message || 'Could not reach the server. Please try again.');
+						});
+				});
+			}
+
+			// --- Delete tag ---
+			document.querySelectorAll('.image-tag-delete-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') { return; }
+					var tagName = btn.getAttribute('data-tag-name');
+					window.confirmAction('Delete the tag "' + tagName + '"? This removes it from every photo it\'s applied to - the photos themselves are untouched.', function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner('Deleting tag…');
+						fetch('/vendor/gallery/tags/' + btn.getAttribute('data-tag-id') + '/delete', { method: 'POST' })
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) { throw new Error(result.body.error || 'Could not delete this tag. Please try again.'); }
+								setToast('Tag deleted.');
+								window.location.reload();
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+
+			// --- Edit tags on an image (shared modal) ---
+			var editTagsModalEl = document.getElementById('editTagsModal');
+			var editTagsModal = bootstrap.Modal.getOrCreateInstance(editTagsModalEl);
+			var activeImage = null;
+
+			document.querySelectorAll('.edit-tags-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					activeImage = {
+						source: btn.getAttribute('data-source'),
+						imageId: btn.getAttribute('data-image-id'),
+						packageId: btn.getAttribute('data-package-id')
+					};
+					var currentIds = (btn.getAttribute('data-current-tag-ids') || '').split(',').filter(Boolean);
+					document.querySelectorAll('.edit-tags-checkbox').forEach(function (checkbox) {
+						checkbox.checked = currentIds.indexOf(checkbox.value) !== -1;
+					});
+					editTagsModal.show();
+				});
+			});
+
+			document.getElementById('editTagsSaveBtn').addEventListener('click', function () {
+				if (!activeImage) { return; }
+				var tagIds = Array.from(document.querySelectorAll('.edit-tags-checkbox:checked')).map(function (c) { return c.value; });
+				var url = activeImage.source === 'PACKAGE'
+					? '/vendor/gallery/packages/' + activeImage.packageId + '/images/' + activeImage.imageId + '/tags'
+					: '/vendor/gallery/photos/' + activeImage.imageId + '/tags';
+				var params = tagIds.map(function (id) { return 'tagIds=' + encodeURIComponent(id); }).join('&');
+				window.showPageSpinner('Saving tags…');
+				fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+					.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+					.then(function (result) {
+						if (!result.ok) { throw new Error(result.body.error || 'Could not save tags. Please try again.'); }
+						setToast('Tags updated.');
+						window.location.reload();
+					})
+					.catch(function (err) {
+						window.hidePageSpinner();
+						alert(err.message || 'Could not reach the server. Please try again.');
+					});
+			});
+		});
+	</script>
+
+</body>
+</html>

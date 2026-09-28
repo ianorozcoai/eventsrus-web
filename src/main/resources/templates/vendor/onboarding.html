@@ -489,7 +489,7 @@
 			if (typeof jQuery !== 'undefined' && jQuery.fn.multiselect) {
 				jQuery('.multiselect-business-types').multiselect();
 				jQuery('.multiselect-operating-areas').multiselect();
-				jQuery('.multiselect-event-types').multiselect();
+				jQuery('.multiselect-event-types').multiselect({ includeSelectAllOption: true });
 			}
 
 			var form = document.getElementById('onboardingForm');

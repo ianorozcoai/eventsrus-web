@@ -1,5 +1,6 @@
 package com.web.eventsrus.backend;
 
+import com.web.eventsrus.model.HistoryEntryType;
 import com.web.eventsrus.model.QuotationStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -9,6 +10,7 @@ import java.util.List;
 /** Mirrors eventsrus-backend's {@code QuotationStatusEventResponse} field-for-field. */
 public record BackendQuotationHistoryEntry(
         Long id,
+        HistoryEntryType entryType,
         QuotationStatus fromStatus,
         QuotationStatus toStatus,
         Long changedByUserId,
@@ -21,4 +23,6 @@ public record BackendQuotationHistoryEntry(
         List<String> packageNames,
         String paymentScreenshotUrl,
         String invoiceUrl,
+        String attachmentUrl,
+        String attachmentFileType,
         Instant createdAt) {}

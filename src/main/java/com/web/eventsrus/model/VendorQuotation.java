@@ -36,4 +36,6 @@ public record VendorQuotation(
         Instant createdAt,
         List<Long> packageIds,
         List<String> packageNames,
-        Instant declinedAt) {}
+        Instant declinedAt,
+        List<String> referenceImageUrls,
+        List<String> responseImageUrls) {}

@@ -7,6 +7,7 @@ import com.web.eventsrus.model.EventType;
 import com.web.eventsrus.model.PlannerEvent;
 import com.web.eventsrus.model.PlannerEventSummary;
 import com.web.eventsrus.model.SupportTicket;
+import com.web.eventsrus.model.GalleryPhotoLimitItem;
 import com.web.eventsrus.model.SupportTicketMessage;
 import com.web.eventsrus.model.VendorBooking;
 import com.web.eventsrus.model.VendorCalendarEntry;
@@ -17,7 +18,9 @@ import com.web.eventsrus.model.VendorLead;
 import com.web.eventsrus.model.VendorLegalDocumentForm;
 import com.web.eventsrus.model.VendorLegalDocumentItem;
 import com.web.eventsrus.model.VendorPackageForm;
+import com.web.eventsrus.model.VendorImageTagItem;
 import com.web.eventsrus.model.VendorPackageImageItem;
+import com.web.eventsrus.model.VendorTaggedImageItem;
 import com.web.eventsrus.model.PlannerProfileForm;
 import com.web.eventsrus.model.VendorPackageItem;
 import com.web.eventsrus.model.VendorPaymentMethodForm;
@@ -281,15 +284,27 @@ public class BackendClient {
                 new ParameterizedTypeReference<List<VendorConversationMessage>>() {});
     }
 
-    public VendorConversationMessage replyToConversation(String jwt, Long conversationId, String message) {
-        return postJson("/api/v1/conversations/" + conversationId + "/messages", jwt, Map.of("message", message),
+    /**
+     * Multipart now (not postJson) since an optional image attachment can't
+     * ride inside a JSON body - hits ConversationController#sendMessageWithAttachment,
+     * the web-specific sibling of the JSON endpoint eventsrus-ui (Flutter) still uses.
+     */
+    public VendorConversationMessage replyToConversation(
+            String jwt, Long conversationId, String message, MultipartFile attachment) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addIfPresent(body, "message", message);
+        addFileIfPresent(body, "attachment", attachment);
+        return postMultipart("/api/v1/conversations/" + conversationId + "/messages", jwt, body,
                 VendorConversationMessage.class);
     }
 
     /** Vendor-initiated first contact to a lead who's only browsed the storefront so far. */
-    public VendorConversationMessage sendVendorMessage(String jwt, Long eventId, String message) {
-        return postJson("/api/v1/events/" + eventId + "/vendor-messages", jwt, Map.of("message", message),
-                VendorConversationMessage.class);
+    public VendorConversationMessage sendVendorMessage(
+            String jwt, Long eventId, String message, MultipartFile attachment) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addIfPresent(body, "message", message);
+        addFileIfPresent(body, "attachment", attachment);
+        return postMultipart("/api/v1/events/" + eventId + "/vendor-messages", jwt, body, VendorConversationMessage.class);
     }
 
     // --- Quotations ---
@@ -304,11 +319,16 @@ public class BackendClient {
 
     /** The vendor's side of the exchange - uploading a PDF quote is what moves the quotation to QUOTE_SENT/REVISION_SENT. */
     public VendorQuotation respondToQuotation(
-            String jwt, Long quotationId, MultipartFile pdf, String message, BigDecimal quotedAmount) {
+            String jwt, Long quotationId, MultipartFile pdf, String message, BigDecimal quotedAmount,
+            List<MultipartFile> images) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         addFileIfPresent(body, "pdf", pdf);
         addIfPresent(body, "message", message);
         body.add("quotedAmount", quotedAmount.toString());
+        if (images != null) {
+            images.stream().filter(file -> file != null && !file.isEmpty())
+                    .forEach(file -> body.add("images", file.getResource()));
+        }
         return postMultipart("/api/v1/vendors/me/quotations/" + quotationId + "/respond", jwt, body, VendorQuotation.class);
     }
 
@@ -316,6 +336,18 @@ public class BackendClient {
     public List<BackendQuotationHistoryEntry> getQuotationHistory(String jwt, Long quotationId) {
         return get("/api/v1/quotations/" + quotationId + "/history", jwt,
                 new ParameterizedTypeReference<List<BackendQuotationHistoryEntry>>() {});
+    }
+
+    /**
+     * A free-standing image/PDF either side can send at any time, with no
+     * status change (see backend QuotationService#addAttachment) - void,
+     * since it doesn't affect the quotation itself, just its history.
+     */
+    public void sendQuotationAttachment(String jwt, Long quotationId, MultipartFile file, String message) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("file", file.getResource());
+        addIfPresent(body, "message", message);
+        postMultipartBodiless("/api/v1/quotations/" + quotationId + "/attachments", jwt, body);
     }
 
     public VendorQuotation declineQuotation(String jwt, Long quotationId) {
@@ -327,12 +359,29 @@ public class BackendClient {
                 .body(VendorQuotation.class);
     }
 
-    public VendorQuotation reviseQuotation(String jwt, Long quotationId, LocalDate targetDate, String message, List<Long> packageIds) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("targetDate", targetDate);
-        body.put("message", message);
-        body.put("packageIds", packageIds);
-        return postJson("/api/v1/quotations/" + quotationId + "/revise", jwt, body, VendorQuotation.class);
+    /**
+     * Multipart now (not postJson) since an optional set of images can't
+     * ride inside a JSON body - eventsrus-ui (Flutter) has no caller for
+     * this endpoint at all, so it was safe to convert outright rather than
+     * add a JSON+multipart sibling pair (see QuotationController#revise).
+     */
+    public VendorQuotation reviseQuotation(
+            String jwt, Long quotationId, LocalDate targetDate, String message, List<Long> packageIds,
+            List<MultipartFile> images) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        if (targetDate != null) {
+            body.add("targetDate", targetDate.toString());
+        }
+        addIfPresent(body, "message", message);
+        if (packageIds != null) {
+            packageIds.forEach(id -> body.add("packageIds", id));
+        }
+        if (images != null) {
+            images.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .forEach(file -> body.add("images", file.getResource()));
+        }
+        return postMultipart("/api/v1/quotations/" + quotationId + "/revise", jwt, body, VendorQuotation.class);
     }
 
     /**
@@ -377,7 +426,7 @@ public class BackendClient {
     /** A vendor starting a brand-new quote directly from a chat thread - see backend QuotationService#createFromChat. */
     public VendorQuotation createQuoteFromChat(
             String jwt, Long eventId, LocalDate targetDate, String message, List<Long> packageIds, MultipartFile pdf,
-            BigDecimal quotedAmount) {
+            BigDecimal quotedAmount, List<MultipartFile> images) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         if (targetDate != null) {
             body.add("targetDate", targetDate.toString());
@@ -388,6 +437,10 @@ public class BackendClient {
         }
         addFileIfPresent(body, "pdf", pdf);
         body.add("quotedAmount", quotedAmount.toString());
+        if (images != null) {
+            images.stream().filter(file -> file != null && !file.isEmpty())
+                    .forEach(file -> body.add("images", file.getResource()));
+        }
         return postMultipart("/api/v1/events/" + eventId + "/vendor-quotations", jwt, body, VendorQuotation.class);
     }
 
@@ -516,6 +569,37 @@ public class BackendClient {
         delete("/api/v1/vendors/me/gallery/" + photoId, jwt);
     }
 
+    public void setGalleryPhotoTags(String jwt, Long photoId, List<Long> tagIds) {
+        putJsonBodiless("/api/v1/vendors/me/gallery/" + photoId + "/tags", jwt, tagIds);
+    }
+
+    // --- Vendor image tags (vendor-defined labels on gallery/package photos) ---
+
+    public List<VendorImageTagItem> getImageTags(String jwt) {
+        return get("/api/v1/vendors/me/image-tags", jwt, new ParameterizedTypeReference<List<VendorImageTagItem>>() {});
+    }
+
+    public VendorImageTagItem createImageTag(String jwt, String name) {
+        return postJson("/api/v1/vendors/me/image-tags", jwt, Map.of("name", name), VendorImageTagItem.class);
+    }
+
+    public void deleteImageTag(String jwt, Long tagId) {
+        delete("/api/v1/vendors/me/image-tags/" + tagId, jwt);
+    }
+
+    /** Every image a vendor has - standalone gallery photos and every package's photos - for the Gallery Management page. */
+    public List<VendorTaggedImageItem> getTaggableImages(String jwt) {
+        return get("/api/v1/vendors/me/image-tags/images", jwt, new ParameterizedTypeReference<List<VendorTaggedImageItem>>() {});
+    }
+
+    public GalleryPhotoLimitItem getGalleryPhotoLimit(String jwt) {
+        return get("/api/v1/vendors/me/gallery/limit", jwt, GalleryPhotoLimitItem.class);
+    }
+
+    public void setPackageImageTags(String jwt, Long packageId, Long imageId, List<Long> tagIds) {
+        putJsonBodiless("/api/v1/vendors/me/packages/" + packageId + "/images/" + imageId + "/tags", jwt, tagIds);
+    }
+
     /** Discontinuing (active=false) hides the package from the storefront without deleting it - reactivating (active=true) brings it right back. */
     public VendorPackageItem setPackageActive(String jwt, Long packageId, boolean active) {
         return putJson("/api/v1/vendors/me/packages/" + packageId + "/active", jwt, Map.of("active", active), VendorPackageItem.class);
@@ -640,28 +724,54 @@ public class BackendClient {
         return request.retrieve().onStatus(HttpStatusCode::isError, this::raise).body(VendorPublicProfile.class);
     }
 
-    /** Planner-initiated - requires the visiting PLANNER's own jwt, not the vendor's. */
+    /**
+     * Planner-initiated - requires the visiting PLANNER's own jwt, not the
+     * vendor's. Multipart now (not postJson) since an optional set of
+     * reference images can't ride inside a JSON body - hits
+     * QuotationController#requestQuotationWithImages, the web-specific
+     * sibling of the JSON endpoint eventsrus-ui (Flutter) still uses.
+     */
     public VendorQuotation submitQuotationRequest(
-            String jwt, Long eventId, Long vendorUserId, String plannerName, LocalDate targetDate, String message, List<Long> packageIds) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("plannerName", plannerName);
-        body.put("targetDate", targetDate);
-        body.put("message", message);
-        body.put("packageIds", packageIds);
-        // Real endpoint is QuotationController#requestQuotation - returns a
+            String jwt, Long eventId, Long vendorUserId, String plannerName, LocalDate targetDate, String message,
+            List<Long> packageIds, List<MultipartFile> referenceImages) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addIfPresent(body, "plannerName", plannerName);
+        if (targetDate != null) {
+            body.add("targetDate", targetDate.toString());
+        }
+        addIfPresent(body, "message", message);
+        if (packageIds != null) {
+            packageIds.forEach(id -> body.add("packageIds", id));
+        }
+        if (referenceImages != null) {
+            referenceImages.stream()
+                    .filter(file -> file != null && !file.isEmpty())
+                    .forEach(file -> body.add("referenceImages", file.getResource()));
+        }
+        // Real endpoint is QuotationController#requestQuotationWithImages - returns a
         // QuotationResponse (VendorQuotation), NOT a conversation message.
-        return postJson("/api/v1/events/" + eventId + "/vendors/" + vendorUserId + "/quotations", jwt, body,
+        return postMultipart("/api/v1/events/" + eventId + "/vendors/" + vendorUserId + "/quotations", jwt, body,
                 VendorQuotation.class);
     }
 
-    /** Planner-initiated - requires the visiting PLANNER's own jwt, not the vendor's. */
+    /**
+     * Planner-initiated - requires the visiting PLANNER's own jwt, not the
+     * vendor's. Multipart now (not postJson) since an optional image
+     * attachment can't ride inside a JSON body - hits
+     * ConversationController#sendInquiryWithAttachment, the web-specific
+     * sibling of the JSON endpoint eventsrus-ui (Flutter) still uses.
+     */
     public VendorConversationMessage submitInquiry(
-            String jwt, Long eventId, Long vendorUserId, String plannerName, LocalDate targetDate, String message) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("plannerName", plannerName);
-        body.put("targetDate", targetDate);
-        body.put("message", message);
-        return postJson("/api/v1/events/" + eventId + "/vendors/" + vendorUserId + "/inquiries", jwt, body,
+            String jwt, Long eventId, Long vendorUserId, String plannerName, LocalDate targetDate, String message,
+            MultipartFile attachment) {
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        addIfPresent(body, "plannerName", plannerName);
+        if (targetDate != null) {
+            body.add("targetDate", targetDate.toString());
+        }
+        addIfPresent(body, "message", message);
+        addFileIfPresent(body, "attachment", attachment);
+        return postMultipart("/api/v1/events/" + eventId + "/vendors/" + vendorUserId + "/inquiries", jwt, body,
                 VendorConversationMessage.class);
     }
 
@@ -1002,6 +1112,16 @@ public class BackendClient {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, this::raise)
                 .body(type);
+    }
+
+    private void putJsonBodiless(String uri, String jwt, Object body) {
+        backendRestClient.put()
+                .uri(uri)
+                .header("Authorization", "Bearer " + jwt)
+                .body(body)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
     }
 
     private <T> T postMultipart(String uri, String jwt, MultiValueMap<String, Object> body, Class<T> type) {

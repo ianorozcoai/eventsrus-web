@@ -74,7 +74,7 @@
 					     covers both CANCELLED and DECLINED. Rows are already
 					     sorted upcoming-event-first by VendorController. */-->
 					<div class="card">
-						<div class="card-header">
+						<div class="card-header" th:if="${not #lists.isEmpty(bookings)}">
 							<ul class="nav nav-tabs card-header-tabs" role="tablist">
 								<li class="nav-item">
 									<a href="#tab-amended" class="nav-link active" data-bs-toggle="tab" role="tab">

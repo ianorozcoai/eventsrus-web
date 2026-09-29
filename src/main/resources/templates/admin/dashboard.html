@@ -110,6 +110,37 @@
 						</div>
 
 					</div>
+
+					<!-- Suppliers by business type - real (non-fake-account) suppliers
+					     only, see AdminDashboardController#supplierCountsByBusinessType.
+					     A supplier with several business types is counted once per
+					     type, so the numbers here don't have to add up to Total
+					     Suppliers above. Sorted by count (server-side) so the most
+					     common categories are immediately visible. -->
+					<div class="card" th:unless="${backendUnavailable}">
+						<div class="card-header">
+							<h6 class="mb-0">Suppliers by Business Type</h6>
+							<span class="text-muted fs-sm ms-2">(excludes test accounts)</span>
+						</div>
+						<div class="table-responsive">
+							<table class="table table-hover mb-0">
+								<thead>
+									<tr>
+										<th>Business Type</th>
+										<th class="text-end">Suppliers</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="entry : ${supplierCountsByBusinessType}">
+										<td th:text="${entry.businessType().getLabel()}">Business Type</td>
+										<td class="text-end" th:text="${entry.count()}">0</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<!-- /suppliers by business type -->
+
 				</div>
 				<!-- /content area -->
 

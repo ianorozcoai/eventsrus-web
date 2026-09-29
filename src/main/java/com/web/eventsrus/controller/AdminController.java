@@ -55,6 +55,7 @@ public class AdminController {
             model.addAttribute("newVendorTicketCount", stats.newVendorTicketCount());
             model.addAttribute("newPlannerTicketCount", stats.newPlannerTicketCount());
             model.addAttribute("incompleteVendorSignupCount", stats.incompleteVendorSignupCount());
+            model.addAttribute("supplierCountsByBusinessType", stats.supplierCountsByBusinessType());
         } catch (BackendApiException e) {
             model.addAttribute("backendUnavailable", true);
         }

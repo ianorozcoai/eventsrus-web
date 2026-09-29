@@ -1,5 +1,8 @@
 package com.web.eventsrus.backend;
 
+import com.web.eventsrus.model.BusinessTypeSupplierCount;
+import java.util.List;
+
 /** Mirrors eventsrus-backend's {@code AdminDashboardResponse}. */
 public record BackendAdminDashboardStats(
         long plannerCount,
@@ -7,4 +10,5 @@ public record BackendAdminDashboardStats(
         long vendorTicketCount,
         long newVendorTicketCount,
         long newPlannerTicketCount,
-        long incompleteVendorSignupCount) {}
+        long incompleteVendorSignupCount,
+        List<BusinessTypeSupplierCount> supplierCountsByBusinessType) {}

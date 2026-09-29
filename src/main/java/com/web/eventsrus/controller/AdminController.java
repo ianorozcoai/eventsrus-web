@@ -111,7 +111,7 @@ public class AdminController {
             model.addAttribute("testVendors", List.of());
             model.addAttribute("incompleteSignups", List.of());
             model.addAttribute("paymentOverdueVendors", List.of());
-            model.addAttribute("pendingGcashPayments", List.of());
+            model.addAttribute("neverSubscribedVendors", List.of());
             return "admin/vendors";
         }
         try {
@@ -133,27 +133,21 @@ public class AdminController {
             model.addAttribute("paymentOverdueVendors", partitioned.get(false).stream()
                     .filter(BackendAdminVendorListItem::isPaymentOverdue)
                     .toList());
-            // Vendors mid-way through GCash's 7-day temporary-access window
-            // (see VendorSubscriptionService#submitGcashPayment) who an admin
-            // hasn't verified or rejected yet - same underlying queue as
-            // AdminSubscriptionPaymentController's "Pending" tab, surfaced
-            // here too so admins don't have to check two separate pages for
-            // at-risk accounts. A separate try/catch: this call failing
-            // shouldn't blank out the vendor list above it.
-            try {
-                model.addAttribute("pendingGcashPayments", backendClient.listSubscriptionPayments(jwt).stream()
-                        .filter(p -> "PAYMENT_VERIFICATION".equals(p.status()))
-                        .toList());
-            } catch (BackendApiException e) {
-                model.addAttribute("pendingGcashPayments", List.of());
-            }
+            // Never had any subscription row at all - still seeing the
+            // mandatory paywall since their very first dashboard visit,
+            // with zero payment action taken (no GCash submission, no
+            // PayPal attempt). Distinct from Payment Overdue above, which
+            // requires having HAD a real subscription that later lapsed.
+            model.addAttribute("neverSubscribedVendors", partitioned.get(false).stream()
+                    .filter(v -> v.billingSource() == null)
+                    .toList());
         } catch (BackendApiException e) {
             model.addAttribute("backendUnavailable", true);
             model.addAttribute("vendors", List.of());
             model.addAttribute("testVendors", List.of());
             model.addAttribute("incompleteSignups", List.of());
             model.addAttribute("paymentOverdueVendors", List.of());
-            model.addAttribute("pendingGcashPayments", List.of());
+            model.addAttribute("neverSubscribedVendors", List.of());
         }
         return "admin/vendors";
     }

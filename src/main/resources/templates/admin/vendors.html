@@ -69,9 +69,9 @@
 									</a>
 								</li>
 								<li class="nav-item">
-									<a href="#tab-pending-gcash" class="nav-link" data-bs-toggle="tab" role="tab">
-										<i class="ph-hourglass-medium me-2"></i> Pending GCash Payment
-										<span class="badge bg-warning text-dark rounded-pill ms-2" th:text="${#lists.size(pendingGcashPayments)}">0</span>
+									<a href="#tab-never-subscribed" class="nav-link" data-bs-toggle="tab" role="tab">
+										<i class="ph-x-circle me-2"></i> Never Subscribed
+										<span class="badge bg-secondary rounded-pill ms-2" th:text="${#lists.size(neverSubscribedVendors)}">0</span>
 									</a>
 								</li>
 							</ul>
@@ -296,34 +296,56 @@
 								</div>
 							</div>
 
-							<!-- Vendors mid-way through GCash's 7-day temporary-access window
-							     (see VendorSubscriptionService#submitGcashPayment) - they got
-							     immediate access on submission, but an admin hasn't verified
-							     the actual payment yet. Same underlying queue as
-							     admin/subscription-payments.html's own "Pending" tab, where
-							     the real verify/reject actions live - this tab is purely for
-							     visibility alongside the other at-risk-account tabs, not a
-							     second place to action them from. -->
-							<div class="tab-pane fade" id="tab-pending-gcash" role="tabpanel">
+							<!-- Never had any subscription row at all - still stuck on the
+							     mandatory paywall since their very first dashboard visit,
+							     with zero payment action taken (no GCash submission, no
+							     PayPal attempt). Distinct from Payment Overdue above, which
+							     requires having HAD a real subscription that later lapsed -
+							     see BackendAdminVendorListItem#billingSource and
+							     AdminController#vendors. No Billing Source/Status/Overdue
+							     Since columns here since none of those ever applied to a
+							     vendor who never subscribed in the first place. -->
+							<div class="tab-pane fade" id="tab-never-subscribed" role="tabpanel">
 								<div class="table-responsive">
-									<table id="pendingGcashTable" class="table table-hover w-100">
+									<table id="neverSubscribedTable" class="table table-hover w-100">
 										<thead>
 											<tr>
 												<th>Business Name</th>
-												<th>Owner</th>
-												<th>Billing Cycle</th>
-												<th>Submitted</th>
+												<th>Contact</th>
+												<th>Business Type</th>
+												<th>Last Login</th>
 												<th></th>
 											</tr>
 										</thead>
 										<tbody>
-											<tr th:each="payment : ${pendingGcashPayments}">
-												<td th:text="${payment.businessName()}">Business Name</td>
-												<td th:text="${payment.ownerName()}">Owner</td>
-												<td th:text="${payment.billingCycle()}">QUARTERLY</td>
-												<td th:text="${#temporals.format(payment.submittedAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+											<tr th:each="vendor : ${neverSubscribedVendors}">
+												<td th:text="${vendor.businessName()}">Business Name</td>
+												<td>
+													<div th:text="${vendor.contactEmail()}">email@example.com</div>
+													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
+												</td>
+												<td>
+													<span th:each="bt, iter : ${vendor.businessTypes()}"
+														th:text="${bt.getLabel()} + (${iter.last} ? '' : ', ')">Business Type</span>
+												</td>
+												<td th:text="${vendor.lastLoginAt() != null ? #temporals.format(vendor.lastLoginAt(), 'MMM d, yyyy h:mm a') : 'Never'}">Never</td>
 												<td class="text-end">
-													<a th:href="@{/admin/subscription-payments}" class="btn btn-sm btn-outline-primary">Review</a>
+													<div class="dropdown">
+														<button type="button" class="btn btn-light btn-icon rounded-pill border-transparent dropdown-toggle" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
+															<i class="ph-list"></i>
+														</button>
+														<div class="dropdown-menu dropdown-menu-end">
+															<a th:if="${vendor.slug() != null}" th:href="@{'/vendor/storefront/' + ${vendor.slug()}}" target="_blank" class="dropdown-item">
+																<i class="ph-storefront me-2"></i> View Storefront
+																<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
+															</a>
+															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
+																<button type="submit" class="dropdown-item">
+																	<i class="ph-squares-four me-2"></i> View Dashboard
+																</button>
+															</form>
+														</div>
+													</div>
 												</td>
 											</tr>
 										</tbody>
@@ -405,17 +427,11 @@
 			var incompleteTable = null;
 			var testVendorsTable = null;
 			var paymentOverdueTable = null;
-			var pendingGcashTable = null;
+			var neverSubscribedTable = null;
 
 			document.querySelector('a[href="#tab-test-vendors"]').addEventListener('shown.bs.tab', function () {
 				if (!testVendorsTable) {
 					testVendorsTable = $('#testVendorsTable').DataTable({ pageLength: 20 });
-				}
-			});
-
-			document.querySelector('a[href="#tab-pending-gcash"]').addEventListener('shown.bs.tab', function () {
-				if (!pendingGcashTable) {
-					pendingGcashTable = $('#pendingGcashTable').DataTable({ pageLength: 20 });
 				}
 			});
 
@@ -428,6 +444,12 @@
 			document.querySelector('a[href="#tab-incomplete"]').addEventListener('shown.bs.tab', function () {
 				if (!incompleteTable) {
 					incompleteTable = $('#incompleteSignupsTable').DataTable({ pageLength: 20 });
+				}
+			});
+
+			document.querySelector('a[href="#tab-never-subscribed"]').addEventListener('shown.bs.tab', function () {
+				if (!neverSubscribedTable) {
+					neverSubscribedTable = $('#neverSubscribedTable').DataTable({ pageLength: 20 });
 				}
 			});
 

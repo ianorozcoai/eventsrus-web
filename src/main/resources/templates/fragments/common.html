@@ -590,26 +590,32 @@
 		</div>
 	</th:block>
 
-	<!--/* Required "Choose your PRO plan" pop-up for a vendor who hasn't paid
-	     yet (no subscription row exists at all - paywallRequiresPlanSelection)
-	     - keeps reappearing every login (see PaywallModelAttributes) until
-	     they pay via PayPal or GCash; there's no free-trial skip anymore, so
-	     no dismiss button either. A GCash submission gets its own separate,
-	     dismissible "awaiting verification" state instead (paywallAwaitingGcashVerification)
-	     rather than forcing another choice - the vendor already did their
-	     part; an admin reviewing it is what's pending, not them. Deliberately
-	     separate from paywallModal below (a renewal reminder for vendors who
-	     DO have a real plan). Only ever renders on pages that add a "status"
-	     model attribute (currently just vendor/dashboard.html - see
+	<!--/* "Choose your PRO plan" pop-up for a vendor who hasn't paid yet (no
+	     subscription row exists at all - paywallRequiresPlanSelection) -
+	     keeps reappearing every login (see PaywallModelAttributes) until
+	     they pay via PayPal or GCash. Dismissible (close button, backdrop
+	     click, Esc) so a vendor can still reach the rest of the dashboard
+	     without paying first - needed so Google's OAuth verification
+	     reviewer can get past this to test the Calendar sync feature; a
+	     dismissed vendor still sees this again next login, and quotations/
+	     chat/bookings/search-visibility stay gated behind the real plan
+	     check elsewhere, this is just the popup. A GCash submission gets
+	     its own separate, dismissible "awaiting verification" state instead
+	     (paywallAwaitingGcashVerification) rather than forcing another
+	     choice - the vendor already did their part; an admin reviewing it
+	     is what's pending, not them. Deliberately separate from
+	     paywallModal below (a renewal reminder for vendors who DO have a
+	     real plan). Only ever renders on pages that add a "status" model
+	     attribute (currently just vendor/dashboard.html - see
 	     VendorController#dashboard) since that's what proPlanPickerForm
 	     above needs for pricing. */-->
 	<th:block th:fragment="planSelectionModal">
 		<div th:if="${paywallRequiresPlanSelection and not paywallAlreadyShown}"
-			class="modal fade" id="planSelectionModal" tabindex="-1"
-			data-bs-backdrop="static" data-bs-keyboard="false">
+			class="modal fade" id="planSelectionModal" tabindex="-1">
 			<div class="modal-dialog modal-dialog-centered">
 				<div class="modal-content">
 					<div class="modal-body p-4">
+						<button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
 						<div class="text-center mb-3">
 							<i class="ph-crown-simple text-warning" style="font-size:3rem;"></i>
 							<h5 class="mt-3 mb-1">Choose your PRO plan</h5>

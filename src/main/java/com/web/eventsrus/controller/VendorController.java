@@ -667,6 +667,7 @@ public class VendorController {
                 .toList();
         model.addAttribute("entries", entries);
         model.addAttribute("calendarEventsJson", toFullCalendarEventsJson(entries));
+        model.addAttribute("googleCalendarStatus", backendClient.getGoogleCalendarStatus(WebSession.token(session)));
         model.addAttribute("activePage", "calendar");
         model.addAttribute("pageTitle", "Calendar");
         return "vendor/calendar";

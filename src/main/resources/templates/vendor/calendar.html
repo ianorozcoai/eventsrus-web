@@ -22,8 +22,24 @@
 				<!-- Page header -->
 				<div class="page-header page-header-light shadow">
 					<div class="page-header-content d-lg-flex">
-						<div class="d-flex">
+						<div class="d-flex flex-fill align-items-center">
 							<h4 class="page-title mb-0">Calendar</h4>
+
+							<a th:if="${not googleCalendarStatus.connected()}" th:href="@{/vendor/settings/google-calendar/connect}" class="btn btn-outline-secondary ms-auto">
+								<i class="ph-calendar-plus me-2"></i>
+								Connect Google Calendar
+							</a>
+							<div th:if="${googleCalendarStatus.connected()}" class="ms-auto d-flex align-items-center gap-2">
+								<span class="text-muted fs-sm">
+									<i class="ph-check-circle text-success me-1"></i>
+									Google Calendar connected
+								</span>
+								<form th:action="@{/vendor/settings/google-calendar/disconnect}" method="post">
+									<button type="submit" class="btn btn-outline-danger btn-sm">
+										<i class="ph-calendar-x me-1"></i> Disconnect
+									</button>
+								</form>
+							</div>
 						</div>
 					</div>
 
@@ -41,6 +57,22 @@
 
 				<!-- Content area -->
 				<div class="content">
+
+					<!-- Google Calendar sync flash messages - see GoogleCalendarOAuthController
+					     for the actual consent redirect; the button/status above only starts/
+					     ends it. -->
+					<div th:if="${googleCalendarConnected}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Google Calendar connected. Your confirmed bookings will now sync automatically.
+					</div>
+					<div th:if="${googleCalendarDisconnected}" class="alert alert-info alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						Google Calendar disconnected. Past events stay on your calendar; nothing new will sync.
+					</div>
+					<div th:if="${googleCalendarError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${googleCalendarError}">Error</span>
+					</div>
 
 					<!-- Tabs + legend -->
 					<div class="d-flex align-items-center flex-wrap gap-3 mb-3">

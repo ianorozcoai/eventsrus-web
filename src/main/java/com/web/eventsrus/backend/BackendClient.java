@@ -8,6 +8,7 @@ import com.web.eventsrus.model.PlannerEvent;
 import com.web.eventsrus.model.PlannerEventSummary;
 import com.web.eventsrus.model.SupportTicket;
 import com.web.eventsrus.model.GalleryPhotoLimitItem;
+import com.web.eventsrus.model.GoogleCalendarStatusItem;
 import com.web.eventsrus.model.SupportTicketMessage;
 import com.web.eventsrus.model.VendorBooking;
 import com.web.eventsrus.model.VendorCalendarEntry;
@@ -594,6 +595,22 @@ public class BackendClient {
 
     public GalleryPhotoLimitItem getGalleryPhotoLimit(String jwt) {
         return get("/api/v1/vendors/me/gallery/limit", jwt, GalleryPhotoLimitItem.class);
+    }
+
+    // --- Google Calendar sync (data layer only - the OAuth consent redirect
+    // itself lives in GoogleCalendarOAuthController, not here) ---
+
+    public GoogleCalendarStatusItem getGoogleCalendarStatus(String jwt) {
+        return get("/api/v1/vendors/me/google-calendar", jwt, GoogleCalendarStatusItem.class);
+    }
+
+    public void saveGoogleCalendarConnection(String jwt, String refreshToken, String googleCalendarId) {
+        putJsonBodiless("/api/v1/vendors/me/google-calendar", jwt,
+                Map.of("refreshToken", refreshToken, "googleCalendarId", googleCalendarId));
+    }
+
+    public void disconnectGoogleCalendar(String jwt) {
+        delete("/api/v1/vendors/me/google-calendar", jwt);
     }
 
     public void setPackageImageTags(String jwt, Long packageId, Long imageId, List<Long> tagIds) {

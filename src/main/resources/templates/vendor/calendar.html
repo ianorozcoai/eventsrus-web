@@ -7,6 +7,7 @@
 	<div th:replace="~{fragments/common :: topnavbar}"></div>
 	<div th:replace="~{fragments/common :: paywallModal}"></div>
 	<div th:replace="~{fragments/common :: gcashRejectedModal}"></div>
+	<div th:replace="~{fragments/common :: confirmActionModal}"></div>
 
 	<!-- Page content -->
 	<div class="page-content">
@@ -25,17 +26,17 @@
 						<div class="d-flex flex-fill align-items-center">
 							<h4 class="page-title mb-0">Calendar</h4>
 
-							<a th:if="${not googleCalendarStatus.connected()}" th:href="@{/vendor/settings/google-calendar/connect}" class="btn btn-outline-secondary ms-auto">
+							<a th:if="${not googleCalendarStatus.connected()}" th:href="@{/vendor/settings/google-calendar/connect}" class="btn btn-primary ms-auto">
 								<i class="ph-calendar-plus me-2"></i>
 								Connect Google Calendar
 							</a>
 							<div th:if="${googleCalendarStatus.connected()}" class="ms-auto d-flex align-items-center gap-2">
-								<span class="text-muted fs-sm">
-									<i class="ph-check-circle text-success me-1"></i>
+								<span class="badge bg-success fs-sm px-3 py-2">
+									<i class="ph-check-circle me-1"></i>
 									Google Calendar connected
 								</span>
-								<form th:action="@{/vendor/settings/google-calendar/disconnect}" method="post">
-									<button type="submit" class="btn btn-outline-danger btn-sm">
+								<form id="disconnectGoogleCalendarForm" th:action="@{/vendor/settings/google-calendar/disconnect}" method="post">
+									<button type="button" id="disconnectGoogleCalendarBtn" class="btn btn-danger btn-sm">
 										<i class="ph-calendar-x me-1"></i> Disconnect
 									</button>
 								</form>
@@ -221,6 +222,22 @@
 			if (calendarTabLink && calendar) {
 				calendarTabLink.addEventListener('shown.bs.tab', function () {
 					calendar.updateSize();
+				});
+			}
+
+			// Confirm before disconnecting Google Calendar - a plain form
+			// submit (not fetch/AJAX) like the rest of this page, so the
+			// confirmed click just submits the real form rather than
+			// re-implementing the POST here.
+			var disconnectBtn = document.getElementById('disconnectGoogleCalendarBtn');
+			if (disconnectBtn) {
+				disconnectBtn.addEventListener('click', function () {
+					window.confirmAction(
+						'Disconnect Google Calendar? Your confirmed bookings will stop syncing until you reconnect.',
+						function () {
+							document.getElementById('disconnectGoogleCalendarForm').submit();
+						},
+						{ label: 'Yes, Disconnect' });
 				});
 			}
 		});

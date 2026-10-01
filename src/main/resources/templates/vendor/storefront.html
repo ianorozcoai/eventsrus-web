@@ -193,9 +193,36 @@
 							<!-- /gallery -->
 
 
-							<!-- Packages -->
+							<!-- Packages - filter tabs mirror every group the vendor has
+							     CREATED (availableGroups - see VendorDirectoryService), not just
+							     ones currently applied to a package, same "empty tab until
+							     used" convention as the Gallery tags above. A vendor with no
+							     groups at all keeps today's exact plain-grid behavior
+							     unchanged; see VendorController for the pre-filtered
+							     packagesByGroup map.
+							     Each package's clickable card is the packageCard fragment (see
+							     fragments/common.html - it must live there, not inline in this
+							     file, since a th:fragment block also renders in normal top-to-
+							     bottom flow wherever it's defined, and "pkg" isn't bound outside
+							     an actual fragment call), reused across the "All" tab and every
+							     group tab it belongs to. Its detail MODAL is rendered only
+							     once, in a flat loop after this card - a Bootstrap modal only
+							     needs a matching id anywhere in the DOM, not to be nested inside
+							     the element that triggers it, so this avoids duplicate element
+							     ids that would otherwise break targeting. -->
 							<div class="card mb-3 mb-lg-0">
-								<div class="card-header">
+								<div class="card-header" th:if="${not #lists.isEmpty(profile.packages()) and not #lists.isEmpty(profile.availableGroups())}">
+									<h6 class="mb-2">Packages</h6>
+									<ul class="nav nav-tabs card-header-tabs" role="tablist">
+										<li class="nav-item">
+											<a href="#tab-packages-all" class="nav-link active" data-bs-toggle="tab" role="tab">All</a>
+										</li>
+										<li class="nav-item" th:each="group : ${profile.availableGroups()}">
+											<a href="#" th:href="'#tab-packages-' + ${#strings.replace(group, ' ', '-')}" class="nav-link" data-bs-toggle="tab" role="tab" th:text="${group}">Group</a>
+										</li>
+									</ul>
+								</div>
+								<div class="card-header" th:if="${#lists.isEmpty(profile.packages()) or #lists.isEmpty(profile.availableGroups())}">
 									<h6 class="mb-0">Packages</h6>
 								</div>
 								<div class="card-body text-center py-5" th:if="${#lists.isEmpty(profile.packages())}">
@@ -205,71 +232,79 @@
 										<span th:text="${profile.businessName()}">this supplier</span> about pricing directly.
 									</p>
 								</div>
-								<div class="card-body" th:if="${not #lists.isEmpty(profile.packages())}">
+								<!-- Plain grid - unchanged from before groups existed - shown
+								     whenever there are packages but the vendor hasn't created
+								     any groups at all yet. -->
+								<div class="card-body" th:if="${not #lists.isEmpty(profile.packages()) and #lists.isEmpty(profile.availableGroups())}">
 									<div class="row g-3">
 										<div class="col-md-6" th:each="pkg : ${profile.packages()}">
-											<!--/* The whole card opens this package's detail modal (full
-											     description + every photo) - a real Bootstrap data-api
-											     trigger, not a JS click handler, EXCEPT the photo
-											     thumbnails inside stay their own .lightbox-trigger; the
-											     lightbox script (fragments/common.html) stops those clicks
-											     from bubbling up and ALSO opening this modal underneath. */-->
-											<div class="border rounded p-3 h-100" style="cursor:pointer;" data-bs-toggle="modal" th:attr="data-bs-target='#packageDetailModal-' + ${pkg.id()}">
-												<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
-												<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
-												<p class="text-muted fs-sm mb-2" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
-												<div class="fw-semibold mb-2" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</div>
-
-												<!-- Real photos for this package - each a .lightbox-trigger
-												     (same shared lightbox as the Gallery section above), so
-												     clicking one browses left/right across every photo on
-												     the page, not just this package's own. -->
-												<div class="d-flex flex-wrap gap-2 mt-2" th:if="${not #lists.isEmpty(pkg.images())}">
-													<a href="#" class="lightbox-trigger" th:each="img : ${pkg.images()}"
-														th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
-														<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded border" style="width:56px;height:56px;object-fit:cover;" loading="lazy">
-													</a>
-												</div>
-
-												<div class="fs-sm mt-2" style="color:#ff6b35;"><i class="ph-eye me-1"></i> View details</div>
+											<div th:replace="~{fragments/common :: packageCard(${pkg})}"></div>
+										</div>
+									</div>
+								</div>
+								<!-- Tabbed grid - "All" is always non-empty (this whole block
+								     only renders once packages itself is non-empty), but an
+								     individual group's tab can genuinely have zero packages
+								     (created but not yet applied to anything), so it gets its
+								     own empty-state - same pattern as the Gallery tabs above. -->
+								<div class="card-body tab-content" th:if="${not #lists.isEmpty(profile.packages()) and not #lists.isEmpty(profile.availableGroups())}">
+									<div class="tab-pane fade show active" id="tab-packages-all" role="tabpanel">
+										<div class="row g-3">
+											<div class="col-md-6" th:each="pkg : ${profile.packages()}">
+												<div th:replace="~{fragments/common :: packageCard(${pkg})}"></div>
 											</div>
-
-											<!-- Package detail - full description + every photo, own
-											     lightbox session (still shares the one page-wide lightbox
-											     via the same .lightbox-trigger class). -->
-											<div class="modal fade" th:id="'packageDetailModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
-												<div class="modal-dialog modal-dialog-centered modal-lg">
-													<div class="modal-content">
-														<div class="modal-header">
-															<h5 class="modal-title" th:text="${pkg.name()}">Package name</h5>
-															<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-														</div>
-														<div class="modal-body">
-															<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
-															<h5 class="mb-3" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</h5>
-															<p class="text-muted" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
-
-															<div th:if="${not #lists.isEmpty(pkg.images())}">
-																<h6 class="fw-semibold mt-4 mb-3">Photos</h6>
-																<div class="row g-3">
-																	<div class="col-6 col-md-4" th:each="img : ${pkg.images()}">
-																		<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
-																			<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded w-100" style="height:110px;object-fit:cover;" loading="lazy">
-																		</a>
-																	</div>
-																</div>
-															</div>
-															<p class="text-muted fs-sm mb-0 mt-3" th:if="${#lists.isEmpty(pkg.images())}">No photos for this package yet.</p>
-														</div>
-													</div>
-												</div>
+										</div>
+									</div>
+									<div class="tab-pane fade" th:each="group : ${profile.availableGroups()}" th:id="'tab-packages-' + ${#strings.replace(group, ' ', '-')}" role="tabpanel">
+										<div class="row g-3" th:if="${not #lists.isEmpty(packagesByGroup.get(group))}">
+											<div class="col-md-6" th:each="pkg : ${packagesByGroup.get(group)}">
+												<div th:replace="~{fragments/common :: packageCard(${pkg})}"></div>
 											</div>
-											<!-- /package detail -->
+										</div>
+										<div class="text-center py-5" th:if="${#lists.isEmpty(packagesByGroup.get(group))}">
+											<i class="ph-package ph-3x text-muted mb-3 d-block"></i>
+											<p class="text-muted mb-0">No packages grouped under <span th:text="${group}">this</span> yet.</p>
 										</div>
 									</div>
 								</div>
 							</div>
 							<!-- /packages -->
+
+							<!-- Package detail modals - one per package regardless of how
+							     many tabs (All + its groups) the package's card appears in;
+							     see the comment above the Packages card for why these live
+							     here, outside the tab structure, rather than inside the
+							     packageCard fragment itself. -->
+							<div th:each="pkg : ${profile.packages()}">
+								<div class="modal fade" th:id="'packageDetailModal-' + ${pkg.id()}" tabindex="-1" aria-hidden="true">
+									<div class="modal-dialog modal-dialog-centered modal-lg">
+										<div class="modal-content">
+											<div class="modal-header">
+												<h5 class="modal-title" th:text="${pkg.name()}">Package name</h5>
+												<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+											</div>
+											<div class="modal-body">
+												<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
+												<h5 class="mb-3" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</h5>
+												<p class="text-muted" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
+
+												<div th:if="${not #lists.isEmpty(pkg.images())}">
+													<h6 class="fw-semibold mt-4 mb-3">Photos</h6>
+													<div class="row g-3">
+														<div class="col-6 col-md-4" th:each="img : ${pkg.images()}">
+															<a href="#" class="d-block lightbox-trigger" th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
+																<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded w-100" style="height:110px;object-fit:cover;" loading="lazy">
+															</a>
+														</div>
+													</div>
+												</div>
+												<p class="text-muted fs-sm mb-0 mt-3" th:if="${#lists.isEmpty(pkg.images())}">No photos for this package yet.</p>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<!-- /package detail modals -->
 
 
 							<!-- Client reviews -->

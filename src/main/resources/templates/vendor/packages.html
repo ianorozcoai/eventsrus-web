@@ -56,6 +56,36 @@
 						<span th:text="${packagesError}"></span>
 					</div>
 
+					<!-- Groups - vendor-created labels, multiple per package,
+					     surfaced as filter tabs on the public storefront (see
+					     VendorDirectoryService#getPublicProfile). Deleting one
+					     only removes the association, never the packages. Same
+					     pattern as Gallery's Tags card. -->
+					<div class="card mb-3">
+						<div class="card-header">
+							<h6 class="mb-0">Groups</h6>
+						</div>
+						<div class="card-body">
+							<p class="text-muted fs-sm mb-3">Create groups and apply them to your packages below - planners can then filter your storefront packages by group.</p>
+							<div class="d-flex flex-wrap gap-2 mb-3" id="packageGroupsGrid" th:classappend="${#lists.isEmpty(packageGroups)} ? 'd-none'">
+								<span class="badge bg-purple text-white d-inline-flex align-items-center gap-2 py-2 px-3" th:each="group : ${packageGroups}" th:attr="data-group-id=${group.id()}">
+									<span th:text="${group.name()}">Group</span>
+									<button type="button" class="btn-close btn-close-white package-group-delete-btn" style="font-size:0.6rem;" th:attr="data-group-id=${group.id()},data-group-name=${group.name()}" aria-label="Delete group"></button>
+								</span>
+							</div>
+							<p class="text-muted fs-sm mb-3" id="packageGroupsEmpty" th:classappend="${not #lists.isEmpty(packageGroups)} ? 'd-none'">No groups yet - add one below.</p>
+							<!--/* autocomplete="off" - same reload-restores-last-value hazard
+							     as the Gallery Tags form (see gallery.html's own comment). */-->
+							<form id="addGroupForm" class="d-flex gap-2" style="max-width:360px;">
+								<input type="text" name="name" class="form-control" placeholder="e.g., Weddings" maxlength="50" autocomplete="off" required>
+								<button type="submit" class="btn btn-primary text-nowrap">
+									<i class="ph-plus me-1"></i> Add Group
+								</button>
+							</form>
+						</div>
+					</div>
+					<!-- /groups -->
+
 					<div class="row" th:if="${not #lists.isEmpty(packages)}">
 						<div class="col-xl-4 col-md-6" th:each="pkg : ${packages}">
 							<div class="card" th:classappend="${!pkg.active()} ? 'opacity-50'">
@@ -84,10 +114,27 @@
 									<p class="text-muted fs-sm mb-3" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
 									<h5 class="mb-3" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</h5>
 
-									<button type="button" class="btn btn-outline-secondary btn-sm" th:if="${not #lists.isEmpty(pkg.images())}" data-bs-toggle="modal" th:attr="data-bs-target='#editPackageModal-' + ${pkg.id()}">
-										<i class="ph-image me-1"></i>
-										<span th:text="${#lists.size(pkg.images())}">0</span> photo(s)
-									</button>
+									<div class="d-flex flex-wrap gap-1 mb-2" th:if="${not #lists.isEmpty(pkg.groups())}">
+										<span class="badge bg-purple" th:each="group : ${pkg.groups()}" th:text="${group}">Group</span>
+									</div>
+
+									<div class="d-flex flex-wrap gap-2">
+										<button type="button" class="btn btn-outline-secondary btn-sm" th:if="${not #lists.isEmpty(pkg.images())}" data-bs-toggle="modal" th:attr="data-bs-target='#editPackageModal-' + ${pkg.id()}">
+											<i class="ph-image me-1"></i>
+											<span th:text="${#lists.size(pkg.images())}">0</span> photo(s)
+										</button>
+										<!--/* Disabled rather than opening a modal with nothing to check -
+										     a vendor with no groups yet has nothing to edit here until
+										     they create one above. pkg.groups() is a list of group NAMES
+										     (mirrors the storefront shape, not ids), so the pre-check match
+										     in JS below is done by name, not id - see editGroupsCheckbox's
+										     own data-group-name attribute further down. */-->
+										<button type="button" class="btn btn-outline-purple btn-sm edit-package-groups-btn"
+											th:disabled="${#lists.isEmpty(packageGroups)}"
+											th:attr="title=${#lists.isEmpty(packageGroups)} ? 'Create a group above first' : 'Edit Groups',data-package-id=${pkg.id()},data-current-group-names=${#strings.listJoin(pkg.groups(), ',')}">
+											<i class="ph-squares-four me-1"></i> Groups
+										</button>
+									</div>
 								</div>
 							</div>
 
@@ -699,6 +746,127 @@
 		});
 	</script>
 	<!-- /discontinue/reactivate package -->
+
+
+	<!-- Edit Groups modal - one shared modal, populated via JS for whichever
+	     package's "Groups" button was clicked, rather than one modal per
+	     package. Checkboxes carry both the group id (value, for submitting)
+	     and the group name (data-group-name, for matching against a
+	     package's groups() list of names when pre-checking). -->
+	<div class="modal fade" id="editPackageGroupsModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Edit Groups</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p class="text-muted fs-sm" th:if="${#lists.isEmpty(packageGroups)}">You haven't created any groups yet - add one above first.</p>
+					<div id="editPackageGroupsCheckboxes" class="d-flex flex-column gap-2">
+						<div class="form-check" th:each="group : ${packageGroups}">
+							<input class="form-check-input edit-package-groups-checkbox" type="checkbox" th:value="${group.id()}" th:attr="data-group-name=${group.name()}" th:id="'editPackageGroupCheckbox-' + ${group.id()}">
+							<label class="form-check-label" th:for="'editPackageGroupCheckbox-' + ${group.id()}" th:text="${group.name()}">Group</label>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="editPackageGroupsSaveBtn">Save</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- /edit groups modal -->
+
+	<!-- Groups - add/delete, same AJAX-then-reload pattern as the rest of
+	     this page's actions (no toast on this page; a visible change on
+	     reload is the existing convention here). -->
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			var addGroupForm = document.getElementById('addGroupForm');
+			if (addGroupForm) {
+				addGroupForm.addEventListener('submit', function (e) {
+					e.preventDefault();
+					var name = addGroupForm.querySelector('[name="name"]').value.trim();
+					if (!name) { return; }
+					window.showPageSpinner('Adding group…');
+					fetch('/vendor/packages/groups', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: 'name=' + encodeURIComponent(name)
+					})
+						.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+						.then(function (result) {
+							if (!result.ok) { throw new Error(result.body.error || 'Could not add this group. Please try again.'); }
+							window.location.reload();
+						})
+						.catch(function (err) {
+							window.hidePageSpinner();
+							alert(err.message || 'Could not reach the server. Please try again.');
+						});
+				});
+			}
+
+			document.querySelectorAll('.package-group-delete-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					if (btn.dataset.armed === '1') { return; }
+					var groupName = btn.getAttribute('data-group-name');
+					window.confirmAction('Delete the group "' + groupName + '"? This removes it from every package it\'s applied to - the packages themselves are untouched.', function () {
+						btn.dataset.armed = '1';
+						window.showPageSpinner('Deleting group…');
+						fetch('/vendor/packages/groups/' + btn.getAttribute('data-group-id') + '/delete', { method: 'POST' })
+							.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+							.then(function (result) {
+								if (!result.ok) { throw new Error(result.body.error || 'Could not delete this group. Please try again.'); }
+								window.location.reload();
+							})
+							.catch(function (err) {
+								delete btn.dataset.armed;
+								window.hidePageSpinner();
+								alert(err.message || 'Could not reach the server. Please try again.');
+							});
+					});
+				});
+			});
+
+			// --- Edit groups on a package (shared modal) ---
+			var editGroupsModalEl = document.getElementById('editPackageGroupsModal');
+			var editGroupsModal = bootstrap.Modal.getOrCreateInstance(editGroupsModalEl);
+			var activePackageId = null;
+
+			document.querySelectorAll('.edit-package-groups-btn').forEach(function (btn) {
+				btn.addEventListener('click', function () {
+					activePackageId = btn.getAttribute('data-package-id');
+					var currentNames = (btn.getAttribute('data-current-group-names') || '').split(',').filter(Boolean);
+					document.querySelectorAll('.edit-package-groups-checkbox').forEach(function (checkbox) {
+						checkbox.checked = currentNames.indexOf(checkbox.getAttribute('data-group-name')) !== -1;
+					});
+					editGroupsModal.show();
+				});
+			});
+
+			var editGroupsSaveBtn = document.getElementById('editPackageGroupsSaveBtn');
+			if (editGroupsSaveBtn) {
+				editGroupsSaveBtn.addEventListener('click', function () {
+					if (!activePackageId) { return; }
+					var groupIds = Array.from(document.querySelectorAll('.edit-package-groups-checkbox:checked')).map(function (c) { return c.value; });
+					var params = groupIds.map(function (id) { return 'groupIds=' + encodeURIComponent(id); }).join('&');
+					window.showPageSpinner('Saving groups…');
+					fetch('/vendor/packages/' + activePackageId + '/groups', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+						.then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+						.then(function (result) {
+							if (!result.ok) { throw new Error(result.body.error || 'Could not save groups. Please try again.'); }
+							window.location.reload();
+						})
+						.catch(function (err) {
+							window.hidePageSpinner();
+							alert(err.message || 'Could not reach the server. Please try again.');
+						});
+				});
+			}
+		});
+	</script>
+	<!-- /groups -->
 
 
 	<div th:replace="~{fragments/common :: confirmActionModal}"></div>

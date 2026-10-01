@@ -14,4 +14,5 @@ public record VendorPackageItem(
         BigDecimal minPrice,
         BigDecimal maxPrice,
         boolean active,
-        List<VendorPackageImageItem> images) {}
+        List<VendorPackageImageItem> images,
+        List<String> groups) {}

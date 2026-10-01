@@ -20,6 +20,7 @@ import com.web.eventsrus.model.VendorLegalDocumentForm;
 import com.web.eventsrus.model.VendorLegalDocumentItem;
 import com.web.eventsrus.model.VendorPackageForm;
 import com.web.eventsrus.model.VendorImageTagItem;
+import com.web.eventsrus.model.VendorPackageGroupItem;
 import com.web.eventsrus.model.VendorPackageImageItem;
 import com.web.eventsrus.model.VendorTaggedImageItem;
 import com.web.eventsrus.model.PlannerProfileForm;
@@ -595,6 +596,24 @@ public class BackendClient {
 
     public GalleryPhotoLimitItem getGalleryPhotoLimit(String jwt) {
         return get("/api/v1/vendors/me/gallery/limit", jwt, GalleryPhotoLimitItem.class);
+    }
+
+    // --- Vendor package groups (vendor-defined groupings on packages) ---
+
+    public List<VendorPackageGroupItem> getPackageGroups(String jwt) {
+        return get("/api/v1/vendors/me/package-groups", jwt, new ParameterizedTypeReference<List<VendorPackageGroupItem>>() {});
+    }
+
+    public VendorPackageGroupItem createPackageGroup(String jwt, String name) {
+        return postJson("/api/v1/vendors/me/package-groups", jwt, Map.of("name", name), VendorPackageGroupItem.class);
+    }
+
+    public void deletePackageGroup(String jwt, Long groupId) {
+        delete("/api/v1/vendors/me/package-groups/" + groupId, jwt);
+    }
+
+    public void setPackageGroups(String jwt, Long packageId, List<Long> groupIds) {
+        putJsonBodiless("/api/v1/vendors/me/packages/" + packageId + "/groups", jwt, groupIds);
     }
 
     // --- Google Calendar sync (data layer only - the OAuth consent redirect

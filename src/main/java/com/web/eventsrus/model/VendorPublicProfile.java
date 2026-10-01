@@ -58,4 +58,5 @@ public record VendorPublicProfile(
         String paymentInstructions,
         List<VendorPaymentMethodItem> paymentMethods,
         List<VendorPackageImageItem> galleryImages,
-        List<String> availableImageTags) {}
+        List<String> availableImageTags,
+        List<String> availableGroups) {}

@@ -703,8 +703,10 @@ public class VendorController {
 
     @GetMapping("/packages")
     public String packages(HttpSession session, Model model) {
-        List<VendorPackageItem> packages = backendClient.getPackages(WebSession.token(session));
+        String jwt = WebSession.token(session);
+        List<VendorPackageItem> packages = backendClient.getPackages(jwt);
         model.addAttribute("packages", packages);
+        model.addAttribute("packageGroups", backendClient.getPackageGroups(jwt));
         model.addAttribute("activePage", "packages");
         model.addAttribute("pageTitle", "Packages");
         if (!model.containsAttribute("vendorPackageForm")) {
@@ -712,6 +714,40 @@ public class VendorController {
         }
         model.addAttribute("packageTypes", PackageType.values());
         return "vendor/packages";
+    }
+
+    @PostMapping("/packages/groups")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> createPackageGroup(@RequestParam String name, HttpSession session) {
+        try {
+            backendClient.createPackageGroup(WebSession.token(session), name);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/packages/groups/{groupId}/delete")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deletePackageGroup(@PathVariable Long groupId, HttpSession session) {
+        try {
+            backendClient.deletePackageGroup(WebSession.token(session), groupId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/packages/{packageId}/groups")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> setPackageGroups(
+            @PathVariable Long packageId, @RequestParam(required = false) List<Long> groupIds, HttpSession session) {
+        try {
+            backendClient.setPackageGroups(WebSession.token(session), packageId, groupIds == null ? List.of() : groupIds);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     // AJAX (JSON in/out) rather than a redirect - the Add Package modal's
@@ -964,6 +1000,15 @@ public class VendorController {
                                 .filter(img -> img.tags().contains(tag))
                                 .toList()));
         model.addAttribute("imagesByTag", imagesByTag);
+        // Same server-side pre-filtering as imagesByTag above, for the
+        // Packages section's own group filter tabs.
+        Map<String, List<VendorPackageItem>> packagesByGroup = profile.availableGroups().stream()
+                .collect(Collectors.toMap(
+                        group -> group,
+                        group -> profile.packages().stream()
+                                .filter(pkg -> pkg.groups().contains(group))
+                                .toList()));
+        model.addAttribute("packagesByGroup", packagesByGroup);
         model.addAttribute("redirectSlug", slug);
         model.addAttribute("eventId", eventId);
         // A vendor previewing their OWN storefront ("View My Page") has no

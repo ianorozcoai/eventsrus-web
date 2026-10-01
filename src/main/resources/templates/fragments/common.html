@@ -800,6 +800,38 @@
 		<span th:if="${pkg.pricingType() != null and pkg.pricingType().name() == 'QUOTE'}" class="badge bg-warning text-dark">Request for Quotation</span>
 	</span>
 
+	<!--/* Storefront package card - the whole card opens this package's
+	     detail modal (full description + every photo) via a real Bootstrap
+	     data-api trigger, not a JS click handler, EXCEPT the photo
+	     thumbnails inside stay their own .lightbox-trigger; the lightbox
+	     script below stops those clicks from bubbling up and ALSO opening
+	     this modal underneath. Lives here (not inline in storefront.html)
+	     because a th:fragment block also renders during normal top-to-
+	     bottom page flow wherever it's defined, and "pkg" would be unbound
+	     in that context on the actual served page - this file is only ever
+	     included via th:replace/th:insert, never served directly, so that
+	     normal-flow evaluation never happens here. Used by
+	     vendor/storefront.html's Packages section (All tab + each group
+	     tab a package belongs to) - the package's actual detail MODAL is
+	     rendered separately, once, outside this fragment. */-->
+	<th:block th:fragment="packageCard(pkg)">
+		<div class="border rounded p-3 h-100" style="cursor:pointer;" data-bs-toggle="modal" th:attr="data-bs-target='#packageDetailModal-' + ${pkg.id()}">
+			<span class="badge mb-2" th:classappend="${pkg.packageType().name() == 'SERVICE'} ? 'bg-indigo' : 'bg-teal'" th:text="${pkg.packageType()}">TYPE</span>
+			<h6 class="mb-1" th:text="${pkg.name()}">Package name</h6>
+			<p class="text-muted fs-sm mb-2" style="white-space:pre-wrap;" th:text="${pkg.description()}">Description</p>
+			<div class="fw-semibold mb-2" th:insert="~{fragments/common :: packagePrice(${pkg})}">0.00</div>
+
+			<div class="d-flex flex-wrap gap-2 mt-2" th:if="${not #lists.isEmpty(pkg.images())}">
+				<a href="#" class="lightbox-trigger" th:each="img : ${pkg.images()}"
+					th:attr="data-lightbox-src=${img.imageUrl()},data-lightbox-caption=${(img.caption() != null ? img.caption() : pkg.name())}">
+					<img th:src="${img.imageUrl()}" alt="Package photo" class="rounded border" style="width:56px;height:56px;object-fit:cover;" loading="lazy">
+				</a>
+			</div>
+
+			<div class="fs-sm mt-2" style="color:#ff6b35;"><i class="ph-eye me-1"></i> View details</div>
+		</div>
+	</th:block>
+
 	<!--/* Image/PDF lightbox - shared by every page that shows real uploaded
 	     images or documents as clickable previews (vendor/storefront.html,
 	     vendor/settings.html, planner/events.html and vendor/quotations.html's

@@ -22,6 +22,8 @@ import com.web.eventsrus.model.VendorPackageForm;
 import com.web.eventsrus.model.VendorImageTagItem;
 import com.web.eventsrus.model.VendorPackageGroupItem;
 import com.web.eventsrus.model.VendorPackageImageItem;
+import com.web.eventsrus.model.VendorSocialMediaLinkItem;
+import com.web.eventsrus.model.SocialMediaPlatform;
 import com.web.eventsrus.model.VendorTaggedImageItem;
 import com.web.eventsrus.model.PlannerProfileForm;
 import com.web.eventsrus.model.VendorPackageItem;
@@ -614,6 +616,21 @@ public class BackendClient {
 
     public void setPackageGroups(String jwt, Long packageId, List<Long> groupIds) {
         putJsonBodiless("/api/v1/vendors/me/packages/" + packageId + "/groups", jwt, groupIds);
+    }
+
+    // --- Vendor social media links ---
+
+    public List<VendorSocialMediaLinkItem> getSocialMediaLinks(String jwt) {
+        return get("/api/v1/vendors/me/social-media-links", jwt, new ParameterizedTypeReference<List<VendorSocialMediaLinkItem>>() {});
+    }
+
+    public VendorSocialMediaLinkItem addSocialMediaLink(String jwt, SocialMediaPlatform platform, String url) {
+        return postJson("/api/v1/vendors/me/social-media-links", jwt,
+                Map.of("platform", platform.name(), "url", url), VendorSocialMediaLinkItem.class);
+    }
+
+    public void deleteSocialMediaLink(String jwt, Long linkId) {
+        delete("/api/v1/vendors/me/social-media-links/" + linkId, jwt);
     }
 
     // --- Google Calendar sync (data layer only - the OAuth consent redirect

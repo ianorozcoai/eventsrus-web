@@ -453,13 +453,23 @@
 										<i class="ph-at text-muted me-2"></i>
 										<span th:text="${profile.contactEmail()}">email@example.com</span>
 									</div>
-									<div class="d-flex align-items-center" th:classappend="${profile.facebookPageUrl() != null and not #strings.isEmpty(profile.facebookPageUrl())} ? 'mb-2' : ''">
+									<div class="d-flex align-items-center" th:classappend="${not #lists.isEmpty(profile.socialMediaLinks())} ? 'mb-2' : ''">
 										<i class="ph-phone text-muted me-2"></i>
 										<span th:text="${profile.phoneNumber()}">+63 900 000 0000</span>
 									</div>
-									<div class="d-flex align-items-center" th:if="${profile.facebookPageUrl() != null and not #strings.isEmpty(profile.facebookPageUrl())}">
-										<i class="ph-facebook-logo text-muted me-2"></i>
-										<a th:href="${profile.facebookPageUrl()}" target="_blank" rel="noopener" th:text="${profile.facebookPageUrl()}">Facebook Page</a>
+									<!--/* As many social media links as the vendor has added (see
+									     VendorSocialMediaLinkService) - includes one seeded from the
+									     legacy Facebook Page URL field if the vendor had set one
+									     before ever adding a link of their own (see
+									     UserService#becomeVendor/#updateSettings), so it naturally
+									     shows up here too without any extra handling. */-->
+									<div class="d-flex align-items-center" th:each="link, iterStat : ${profile.socialMediaLinks()}" th:classappend="${not iterStat.last} ? 'mb-2' : ''">
+										<i class="text-muted me-2"
+											th:classappend="${link.platform().name() == 'FACEBOOK'} ? 'ph-facebook-logo'
+												: (${link.platform().name() == 'INSTAGRAM'} ? 'ph-instagram-logo'
+												: (${link.platform().name() == 'X'} ? 'ph-twitter-logo'
+												: (${link.platform().name() == 'TIKTOK'} ? 'ph-tiktok-logo' : 'ph-youtube-logo')))"></i>
+										<a th:href="${link.url()}" target="_blank" rel="noopener" th:text="${link.url()}">Social media link</a>
 									</div>
 								</div>
 							</div>

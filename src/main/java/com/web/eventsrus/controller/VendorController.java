@@ -7,6 +7,7 @@ import com.web.eventsrus.model.EventType;
 import com.web.eventsrus.model.InquiryForm;
 import com.web.eventsrus.model.LegalDocumentType;
 import com.web.eventsrus.model.PackageType;
+import com.web.eventsrus.model.SocialMediaPlatform;
 import com.web.eventsrus.model.PaymentType;
 import com.web.eventsrus.model.PhilippineProvinces;
 import com.web.eventsrus.model.QuotationRequestForm;
@@ -1158,6 +1159,8 @@ public class VendorController {
             model.addAttribute("vendorLegalDocumentForm", new VendorLegalDocumentForm());
         }
         model.addAttribute("legalDocuments", backendClient.getLegalDocuments(jwt));
+        model.addAttribute("socialMediaLinks", backendClient.getSocialMediaLinks(jwt));
+        model.addAttribute("socialMediaPlatforms", SocialMediaPlatform.values());
         model.addAttribute("documentTypes", LegalDocumentType.values());
         model.addAttribute("businessTypes", BusinessType.displayOrder());
         model.addAttribute("provinces", PhilippineProvinces.ALL);
@@ -1353,6 +1356,33 @@ public class VendorController {
     public ResponseEntity<Map<String, Object>> deletePaymentMethod(@PathVariable Long paymentMethodId, HttpSession session) {
         try {
             backendClient.deletePaymentMethod(WebSession.token(session), paymentMethodId);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // AJAX (JSON), not a redirect - a social media link is just a platform +
+    // URL, no file involved, so (unlike Payment Methods/Legal Documents)
+    // there's nothing to queue until the page's big Save Changes button -
+    // this adds it immediately, same pattern as Gallery tags/Package groups.
+    @PostMapping("/settings/social-media-links")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> addSocialMediaLink(
+            @RequestParam SocialMediaPlatform platform, @RequestParam String url, HttpSession session) {
+        try {
+            backendClient.addSocialMediaLink(WebSession.token(session), platform, url);
+            return ResponseEntity.ok(Map.of("success", true));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/settings/social-media-links/{linkId}/delete")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> deleteSocialMediaLink(@PathVariable Long linkId, HttpSession session) {
+        try {
+            backendClient.deleteSocialMediaLink(WebSession.token(session), linkId);
             return ResponseEntity.ok(Map.of("success", true));
         } catch (BackendApiException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

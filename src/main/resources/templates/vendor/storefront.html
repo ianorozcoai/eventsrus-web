@@ -431,8 +431,13 @@
 							<!-- /contact info -->
 
 
-							<!-- Payment methods -->
-							<div class="card mb-3" th:if="${not #lists.isEmpty(profile.paymentMethods())}">
+							<!-- Payment methods - shown if there's EITHER instructions text OR at
+							     least one approved QR code, not only when both are present. A vendor
+							     who's only filled in instructions (no QR code uploaded/approved yet)
+							     still needs that text visible - paymentMethods only ever holds
+							     APPROVED entries (see VendorDirectoryService), so gating purely on
+							     it hid the instructions entirely for any vendor without one yet. -->
+							<div class="card mb-3" th:if="${(profile.paymentInstructions() != null and not #strings.isEmpty(profile.paymentInstructions())) or not #lists.isEmpty(profile.paymentMethods())}">
 								<div class="card-header">
 									<h6 class="mb-0">Payment Methods</h6>
 								</div>

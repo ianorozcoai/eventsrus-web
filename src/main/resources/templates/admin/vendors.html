@@ -129,6 +129,7 @@
 														th:text="${bt.getLabel()} + (${iter.last} ? '' : ', ')">Business Type</span>
 												</td>
 												<td>
+													<div class="fw-semibold" th:text="${vendor.ownerName()}">Owner Name</div>
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">09xxxxxxxxx</div>
 												</td>
@@ -261,6 +262,7 @@
 											<tr th:each="vendor : ${paymentOverdueVendors}">
 												<td th:text="${vendor.businessName()}">Business Name</td>
 												<td>
+													<div class="fw-semibold" th:text="${vendor.ownerName()}">Owner Name</div>
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
 												</td>
@@ -321,6 +323,7 @@
 											<tr th:each="vendor : ${neverSubscribedVendors}">
 												<td th:text="${vendor.businessName()}">Business Name</td>
 												<td>
+													<div class="fw-semibold" th:text="${vendor.ownerName()}">Owner Name</div>
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
 												</td>

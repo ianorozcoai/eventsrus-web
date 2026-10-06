@@ -7,6 +7,7 @@
 	<title th:text="${intent == 'vendor'} ? 'Supplier Login - EventsRUs' : 'Planner Login - EventsRUs'">Login - EventsRUs</title>
 
 	<!-- Favicon -->
+	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">
 	<link rel="icon" type="image/png" sizes="32x32" th:href="@{/assets/images/favicon-32x32.png}">
 	<link rel="icon" type="image/png" sizes="16x16" th:href="@{/assets/images/favicon-16x16.png}">
 	<link rel="apple-touch-icon" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -123,7 +124,7 @@
 			     error. Detected before Google Sign-In is ever attempted, so
 			     they see actionable instructions instead of that dead end. -->
 			<div id="in-app-browser-notice" class="card-body text-center p-4" hidden>
-				<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:220px;max-width:80%;height:auto;" class="mb-3">
+				<img th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs" style="width:220px;max-width:80%;height:auto;" class="mb-3">
 				<h5 class="mb-2">Open this page in your browser</h5>
 				<p class="text-muted fs-sm mb-3">
 					Google Sign-In doesn't work inside this app's built-in browser. Tap the <strong>&#8942;</strong> or <strong>&#183;&#183;&#183;</strong> menu above and choose <strong>"Open in Browser"</strong> (or "Open in Chrome" / "Open in Safari") to continue - or copy the link below and paste it into your browser.
@@ -136,11 +137,11 @@
 			</div>
 
 			<div id="login-card-content" class="card-body text-center p-4">
-				<!-- One card for the whole login moment - logo.svg already carries
-				     its own white backdrop, so it blends seamlessly on this
-				     card's own white surface without any extra wrapper. -->
+				<!-- One card for the whole login moment - logo-login.svg has a transparent
+				     canvas natively (vector trace, no background fill), so it blends
+				     seamlessly on this card's own white surface without any extra wrapper. -->
 				<a th:href="@{/}" class="d-inline-block mb-3">
-					<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:260px;max-width:85%;height:auto;">
+					<img th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs" style="width:260px;max-width:85%;height:auto;">
 				</a>
 				<h5 class="mb-1" th:text="${intent == 'vendor'} ? 'Supplier Login' : 'Planner Login'">Login</h5>
 				<p class="text-muted fs-sm mb-4"

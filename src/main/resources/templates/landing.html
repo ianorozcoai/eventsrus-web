@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<title>EventsRUs</title>
 
+	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">
 	<link rel="icon" type="image/png" sizes="32x32" th:href="@{/assets/images/favicon-32x32.png}">
 	<link rel="icon" type="image/png" sizes="16x16" th:href="@{/assets/images/favicon-16x16.png}">
 	<link rel="apple-touch-icon" th:href="@{/assets/images/apple-touch-icon.png}">
@@ -68,15 +69,13 @@
 			background: #000;
 			padding: .9rem 0;
 		}
-		.landing-header .brand-mark { width: 28px; height: 28px; font-size: .85rem; }
-		.landing-header .brand-name { color: #fff; }
 		.landing-header .nav-link-item { color: rgba(255,255,255,.85); }
 		.landing-header .nav-link-item:hover { color: #fff; }
-		/* Below ~420px, "EventsRUs" + the pill button no longer both fit on
-		     one line (neither shrinks below its own content width) - the logo
-		     mark alone still reads as the brand, so drop the text there. */
+		/* Below ~420px, the full wordmark logo + the pill button no longer both fit on
+		     one line - shrink it rather than drop any part of it, since
+		     there's no separate mark-only asset to fall back to any more. */
 		@media (max-width: 420px) {
-			.landing-header .brand-name { display: none; }
+			.landing-header img[alt="EventsRUs"] { height: 20px; }
 			.landing-header .pill-btn { padding: .6rem 1.25rem; font-size: .85rem; }
 		}
 
@@ -197,8 +196,7 @@
 	<header class="landing-header">
 		<div class="container d-flex align-items-center justify-content-between">
 			<span class="d-inline-flex align-items-center text-decoration-none">
-				<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold brand-mark text-white">E</span>
-				<span class="fw-bold fs-lg ms-2 brand-name">EventsRUs</span>
+				<img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs" style="height:26px;width:auto;">
 			</span>
 			<div class="d-none d-md-flex align-items-center gap-4">
 				<a href="#how-it-works" class="nav-link-item text-decoration-none fw-semibold fs-sm">How it works</a>
@@ -532,7 +530,7 @@
 			<div class="modal-content">
 				<div class="modal-body text-center p-4 p-md-5">
 					<button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
-					<img th:src="@{/assets/images/logo.svg}" alt="EventsRUs" style="width:280px;max-width:100%;height:auto;" class="mb-3">
+					<img th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs" style="width:280px;max-width:100%;height:auto;" class="mb-3">
 					<h5 class="mb-1">What brings you here today?</h5>
 					<p class="text-muted fs-sm mb-4">Choose how you'd like to use EventsRUs.</p>
 					<div class="role-cards">

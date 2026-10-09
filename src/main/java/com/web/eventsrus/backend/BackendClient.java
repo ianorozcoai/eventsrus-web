@@ -1080,6 +1080,16 @@ public class BackendClient {
         postMultipartBodiless("/api/v1/admin/referrals/" + referralId + "/mark-paid", adminJwt, body);
     }
 
+    /** The admin module's ad-hoc SMS tool - see admin/sms.html. */
+    public BackendSmsLogItem sendAdhocSms(String adminJwt, String number, String message) {
+        return postJson("/api/v1/admin/sms/send", adminJwt, Map.of("number", number, "message", message),
+                BackendSmsLogItem.class);
+    }
+
+    public List<BackendSmsLogItem> listSmsHistory(String adminJwt) {
+        return get("/api/v1/admin/sms/history", adminJwt, new ParameterizedTypeReference<List<BackendSmsLogItem>>() {});
+    }
+
     /** Support-desk fix for a referral that was never attributed at signup - see AdminVendorController#tagReferral. */
     public void tagVendorReferral(
             String adminJwt, Long vendorUserId, String referrerCode, String status, java.math.BigDecimal commissionAmount) {

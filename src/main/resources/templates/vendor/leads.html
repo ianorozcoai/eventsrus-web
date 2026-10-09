@@ -65,6 +65,7 @@
 									<tr>
 										<th>Planner</th>
 										<th>Event</th>
+										<th>Event date</th>
 										<th>First visited</th>
 										<th>Last visited</th>
 										<th class="text-end">Actions</th>
@@ -79,6 +80,7 @@
 											</div>
 										</td>
 										<td th:text="${lead.eventName()}">Event</td>
+										<td th:text="${lead.eventDate() != null ? #temporals.format(lead.eventDate(), 'MMM dd, yyyy') : '-'}">-</td>
 										<td th:text="${#temporals.format(lead.firstVisitedAt(), 'MMM dd, yyyy - h:mm a')}">-</td>
 										<td>
 											<span th:text="${#temporals.format(lead.lastVisitedAt(), 'MMM dd, yyyy - h:mm a')}">-</span>

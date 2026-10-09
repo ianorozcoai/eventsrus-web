@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('SMS - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('sms')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">SMS</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${smsSent}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						SMS sent.
+					</div>
+
+					<div th:if="${smsError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${smsError}">Error</span>
+					</div>
+
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<!--/* Sends via Semaphore (semaphore.co), sender name "EventsRUsPH".
+					     Real sends are disabled backend-side until that sender name is
+					     approved - see SmsService's app.sms-enabled flag. Trying to
+					     send while disabled still returns a clear reason in the
+					     smsError banner above rather than a generic failure. */-->
+					<div class="card" th:unless="${backendUnavailable}">
+						<div class="card-header">
+							<h6 class="mb-0">Send a message</h6>
+						</div>
+						<div class="card-body">
+							<form th:action="@{/admin/sms/send}" method="post" class="row g-3">
+								<div class="col-md-4">
+									<label class="form-label">Mobile number</label>
+									<input type="text" name="number" class="form-control" placeholder="e.g. 09171234567" required>
+								</div>
+								<div class="col-md-6">
+									<label class="form-label">Message</label>
+									<input type="text" name="message" class="form-control" maxlength="480" required>
+								</div>
+								<div class="col-md-2 d-flex align-items-end">
+									<button type="submit" class="btn btn-primary w-100">
+										<i class="ph-paper-plane-tilt me-1"></i> Send
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+
+					<div class="card mt-3" th:unless="${backendUnavailable}">
+						<div class="card-header d-flex align-items-center">
+							<h6 class="mb-0">Recent sends</h6>
+							<span class="badge bg-primary rounded-pill ms-auto" th:text="${#lists.size(history)}">0</span>
+						</div>
+
+						<div class="table-responsive">
+							<table id="smsHistoryTable" class="table table-hover w-100">
+								<thead>
+									<tr>
+										<th>When</th>
+										<th>Number</th>
+										<th>Message</th>
+										<th>Trigger</th>
+										<th>Status</th>
+										<th>Sent by</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="entry : ${history}">
+										<td th:text="${#temporals.format(entry.createdAt(), 'MMM d, yyyy h:mm a')}">-</td>
+										<td th:text="${entry.recipientNumber()}">-</td>
+										<td>
+											<div class="text-truncate" style="max-width: 320px;" th:text="${entry.message()}">-</div>
+										</td>
+										<td>
+											<span class="badge bg-secondary" th:if="${entry.triggerType().name() == 'ADMIN_ADHOC'}">Admin ad-hoc</span>
+											<span class="badge bg-info text-dark" th:if="${entry.triggerType().name() == 'VENDOR_QUOTATION_REQUEST'}">Quote request</span>
+											<span class="badge bg-info text-dark" th:if="${entry.triggerType().name() == 'VENDOR_PAYMENT_SCREENSHOT'}">Payment screenshot</span>
+											<span class="badge bg-info text-dark" th:if="${entry.triggerType().name() == 'VENDOR_AMENDMENT_PROPOSED'}">Amendment proposed</span>
+										</td>
+										<td>
+											<span class="badge bg-success" th:if="${entry.success()}">Sent</span>
+											<span class="badge bg-danger" th:unless="${entry.success()}" th:title="${entry.errorMessage()}">Failed</span>
+										</td>
+										<td th:text="${entry.sentByAdminEmail() != null ? entry.sentByAdminEmail() : '-'}">-</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="card-body text-center text-muted" th:if="${#lists.isEmpty(history)}">
+							No SMS sent yet.
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+				<!-- Footer -->
+				<div class="navbar navbar-sm navbar-footer border-top">
+					<div class="container-fluid">
+						<span>&copy; 2026 EventsRUs</span>
+					</div>
+				</div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
+	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			$('#smsHistoryTable').DataTable({ pageLength: 20, order: [] });
+		});
+	</script>
+
+</body>
+</html>

@@ -376,19 +376,12 @@
 
 										<div class="d-flex flex-column flex-grow-1" th:if="${selectedConversation != null}">
 
-											<div class="d-flex align-items-center p-3 border-bottom">
-												<div class="d-flex align-items-center justify-content-center rounded-circle fw-bold text-white flex-shrink-0" style="width:36px;height:36px;"
-													th:classappend="${selectedConversation.id() % 3 == 0} ? 'bg-indigo' : (${selectedConversation.id() % 3 == 1} ? 'bg-teal' : 'bg-pink')"
-													th:text="${#strings.substring(selectedConversation.otherPartyName(), 0, 1)}">V</div>
-												<div class="ms-3">
-													<span class="fw-semibold" th:text="${selectedConversation.otherPartyName()}">Supplier name</span>
-													<div class="text-muted fs-sm">
-														<i class="ph-user-circle me-1"></i>
-														<span th:text="${selectedConversation.otherPartyBusinessType() != null} ? ${selectedConversation.otherPartyBusinessType().label} : 'Supplier'">Supplier</span>
-													</div>
-												</div>
-												<a th:if="${selectedConversation.otherPartySlug() != null}"
-													th:href="@{'/vendor/storefront/' + ${selectedConversation.otherPartySlug()}(eventId=${selectedEvent.id()})}"
+											<!-- The supplier's name/avatar/business type already show in the
+											     conversation list on the left - repeating them here just
+											     duplicated that same info, so this bar now only carries the
+											     one thing the list doesn't have: the storefront link. -->
+											<div class="d-flex align-items-center p-3 border-bottom" th:if="${selectedConversation.otherPartySlug() != null}">
+												<a th:href="@{'/vendor/storefront/' + ${selectedConversation.otherPartySlug()}(eventId=${selectedEvent.id()})}"
 													target="_blank" class="btn btn-primary btn-sm ms-auto flex-shrink-0">
 													<i class="ph-storefront me-1"></i>
 													View Storefront

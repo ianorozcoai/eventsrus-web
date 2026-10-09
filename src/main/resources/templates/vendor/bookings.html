@@ -158,8 +158,8 @@
 						<tbody th:fragment="bookingsTableBody(rows)">
 							<tr th:each="booking : ${rows}">
 								<td>
-									<div th:text="${booking.eventName()}">Event</div>
-									<div class="text-muted fs-sm" th:text="'Planner: ' + ${booking.plannerName()}">Planner</div>
+									<div th:text="${booking.plannerName()}">Planner</div>
+									<div class="text-muted fs-sm" th:text="${booking.eventName()}">Event</div>
 									<!--/* The original request message stops being relevant once the
 									     booking is cancelled - showing it next to the cancellation
 									     reason made it look like the two were related, which is

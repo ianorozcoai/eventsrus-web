@@ -47,10 +47,10 @@ class VendorControllerStorefrontTest {
 
     private VendorPublicProfile profile(long vendorUserId) {
         return new VendorPublicProfile(
-                vendorUserId, "Business", "Owner", "Description", null, null, "City", "State", "Country",
-                "contact@example.com", "0900", null, null, null, null, null, null, false, java.util.List.of(),
-                java.util.List.of(), null, 0, null, java.util.List.of(), java.util.List.of(), java.util.List.of(),
-                java.util.List.of(), java.util.List.of());
+                vendorUserId, null, "Business", "Owner", "Description", null, java.util.List.of(), "City", "State",
+                "Country", "contact@example.com", "0900", null, null, null, null, null, java.util.List.of(), false,
+                java.util.List.of(), java.util.List.of(), null, 0, null, java.util.List.of(), java.util.List.of(),
+                java.util.List.of(), java.util.List.of(), java.util.List.of());
     }
 
     @Test
@@ -60,7 +60,9 @@ class VendorControllerStorefrontTest {
         session.setAttribute(WebSession.FIRST_NAME, "Ian");
         when(backendClient.getVendorProfile(eq("a.jwt"), eq("some-vendor"), eq(42L))).thenReturn(profile(9001L));
         when(backendClient.getEvent("a.jwt", 42L))
-                .thenReturn(new PlannerEvent(42L, "Birthday", null, LocalDate.of(2026, 12, 25), null, null, null, false, null));
+                .thenReturn(new PlannerEvent(
+                        42L, "Birthday", null, LocalDate.of(2026, 12, 25), null, null, null, null, null, false, null,
+                        null, null));
 
         mockMvc.perform(get("/vendor/storefront/some-vendor").param("eventId", "42").session(session))
                 .andExpect(status().isOk())

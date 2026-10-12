@@ -19,6 +19,7 @@ import com.web.eventsrus.model.VendorConversationMessage;
 import com.web.eventsrus.model.VendorQuotation;
 
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -58,6 +59,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  */
 @Controller
 @RequestMapping("/planner/events")
+@Slf4j
 public class PlannerController {
 
     // Manila, not UTC/system default - every date this app collects (event
@@ -86,6 +88,7 @@ public class PlannerController {
         } catch (BackendApiException e) {
             // Already read, not this planner's, or the backend hiccuped -
             // still send them back rather than showing an error.
+            log.warn("markNotificationRead failed for notification {}: {} {}", id, e.getStatus(), e.getMessage());
         }
         return "redirect:/planner/events";
     }
@@ -441,6 +444,7 @@ public class PlannerController {
             model.addAttribute("selectedEvent", event);
             addSupplierPanelAttributes(model, event);
         } catch (BackendApiException e) {
+            log.warn("getChecklist failed for event {}: {} {}", eventId, e.getStatus(), e.getMessage());
             model.addAttribute("checklistError", "Couldn't load checklist. Please try again.");
         }
         return "planner/events :: checklistResults";

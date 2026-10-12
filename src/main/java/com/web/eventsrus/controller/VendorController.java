@@ -50,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -73,6 +74,7 @@ import tools.jackson.databind.ObjectMapper;
  */
 @Controller
 @RequestMapping("/vendor")
+@Slf4j
 public class VendorController {
 
     private final ObjectMapper objectMapper;
@@ -153,6 +155,7 @@ public class VendorController {
         } catch (BackendApiException e) {
             // Already read, not this vendor's, or the backend hiccuped -
             // still send them somewhere sensible rather than showing an error.
+            log.warn("markNotificationRead failed for notification {}: {} {}", id, e.getStatus(), e.getMessage());
         }
         String type = relatedEntityType == null ? "" : relatedEntityType;
         return "redirect:" + switch (type) {
@@ -265,6 +268,7 @@ public class VendorController {
             backendClient.sendVendorMessage(WebSession.token(session), eventId, message, attachment);
             redirectAttributes.addFlashAttribute("leadMessageSent", true);
         } catch (BackendApiException e) {
+            log.warn("sendLeadMessage failed for event {}: {} {}", eventId, e.getStatus(), e.getMessage());
             redirectAttributes.addFlashAttribute("leadsError", e.getMessage());
         }
         return "redirect:/vendor/leads";
@@ -325,6 +329,7 @@ public class VendorController {
             backendClient.acknowledgeBookingPayment(WebSession.token(session), bookingId, invoice);
             redirectAttributes.addFlashAttribute("paymentAcknowledged", true);
         } catch (BackendApiException e) {
+            log.warn("acknowledgeBookingPayment failed for booking {}: {} {}", bookingId, e.getStatus(), e.getMessage());
             redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
         }
         return "redirect:/vendor/bookings";
@@ -342,6 +347,7 @@ public class VendorController {
             backendClient.rejectBookingPayment(WebSession.token(session), bookingId, reason);
             redirectAttributes.addFlashAttribute("paymentRejected", true);
         } catch (BackendApiException e) {
+            log.warn("rejectBookingPayment failed for booking {}: {} {}", bookingId, e.getStatus(), e.getMessage());
             redirectAttributes.addFlashAttribute("bookingsError", e.getMessage());
         }
         return "redirect:/vendor/bookings";

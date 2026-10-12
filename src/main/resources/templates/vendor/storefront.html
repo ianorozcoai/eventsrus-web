@@ -72,7 +72,35 @@
 										     vendor still waiting on admin review. */-->
 									</div>
 
-									<h1 class="fw-bold mb-2" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
+									<div class="d-flex align-items-center flex-wrap gap-3 mb-2">
+										<h1 class="fw-bold mb-0" style="font-size:2.25rem;" th:text="${profile.businessName()}">Business name</h1>
+										<!--/* Bookmarking a specific supplier for this event - distinct from
+										     just checking its category, this names an actual vendor the
+										     planner wants to follow up with (see EventService
+										     #setVendorBookmark). Creates a "X was bookmarked" checklist item.
+										     Only shown for a logged-in planner viewing in the context of one
+										     of their own events, never on their own storefront preview.
+										     Same ph-bookmark-simple icon in both states - this icon set has
+										     no "-fill" weight, so the filled/outline button style alone
+										     carries the on/off state. Not .btn-outline-light for the "off"
+										     state - same compiled-CSS gotcha as the "Go to Dashboard" link
+										     above (this theme doesn't give that class real light text, so it
+										     rendered near-invisible dark-on-dark here) - plain text-white
+										     plus a manual border matches that link's working fix instead. */-->
+										<button type="button" id="bookmarkToggleBtn" class="btn btn-sm fw-semibold"
+												th:if="${plannerLoggedIn and eventId != null and not isOwnStorefront}"
+												th:classappend="${isBookmarked} ? ' btn-warning' : ' text-white'"
+												th:style="${isBookmarked} ? '' : 'border:1px solid rgba(255,255,255,.4);'"
+												th:attr="data-event-id=${eventId},data-vendor-user-id=${profile.vendorUserId()},data-bookmarked=${isBookmarked},data-category=${bookmarkCategory}">
+											<i class="ph-bookmark-simple"></i>
+											<span th:text="${isBookmarked} ? 'Bookmarked' : 'Bookmark this supplier'">Bookmark this supplier</span>
+										</button>
+									</div>
+									<div class="fs-sm opacity-75 mb-2" th:if="${profile.businessTypes() != null and not #lists.isEmpty(profile.businessTypes())}">
+										<span th:each="type, iter : ${profile.businessTypes()}">
+											<span th:text="${type.label}">Catering</span><span th:if="${!iter.last}">, </span>
+										</span>
+									</div>
 									<p class="mb-4 opacity-75" style="max-width:640px;white-space:pre-wrap;" th:text="${profile.description()}">Description</p>
 
 									<div class="d-flex flex-wrap gap-4 pt-3 border-top border-white border-opacity-10" th:if="${profile.primaryRegion() != null or (profile.averageRating() != null) or profile.responseTime() != null}">
@@ -665,6 +693,40 @@
 		});
 	</script>
 
+	<!-- Storefront Bookmark toggle - AJAX, same page stays open. -->
+	<script th:if="${plannerLoggedIn and eventId != null and not isOwnStorefront}">
+		document.addEventListener('DOMContentLoaded', function () {
+			var btn = document.getElementById('bookmarkToggleBtn');
+			if (!btn) { return; }
+			btn.addEventListener('click', function () {
+				var bookmarked = btn.getAttribute('data-bookmarked') === 'true';
+				var next = !bookmarked;
+				btn.disabled = true;
+				var params = new URLSearchParams();
+				params.set('eventId', btn.getAttribute('data-event-id'));
+				params.set('vendorUserId', btn.getAttribute('data-vendor-user-id'));
+				params.set('bookmarked', next);
+				var category = btn.getAttribute('data-category');
+				if (category) { params.set('category', category); }
+				fetch('/vendor/storefront/bookmark?' + params.toString(), { method: 'POST' })
+					.then(function (res) {
+						if (!res.ok) { throw new Error('Request failed'); }
+						btn.setAttribute('data-bookmarked', next);
+						btn.classList.toggle('btn-warning', next);
+						btn.classList.toggle('text-white', !next);
+						btn.style.border = next ? '' : '1px solid rgba(255,255,255,.4)';
+						btn.querySelector('span').textContent = next ? 'Bookmarked' : 'Bookmark this supplier';
+					})
+					.catch(function () {
+						if (window.showAlert) { window.showAlert('Could not update bookmark. Please try again.'); }
+					})
+					.finally(function () {
+						btn.disabled = false;
+					});
+			});
+		});
+	</script>
+
 	<div th:replace="~{fragments/common :: imageLightbox}"></div>
 
 	<div th:replace="~{fragments/common :: sweetAlertScript}"></div>
@@ -689,10 +751,11 @@
 	         handleGuidedGoogleCredential) - reused for both a real login
 	         and a real signup, the backend's own find-or-create logic
 	         doesn't care which.
-	       Modal C the trimmed 3-field "quick event" form (Name/Type/Date
-	         only - location/description are optional on the real backend
-	         request, left blank; the planner can fill those in normally
-	         later) - shown either after Modal A's "No" (then followed by
+	       Modal C the "quick event" form (Name/Type/Date/Location - the
+	         same four mandatory fields the full intake form collects;
+	         description is left blank, optional on the real backend
+	         request, the planner can fill it in normally later) - shown
+	         either after Modal A's "No" (then followed by
 	         Modal B to actually create the account) or directly, with no
 	         account question at all, for a planner who's already logged in
 	         but simply has no event yet.
@@ -781,9 +844,13 @@
 							<option th:each="type : ${eventTypes}" th:value="${type}" th:text="${type.label}"></option>
 						</select>
 					</div>
-					<div class="mb-0">
+					<div class="mb-3">
 						<label class="form-label">Event Date</label>
 						<input type="date" id="guidedEventDate" class="form-control">
+					</div>
+					<div class="mb-0">
+						<label class="form-label">Location</label>
+						<input type="text" id="guidedEventLocation" class="form-control" placeholder="City or province">
 					</div>
 				</div>
 				<div class="modal-footer">
@@ -918,11 +985,12 @@
 				var name = document.getElementById('guidedEventName').value.trim();
 				var eventType = document.getElementById('guidedEventType').value;
 				var eventDate = document.getElementById('guidedEventDate').value;
-				if (!name || !eventType) {
-					alert('Please fill in the event name and type.');
+				var location = document.getElementById('guidedEventLocation').value.trim();
+				if (!name || !eventType || !eventDate || !location) {
+					alert('Please fill in the event name, type, date, and location.');
 					return;
 				}
-				guidedPendingEvent = { name: name, eventType: eventType, eventDate: eventDate };
+				guidedPendingEvent = { name: name, eventType: eventType, eventDate: eventDate, location: location };
 				bootstrap.Modal.getInstance(document.getElementById('guidedEventModal')).hide();
 				if (guidedAuthenticated) {
 					createQuickEventAndRedirect();
@@ -994,9 +1062,8 @@
 				var body = new URLSearchParams();
 				body.set('name', guidedPendingEvent.name);
 				body.set('eventType', guidedPendingEvent.eventType);
-				if (guidedPendingEvent.eventDate) {
-					body.set('eventDate', guidedPendingEvent.eventDate);
-				}
+				body.set('eventDate', guidedPendingEvent.eventDate);
+				body.set('location', guidedPendingEvent.location);
 				fetch('/planner/events/quick-create', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

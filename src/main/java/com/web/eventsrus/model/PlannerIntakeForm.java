@@ -1,5 +1,6 @@
 package com.web.eventsrus.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,13 +9,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * Mirrors eventsrus-backend's dto.CreateEventRequest field-for-field
- * (eventType @NotNull, everything else optional), plus one stub-only
- * addition: name. The real event-name field only exists on the separate
- * SaveEventRequest DTO (@NotBlank there, sent in a later "save this event"
- * step) - captured here upfront instead, since this intake form combines
- * what the real flow eventually splits into create-then-save.
- * A mutable POJO rather than a record - Thymeleaf's th:field="*{...}"
- * binding needs a no-arg constructor and setters.
+ * (name/eventType/eventDate/location all required, description/budget/
+ * guestCount optional). A mutable POJO rather than a record - Thymeleaf's
+ * th:field="*{...}" binding needs a no-arg constructor and setters.
  */
 @Getter
 @Setter
@@ -31,4 +28,6 @@ public class PlannerIntakeForm {
     private LocalDate eventDate;
     private String location;
     private String description;
+    private BigDecimal budget;
+    private Integer guestCount;
 }

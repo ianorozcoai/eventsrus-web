@@ -5,8 +5,10 @@ import com.web.eventsrus.backend.BackendClient;
 import com.web.eventsrus.backend.BackendQuotationHistoryEntry;
 import com.web.eventsrus.backend.WebSession;
 import com.web.eventsrus.model.BusinessType;
+import com.web.eventsrus.model.CategoryRecommendation;
 import com.web.eventsrus.model.EventType;
 import com.web.eventsrus.model.PhilippineProvinces;
+import com.web.eventsrus.model.PlannerChecklistItem;
 import com.web.eventsrus.model.PlannerEvent;
 import com.web.eventsrus.model.PlannerEventSummary;
 import com.web.eventsrus.model.PlannerIntakeForm;
@@ -15,36 +17,6 @@ import com.web.eventsrus.model.VendorBooking;
 import com.web.eventsrus.model.VendorConversation;
 import com.web.eventsrus.model.VendorConversationMessage;
 import com.web.eventsrus.model.VendorQuotation;
-import static com.web.eventsrus.model.BusinessType.ARCADE;
-import static com.web.eventsrus.model.BusinessType.BRIDAL_GOWN_DESIGNER;
-import static com.web.eventsrus.model.BusinessType.CAKE_AND_PASTRIES;
-import static com.web.eventsrus.model.BusinessType.CATERING;
-import static com.web.eventsrus.model.BusinessType.DECORATION_PRODUCTION;
-import static com.web.eventsrus.model.BusinessType.ENTERTAINMENT;
-import static com.web.eventsrus.model.BusinessType.EVENT_COORDINATOR;
-import static com.web.eventsrus.model.BusinessType.EVENT_HOST;
-import static com.web.eventsrus.model.BusinessType.FLORAL_SERVICES;
-import static com.web.eventsrus.model.BusinessType.FOOD_CARTS_GRAZING;
-import static com.web.eventsrus.model.BusinessType.HAIR_AND_MAKEUP;
-import static com.web.eventsrus.model.BusinessType.INFLATABLES;
-import static com.web.eventsrus.model.BusinessType.INTERACTIVE_BAR_MIXOLOGY_SERVICES;
-import static com.web.eventsrus.model.BusinessType.INVITATIONS;
-import static com.web.eventsrus.model.BusinessType.LED_WALL_VISUAL_PROJECTION_RENTALS;
-import static com.web.eventsrus.model.BusinessType.LIGHTS_AND_SOUNDS;
-import static com.web.eventsrus.model.BusinessType.LIVE_EVENT_PAINTERS_SKETCH_ARTISTS;
-import static com.web.eventsrus.model.BusinessType.MOBILE_PLAYGROUND;
-import static com.web.eventsrus.model.BusinessType.PERFORMERS;
-import static com.web.eventsrus.model.BusinessType.PHOTO_AND_VIDEO;
-import static com.web.eventsrus.model.BusinessType.PHOTO_BOOTHS;
-import static com.web.eventsrus.model.BusinessType.POWER_GENERATOR_SERVICES;
-import static com.web.eventsrus.model.BusinessType.SECURITY_CROWD_CONTROL;
-import static com.web.eventsrus.model.BusinessType.SOUVENIR_GIVEAWAYS;
-import static com.web.eventsrus.model.BusinessType.SPECIAL_EFFECTS;
-import static com.web.eventsrus.model.BusinessType.STAGING_TRUSSING_FLOORING_RENTALS;
-import static com.web.eventsrus.model.BusinessType.SUIT_RENTALS;
-import static com.web.eventsrus.model.BusinessType.TRANSPORT_SHUTTLE_FLEET_SERVICES;
-import static com.web.eventsrus.model.BusinessType.VENUE;
-import static com.web.eventsrus.model.BusinessType.WARDROBE_STYLISTS_DRESSERS;
 
 import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
@@ -59,6 +31,7 @@ import java.util.Set;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -189,177 +162,175 @@ public class PlannerController {
         model.addAttribute("selectedConversation", selectedConversation);
         model.addAttribute("thread", thread);
         model.addAttribute("coordinatorHistory", backendClient.getCoordinatorHistory(jwt, selected.id()));
-        model.addAttribute("businessTypes", BusinessType.displayOrder());
         addSupplierPanelAttributes(model, selected);
         return "planner/events";
     }
 
-    // Which vendor categories matter for a given kind of event, most
-    // important first. Drives the order categories appear in and which ones
-    // sit up top vs. behind "show more service categories". A category not
-    // in the list still shows (as a match) - just down in the long tail.
-    private static final List<BusinessType> WEDDING_TYPES = List.of(
-            VENUE, CATERING, PHOTO_AND_VIDEO, EVENT_COORDINATOR, HAIR_AND_MAKEUP, FLORAL_SERVICES,
-            CAKE_AND_PASTRIES, BRIDAL_GOWN_DESIGNER, SUIT_RENTALS, DECORATION_PRODUCTION, LIGHTS_AND_SOUNDS,
-            ENTERTAINMENT, EVENT_HOST, INVITATIONS, PHOTO_BOOTHS, SOUVENIR_GIVEAWAYS,
-            WARDROBE_STYLISTS_DRESSERS, TRANSPORT_SHUTTLE_FLEET_SERVICES, SPECIAL_EFFECTS);
-
-    private static final List<BusinessType> PARTY_TYPES = List.of(
-            VENUE, CATERING, PHOTO_AND_VIDEO, EVENT_HOST, CAKE_AND_PASTRIES, DECORATION_PRODUCTION,
-            ENTERTAINMENT, PHOTO_BOOTHS, FOOD_CARTS_GRAZING, SOUVENIR_GIVEAWAYS, INFLATABLES,
-            MOBILE_PLAYGROUND, ARCADE, PERFORMERS, LIGHTS_AND_SOUNDS, INTERACTIVE_BAR_MIXOLOGY_SERVICES,
-            INVITATIONS, SPECIAL_EFFECTS);
-
-    private static final List<BusinessType> MILESTONE_TYPES = List.of(
-            VENUE, CATERING, PHOTO_AND_VIDEO, EVENT_HOST, EVENT_COORDINATOR, CAKE_AND_PASTRIES,
-            DECORATION_PRODUCTION, FLORAL_SERVICES, ENTERTAINMENT, PHOTO_BOOTHS, HAIR_AND_MAKEUP,
-            LIGHTS_AND_SOUNDS, FOOD_CARTS_GRAZING, INTERACTIVE_BAR_MIXOLOGY_SERVICES, SOUVENIR_GIVEAWAYS,
-            INVITATIONS);
-
-    private static final List<BusinessType> CORPORATE_TYPES = List.of(
-            VENUE, CATERING, LIGHTS_AND_SOUNDS, LED_WALL_VISUAL_PROJECTION_RENTALS,
-            STAGING_TRUSSING_FLOORING_RENTALS, EVENT_HOST, EVENT_COORDINATOR, PHOTO_AND_VIDEO,
-            ENTERTAINMENT, PERFORMERS, DECORATION_PRODUCTION, POWER_GENERATOR_SERVICES,
-            SECURITY_CROWD_CONTROL, TRANSPORT_SHUTTLE_FLEET_SERVICES, INTERACTIVE_BAR_MIXOLOGY_SERVICES,
-            LIVE_EVENT_PAINTERS_SKETCH_ARTISTS, SPECIAL_EFFECTS, INVITATIONS, SOUVENIR_GIVEAWAYS);
-
-    private static final List<BusinessType> PRODUCTION_TYPES = List.of(
-            VENUE, LIGHTS_AND_SOUNDS, STAGING_TRUSSING_FLOORING_RENTALS, LED_WALL_VISUAL_PROJECTION_RENTALS,
-            POWER_GENERATOR_SERVICES, SECURITY_CROWD_CONTROL, PERFORMERS, ENTERTAINMENT, EVENT_HOST,
-            FOOD_CARTS_GRAZING, CATERING, TRANSPORT_SHUTTLE_FLEET_SERVICES, SPECIAL_EFFECTS,
-            PHOTO_AND_VIDEO, INTERACTIVE_BAR_MIXOLOGY_SERVICES);
-
-    private static List<BusinessType> relevantTypesFor(EventType type) {
-        if (type == null) {
-            return MILESTONE_TYPES;
-        }
-        return switch (type) {
-            case WEDDING -> WEDDING_TYPES;
-            case BIRTHDAY, DEBUT, PARTY, BABY_SHOWER -> PARTY_TYPES;
-            case SEMINAR, NETWORKING_EVENT, CORPORATE_EVENT, PRODUCT_LAUNCH, TEAM_BUILDING, CORPORATE_RETREAT,
-                    TRADE_SHOW, GALA, FUNDRAISER, EXHIBITION -> CORPORATE_TYPES;
-            case CONCERT, FESTIVAL, SPORTS_EVENT -> PRODUCTION_TYPES;
-            default -> MILESTONE_TYPES;
-        };
-    }
-
     /**
-     * Turns the backend's flat list of suggestions into the Overview
-     * panel's model: a compact, relevance-ordered set of category groups
-     * (each already ranked Top Vendor -> Verified -> rating by the backend),
-     * the categories relevant to this event type up front and the rest
-     * flagged for the "show more service categories" fold, plus a single
-     * list of category labels that matched nothing so the template can
-     * render one line instead of a dozen empty cards.
+     * Turns the backend's flat list of suggestions into "Search Result"'s
+     * model: one SupplierGroup per category the planner selected during
+     * the create-event wizard (see the "no event selected" branch's
+     * essential/optional split there - RecommendationController's matrix,
+     * read before any event/SupplierGroup exists). Also builds
+     * supplierGroupByType for the Checklist tab's live match-count badges.
      */
     private void addSupplierPanelAttributes(Model model, PlannerEvent event) {
         Map<BusinessType, List<PlannerVendorSuggestion>> byType = new LinkedHashMap<>();
         for (PlannerVendorSuggestion s : event.suggestions()) {
-            byType.computeIfAbsent(s.vendorType(), k -> new ArrayList<>());
-            if (s.vendorProfileId() != null) {
-                byType.get(s.vendorType()).add(s);
-            }
+            byType.computeIfAbsent(s.vendorType(), k -> new ArrayList<>()).add(s);
         }
 
-        List<BusinessType> relevantOrder = relevantTypesFor(event.eventType());
-        Set<BusinessType> emitted = new LinkedHashSet<>();
-        List<SupplierGroup> groups = new ArrayList<>();
-
-        for (BusinessType t : relevantOrder) {
-            List<PlannerVendorSuggestion> vendors = byType.get(t);
-            if (vendors != null && !vendors.isEmpty()) {
-                groups.add(toSupplierGroup(t, vendors, true));
-                emitted.add(t);
-            }
-        }
-        // Categories that matched but aren't relevant to this event type sit
-        // behind "show more service categories" - alphabetical there (no
-        // relevance ranking applies), not raw enum/insertion order.
-        List<Map.Entry<BusinessType, List<PlannerVendorSuggestion>>> remaining = byType.entrySet().stream()
-                .filter(e -> !emitted.contains(e.getKey()) && !e.getValue().isEmpty())
-                .sorted(Comparator.comparing(e -> e.getKey().getLabel()))
-                .toList();
-        for (Map.Entry<BusinessType, List<PlannerVendorSuggestion>> e : remaining) {
-            groups.add(toSupplierGroup(e.getKey(), e.getValue(), false));
-            emitted.add(e.getKey());
-        }
-
-        List<String> emptyTypeLabels = new ArrayList<>();
+        List<SupplierGroup> essentialGroups = new ArrayList<>();
+        List<SupplierGroup> otherGroups = new ArrayList<>();
         for (BusinessType t : BusinessType.displayOrder()) {
-            List<PlannerVendorSuggestion> vendors = byType.get(t);
-            if (vendors == null || vendors.isEmpty()) {
-                emptyTypeLabels.add(t.getLabel());
+            List<PlannerVendorSuggestion> rows = byType.get(t);
+            if (rows == null || rows.isEmpty()) {
+                continue;
             }
+            SupplierGroup group = toSupplierGroup(t, rows);
+            (group.essential() ? essentialGroups : otherGroups).add(group);
         }
 
-        int matchTotal = groups.stream().mapToInt(SupplierGroup::matchCount).sum();
-        int verifiedTotal = groups.stream().mapToInt(SupplierGroup::verifiedCount).sum();
-        int moreCatCount = (int) groups.stream().filter(g -> !g.relevant()).count();
+        List<SupplierGroup> allGroups = new ArrayList<>(essentialGroups);
+        allGroups.addAll(otherGroups);
+        List<SupplierGroup> selectedGroups = allGroups.stream().filter(SupplierGroup::selected).toList();
 
-        model.addAttribute("supplierGroups", groups);
-        model.addAttribute("supplierEmptyTypes", emptyTypeLabels);
-        model.addAttribute("supplierMatchTotal", matchTotal);
-        model.addAttribute("supplierVerifiedTotal", verifiedTotal);
-        model.addAttribute("supplierMoreCatCount", moreCatCount);
+        // "Search Result" (the Overview tab) only ever shows categories the
+        // planner actually selected in the create-event wizard's step 2 -
+        // essential/otherGroups themselves are no longer rendered anywhere
+        // (that selection now happens pre-creation, via RecommendationController
+        // directly, before any event/SupplierGroup exists).
+        model.addAttribute("selectedSupplierGroups", selectedGroups);
+        // The complement - for the "Add category" pop-up, so a planner who
+        // skipped a category during creation (or just changed their mind)
+        // can bring it into Search Result later without starting over.
+        model.addAttribute("unselectedSupplierGroups", allGroups.stream().filter(g -> !g.selected()).toList());
+
+        addChecklistPanelAttributes(model, event);
     }
 
-    private SupplierGroup toSupplierGroup(BusinessType type, List<PlannerVendorSuggestion> ranked, boolean relevant) {
-        int verified = (int) ranked.stream().filter(PlannerVendorSuggestion::verified).count();
-        return new SupplierGroup(type, type.getLabel(), relevant, ranked.size(), verified, ranked);
+    /**
+     * Groups the flat checklist into one bucket per category (both a
+     * category's own "Book a X vendor" item and any "Follow up with Y"
+     * bookmark items for that category land in the same bucket - see
+     * EventService#setVendorBookmark's category-context resolution), plus
+     * a flat bucket for planner-typed custom items (no category at all).
+     * Category order follows BusinessType#displayOrder, not insertion
+     * order, so it reads the same way every time regardless of which
+     * category the planner happened to check first.
+     */
+    private void addChecklistPanelAttributes(Model model, PlannerEvent event) {
+        Map<BusinessType, List<PlannerChecklistItem>> byCategory = new LinkedHashMap<>();
+        List<PlannerChecklistItem> uncategorized = new ArrayList<>();
+        for (PlannerChecklistItem item : event.checklist()) {
+            if (item.vendorType() != null) {
+                byCategory.computeIfAbsent(item.vendorType(), k -> new ArrayList<>()).add(item);
+            } else {
+                uncategorized.add(item);
+            }
+        }
+        Map<BusinessType, List<PlannerChecklistItem>> orderedByCategory = new LinkedHashMap<>();
+        for (BusinessType t : BusinessType.displayOrder()) {
+            if (byCategory.containsKey(t)) {
+                orderedByCategory.put(t, byCategory.get(t));
+            }
+        }
+        model.addAttribute("checklistByCategory", orderedByCategory);
+        model.addAttribute("uncategorizedChecklistItems", uncategorized);
     }
 
-    /** One business-type card in the Overview's Recommended Suppliers panel. */
+    private SupplierGroup toSupplierGroup(BusinessType type, List<PlannerVendorSuggestion> rows) {
+        List<PlannerVendorSuggestion> matches = rows.stream().filter(r -> r.vendorProfileId() != null).toList();
+        // Every row in this category carries the same categorySelected/categoryBudget/essential
+        // (see SuggestedVendorResponse javadoc on the backend) - read off the first.
+        PlannerVendorSuggestion first = rows.get(0);
+        return new SupplierGroup(
+                type, type.getLabel(), first.essential(), matches.size(), first.categorySelected(),
+                first.categoryBudget(), matches);
+    }
+
+    /** One business-type card in the Overview's Suggested Suppliers panel / Browse Suppliers modal. */
     public record SupplierGroup(
             BusinessType type,
             String label,
-            boolean relevant,
+            boolean essential,
             int matchCount,
-            int verifiedCount,
+            boolean selected,
+            java.math.BigDecimal budget,
             List<PlannerVendorSuggestion> vendors) {
     }
 
-    @PostMapping
-    public String submitIntake(
-            @ModelAttribute PlannerIntakeForm plannerIntakeForm, HttpSession session, RedirectAttributes redirectAttributes) {
+    /**
+     * STEP 1 -> STEP 2 of the new-event wizard (see events.html's script
+     * block): essential/optional categories for an event type, with no
+     * event created yet - just a thin proxy onto the backend's standalone
+     * RecommendationController, so step 2 can render its checkbox list
+     * before anything is saved.
+     */
+    @GetMapping("/recommendations")
+    @ResponseBody
+    public CategoryOptionsResponse recommendations(@RequestParam EventType eventType, HttpSession session) {
+        CategoryRecommendation rec = backendClient.getRecommendations(WebSession.token(session), eventType);
+        return new CategoryOptionsResponse(toCategoryOptions(rec.essential()), toCategoryOptions(rec.optional()));
+    }
+
+    private List<CategoryOption> toCategoryOptions(Set<BusinessType> types) {
+        return BusinessType.displayOrder().stream()
+                .filter(types::contains)
+                .map(t -> new CategoryOption(t.name(), t.getLabel()))
+                .toList();
+    }
+
+    public record CategoryOption(String type, String label) {
+    }
+
+    public record CategoryOptionsResponse(List<CategoryOption> essential, List<CategoryOption> optional) {
+    }
+
+    /**
+     * STEP 2's "Next" (see events.html's script block) - this is the actual
+     * save point for the whole wizard. Creates the event from step 1's
+     * fields; the categories checked in step 2 are saved right after, one
+     * #setSupplierTypeSelection call per category, all behind the same
+     * "Processing data" spinner (see PlannerController's REST call chain
+     * in JS - no new backend endpoint needed for that part).
+     */
+    @PostMapping("/create")
+    @ResponseBody
+    public QuickEventResult createEventAjax(@ModelAttribute PlannerIntakeForm plannerIntakeForm, HttpSession session) {
         String jwt = WebSession.token(session);
         try {
             PlannerEvent created = backendClient.createEvent(
-                    jwt, plannerIntakeForm.getEventType(), plannerIntakeForm.getEventDate(),
-                    plannerIntakeForm.getLocation(), plannerIntakeForm.getDescription());
-            // The real CreateEventRequest has no name field (that's a
-            // separate "save" step) - naming it immediately here keeps the
-            // vendor-facing UX exactly what it always was: a new event
-            // shows up in the sidebar, named, right away.
-            backendClient.saveEvent(jwt, created.id(), plannerIntakeForm.getName());
-            redirectAttributes.addAttribute("eventId", created.id());
+                    jwt, plannerIntakeForm.getName(), plannerIntakeForm.getEventType(), plannerIntakeForm.getEventDate(),
+                    plannerIntakeForm.getLocation(), plannerIntakeForm.getDescription(),
+                    plannerIntakeForm.getBudget(), plannerIntakeForm.getGuestCount());
+            return new QuickEventResult(true, created.id(), null);
         } catch (BackendApiException e) {
-            redirectAttributes.addFlashAttribute("eventCreationError", e.getMessage());
-            redirectAttributes.addFlashAttribute("plannerIntakeForm", plannerIntakeForm);
+            return new QuickEventResult(false, null, e.getMessage());
         }
-        return "redirect:/planner/events";
     }
 
     // JSON variant of the same create-then-save pair above, for the
     // storefront's guided signup flow (see VendorController#loadStorefront
     // and storefront.html's Modal C) - a brand-new or event-less planner
     // who just wants to request a quote from one vendor doesn't need the
-    // full intake form's location/description (both optional on the real
-    // backend request, same as submitIntake leaves them for this trimmed
-    // 3-field version); they can fill those in normally later. Driven by
-    // fetch() from a modal rather than a page form post, so this returns
-    // JSON instead of redirecting - WebMvcConfig already gates every
-    // /planner/** route to a logged-in session, so this is only ever
-    // reachable once the storefront's embedded Google sign-in has actually
-    // succeeded.
+    // full intake form's description field (optional on the real backend
+    // request, same as submitIntake leaves it); they can fill that in
+    // normally later. name/eventType/eventDate/location are all mandatory
+    // on the real backend request same as everywhere else, so Modal C
+    // collects all four. Driven by fetch() from a modal rather than a page
+    // form post, so this returns JSON instead of redirecting -
+    // WebMvcConfig already gates every /planner/** route to a logged-in
+    // session, so this is only ever reachable once the storefront's
+    // embedded Google sign-in has actually succeeded.
     @PostMapping("/quick-create")
     @ResponseBody
     public QuickEventResult quickCreate(
             @RequestParam String name, @RequestParam EventType eventType,
-            @RequestParam(required = false) LocalDate eventDate, HttpSession session) {
+            @RequestParam LocalDate eventDate, @RequestParam String location, HttpSession session) {
         String jwt = WebSession.token(session);
         try {
-            PlannerEvent created = backendClient.createEvent(jwt, eventType, eventDate, null, null);
-            backendClient.saveEvent(jwt, created.id(), name);
+            PlannerEvent created = backendClient.createEvent(jwt, name, eventType, eventDate, location, null, null, null);
             return new QuickEventResult(true, created.id(), null);
         } catch (BackendApiException e) {
             return new QuickEventResult(false, null, e.getMessage());
@@ -393,29 +364,151 @@ public class PlannerController {
     }
 
     /**
-     * Live vendor-matching endpoint behind the always-on location/date
-     * filter on the Overview tab (see events.html's script block and
-     * #suppliersResults fragment) - called via fetch() on field change, not
-     * a form submit. Persists the new location/date onto the event, then
-     * returns just the results fragment (not a full page/redirect) with
-     * vendor matches computed fresh against whatever's now on the event -
-     * see EventService#buildSuggestions on the backend.
+     * Opts a suggested category in/out of active browsing, with an optional
+     * per-category budget earmark. Only ever called from the create-event
+     * wizard's step 2 "Next" now (see events.html's script block for the
+     * "no event selected" branch) - chained once per checked category,
+     * right after the event itself is created. The response body is never
+     * used by that caller, just whether the request succeeded.
      */
-    @PostMapping("/{eventId}/suppliers")
-    public String refreshSuppliers(
+    @PostMapping("/{eventId}/supplier-types/{vendorType}")
+    public ResponseEntity<Void> setSupplierTypeSelection(
             @PathVariable Long eventId,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) LocalDate eventDate,
+            @PathVariable BusinessType vendorType,
+            @RequestParam boolean selected,
+            @RequestParam(required = false) java.math.BigDecimal budget,
+            HttpSession session) {
+        try {
+            backendClient.setSupplierTypeSelection(WebSession.token(session), eventId, vendorType, selected, budget);
+            return ResponseEntity.ok().build();
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Removes a category from Search Result outright, deleting its
+     * checklist items too - see BackendClient#removeCategorySelection /
+     * EventService#removeCategorySelection for why this is distinct from
+     * #setSupplierTypeSelection(selected=false).
+     */
+    @DeleteMapping("/{eventId}/supplier-types/{vendorType}")
+    public ResponseEntity<Void> removeCategorySelection(
+            @PathVariable Long eventId, @PathVariable BusinessType vendorType, HttpSession session) {
+        try {
+            backendClient.removeCategorySelection(WebSession.token(session), eventId, vendorType);
+            return ResponseEntity.ok().build();
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Deliberate name search for a specific supplier the planner already has
+     * in mind - distinct from "Search Result"'s own category rows, which
+     * only ever surface whoever matched a category the planner already
+     * selected. Returns just the results fragment.
+     */
+    @GetMapping("/{eventId}/suppliers/search")
+    public String searchSuppliers(
+            @PathVariable Long eventId,
+            @RequestParam String query,
             HttpSession session,
             Model model) {
+        model.addAttribute("supplierSearchQuery", query);
+        model.addAttribute("eventIdForSearch", eventId);
         try {
-            PlannerEvent updated = backendClient.updateEventDetails(WebSession.token(session), eventId, eventDate, location);
+            model.addAttribute("supplierSearchResults",
+                    backendClient.searchVendors(WebSession.token(session), query, null));
+        } catch (BackendApiException e) {
+            model.addAttribute("supplierSearchError", "Couldn't search suppliers. Please try again.");
+        }
+        return "planner/events :: supplierSearchResults";
+    }
+
+    /**
+     * Read-only refresh of just the checklist fragment - called after
+     * checking a supplier category (see events.html's JS), since
+     * #setSupplierTypeSelection's own response only swaps the suppliers
+     * panel and checking a category also creates a new checklist item
+     * server-side.
+     */
+    @GetMapping("/{eventId}/checklist")
+    public String getChecklist(@PathVariable Long eventId, HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        try {
+            PlannerEvent event = backendClient.getEvent(jwt, eventId);
+            model.addAttribute("selectedEvent", event);
+            addSupplierPanelAttributes(model, event);
+        } catch (BackendApiException e) {
+            model.addAttribute("checklistError", "Couldn't load checklist. Please try again.");
+        }
+        return "planner/events :: checklistResults";
+    }
+
+    /**
+     * Read-only refresh of just the Search Result fragment - called after
+     * adding a category from the "Add category" pop-up (see events.html's
+     * JS), same reasoning as #getChecklist: #setSupplierTypeSelection's own
+     * response isn't a renderable fragment, just a success/failure signal.
+     */
+    @GetMapping("/{eventId}/search-result")
+    public String getSearchResult(@PathVariable Long eventId, HttpSession session, Model model) {
+        String jwt = WebSession.token(session);
+        try {
+            PlannerEvent event = backendClient.getEvent(jwt, eventId);
+            model.addAttribute("selectedEvent", event);
+            addSupplierPanelAttributes(model, event);
+        } catch (BackendApiException e) {
+            model.addAttribute("suppliersError", "Couldn't load Search Result. Please try again.");
+        }
+        return "planner/events :: searchResultContent";
+    }
+
+    /**
+     * Adds a custom checklist item (the system-suggested "Book a X vendor"
+     * ones come from #setSupplierTypeSelection instead). Re-renders just the
+     * checklist fragment, same re-fetch-and-swap pattern as the supplier
+     * panel's endpoints above - the checklist endpoints only return the
+     * mutated ChecklistItemResponse, not a full event, so a fresh getEvent
+     * is what rebuilds the rest of the fragment's model.
+     */
+    @PostMapping("/{eventId}/checklist")
+    public String addChecklistItem(
+            @PathVariable Long eventId,
+            @RequestParam String label,
+            HttpSession session,
+            Model model) {
+        String jwt = WebSession.token(session);
+        try {
+            backendClient.addChecklistItem(jwt, eventId, label);
+            PlannerEvent updated = backendClient.getEvent(jwt, eventId);
             model.addAttribute("selectedEvent", updated);
             addSupplierPanelAttributes(model, updated);
         } catch (BackendApiException e) {
-            model.addAttribute("suppliersError", "Couldn't update vendor matches. Please try again.");
+            model.addAttribute("checklistError", "Couldn't add checklist item. Please try again.");
         }
-        return "planner/events :: suppliersResults";
+        return "planner/events :: checklistResults";
+    }
+
+    /** status is one of TODO/DONE/DISMISSED - see EventService#updateChecklistItemStatus on the backend; this endpoint just forwards it. */
+    @PostMapping("/{eventId}/checklist/{itemId}/toggle")
+    public String toggleChecklistItem(
+            @PathVariable Long eventId,
+            @PathVariable Long itemId,
+            @RequestParam String status,
+            HttpSession session,
+            Model model) {
+        String jwt = WebSession.token(session);
+        try {
+            backendClient.updateChecklistItemStatus(jwt, eventId, itemId, status);
+            PlannerEvent updated = backendClient.getEvent(jwt, eventId);
+            model.addAttribute("selectedEvent", updated);
+            addSupplierPanelAttributes(model, updated);
+        } catch (BackendApiException e) {
+            model.addAttribute("checklistError", "Couldn't update checklist item. Please try again.");
+        }
+        return "planner/events :: checklistResults";
     }
 
     @PostMapping("/{eventId}/coordinator/ask")

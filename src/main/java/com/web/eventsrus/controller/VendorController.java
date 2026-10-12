@@ -5,6 +5,7 @@ import com.web.eventsrus.model.BusinessType;
 import com.web.eventsrus.model.CreateTicketForm;
 import com.web.eventsrus.model.EventType;
 import com.web.eventsrus.model.InquiryForm;
+import com.web.eventsrus.model.PlannerEvent;
 import com.web.eventsrus.model.LegalDocumentType;
 import com.web.eventsrus.model.PackageType;
 import com.web.eventsrus.model.SocialMediaPlatform;
@@ -955,26 +956,31 @@ public class VendorController {
         // There's no authenticated "my own public profile" endpoint - the
         // vendor's slug only comes back on their own settings response.
         String slug = backendClient.getSettings(jwt).slug();
-        loadStorefront(model, slug, null, jwt, session);
+        loadStorefront(model, slug, null, null, jwt, session);
         return "vendor/storefront";
     }
 
     @GetMapping("/storefront/{slug}")
     public String storefrontBySlug(
-            @PathVariable String slug, @RequestParam(required = false) Long eventId, HttpSession session, Model model) {
+            @PathVariable String slug,
+            @RequestParam(required = false) Long eventId,
+            @RequestParam(required = false) BusinessType category,
+            HttpSession session,
+            Model model) {
         String jwt = WebSession.isLoggedIn(session) ? WebSession.token(session) : null;
-        loadStorefront(model, slug, eventId, jwt, session);
+        loadStorefront(model, slug, eventId, category, jwt, session);
         return "vendor/storefront";
     }
 
-    private void loadStorefront(Model model, String slug, Long eventId, String jwt, HttpSession session) {
+    private void loadStorefront(Model model, String slug, Long eventId, BusinessType category, String jwt, HttpSession session) {
         // A planner who arrived here from one of their own events already
         // has both of these on hand - pre-filling saves them re-typing
         // their name and re-picking a date they already set on the event.
         // Only applies on a fresh page load (not after a failed submission,
         // where the form is already re-populated with what they typed).
         String plannerName = WebSession.fullName(session);
-        LocalDate eventDate = eventId != null && jwt != null ? eventDateOrNull(jwt, eventId) : null;
+        PlannerEvent event = eventId != null && jwt != null ? eventOrNull(jwt, eventId) : null;
+        LocalDate eventDate = event == null ? null : event.eventDate();
 
         if (!model.containsAttribute("quotationRequestForm")) {
             QuotationRequestForm form = new QuotationRequestForm();
@@ -990,6 +996,19 @@ public class VendorController {
         }
         VendorPublicProfile profile = backendClient.getVendorProfile(jwt, slug, eventId);
         model.addAttribute("profile", profile);
+        // Drives the storefront's Bookmark button - only meaningful once a
+        // planner is actually viewing this page in the context of one of
+        // their own events (eventId present).
+        model.addAttribute("isBookmarked", event != null && profile.vendorProfileId() != null
+                && event.bookmarkedVendorProfileIds() != null
+                && event.bookmarkedVendorProfileIds().contains(profile.vendorProfileId()));
+        // The category the planner was browsing when they got here (from a
+        // Browse modal's storefront link) - threaded through to the
+        // Bookmark button so the resulting checklist item groups under the
+        // right category heading. Null when reached some other way (own
+        // storefront preview, name search) - the backend then falls back to
+        // the vendor's own first business type.
+        model.addAttribute("bookmarkCategory", category);
         // Server-side per-tag filtering (rather than inline Thymeleaf stream
         // expressions) - one map, keyed by tag name, built once here so the
         // storefront's Gallery filter tabs can just th:each over a
@@ -1035,12 +1054,37 @@ public class VendorController {
     }
 
     // Best-effort - a missing/inaccessible event just means no date
-    // prefill, never a broken storefront page.
-    private LocalDate eventDateOrNull(String jwt, Long eventId) {
+    // prefill/bookmark state, never a broken storefront page.
+    private PlannerEvent eventOrNull(String jwt, Long eventId) {
         try {
-            return backendClient.getEvent(jwt, eventId).eventDate();
+            return backendClient.getEvent(jwt, eventId);
         } catch (BackendApiException e) {
             return null;
+        }
+    }
+
+    /**
+     * Bookmarks (or un-bookmarks) this vendor for a planner's event, from
+     * the storefront's Bookmark button. Creates a "Follow up with X"
+     * checklist item on the backend - see EventService#setVendorBookmark.
+     * AJAX toggle (not a form submit), same page stays open.
+     */
+    @PostMapping("/storefront/bookmark")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> toggleBookmark(
+            @RequestParam Long eventId,
+            @RequestParam Long vendorUserId,
+            @RequestParam boolean bookmarked,
+            @RequestParam(required = false) BusinessType category,
+            HttpSession session) {
+        if (!WebSession.isLoggedIn(session)) {
+            return ResponseEntity.status(401).build();
+        }
+        try {
+            backendClient.setVendorBookmark(WebSession.token(session), eventId, vendorUserId, bookmarked, category);
+            return ResponseEntity.ok(Map.of("bookmarked", bookmarked));
+        } catch (BackendApiException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

@@ -1,10 +1,14 @@
 package com.web.eventsrus.backend;
 
 import com.web.eventsrus.model.AdminPlannerSummary;
+import com.web.eventsrus.model.BusinessType;
+import com.web.eventsrus.model.CategoryRecommendation;
 import com.web.eventsrus.model.CoordinatorHistory;
 import com.web.eventsrus.model.CoordinatorQuestion;
 import com.web.eventsrus.model.EventType;
+import com.web.eventsrus.model.PlannerChecklistItem;
 import com.web.eventsrus.model.PlannerEvent;
+import com.web.eventsrus.model.PlannerVendorSuggestion;
 import com.web.eventsrus.model.PlannerEventSummary;
 import com.web.eventsrus.model.SupportTicket;
 import com.web.eventsrus.model.GalleryPhotoLimitItem;
@@ -450,13 +454,23 @@ public class BackendClient {
 
     // --- Events (planner) ---
 
-    public PlannerEvent createEvent(String jwt, EventType eventType, LocalDate eventDate, String location, String description) {
+    public PlannerEvent createEvent(
+            String jwt, String name, EventType eventType, LocalDate eventDate, String location, String description,
+            java.math.BigDecimal budget, Integer guestCount) {
         Map<String, Object> body = new LinkedHashMap<>();
+        body.put("name", name);
         body.put("eventType", eventType != null ? eventType.name() : null);
         body.put("eventDate", eventDate);
         body.put("location", location);
         body.put("description", description);
+        body.put("budget", budget);
+        body.put("guestCount", guestCount);
         return postJson("/api/v1/events", jwt, body, PlannerEvent.class);
+    }
+
+    /** Essential/optional category matrix for an event type - no event needs to exist yet (see RecommendationController on the backend). */
+    public CategoryRecommendation getRecommendations(String jwt, EventType eventType) {
+        return get("/api/v1/recommendations?eventType=" + eventType.name(), jwt, CategoryRecommendation.class);
     }
 
     public List<PlannerEventSummary> listEvents(String jwt) {
@@ -478,6 +492,60 @@ public class BackendClient {
 
     public PlannerEvent saveEvent(String jwt, Long eventId, String name) {
         return putJson("/api/v1/events/" + eventId + "/save", jwt, Map.of("name", name), PlannerEvent.class);
+    }
+
+    /** Bookmarks (or un-bookmarks) a specific supplier for an event, addressed by vendorUserId - see VendorController#toggleBookmark. */
+    public PlannerEvent setVendorBookmark(
+            String jwt, Long eventId, Long vendorUserId, boolean bookmarked, BusinessType category) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("bookmarked", bookmarked);
+        body.put("category", category == null ? null : category.name());
+        return putJson("/api/v1/events/" + eventId + "/bookmarks/" + vendorUserId, jwt, body, PlannerEvent.class);
+    }
+
+    /** Opts a suggested category in/out of active browsing, with an optional per-category budget earmark. */
+    public PlannerEvent setSupplierTypeSelection(
+            String jwt, Long eventId, BusinessType vendorType, boolean selected, java.math.BigDecimal budget) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("selected", selected);
+        body.put("budget", budget);
+        return putJson(
+                "/api/v1/events/" + eventId + "/supplier-types/" + vendorType.name(), jwt, body, PlannerEvent.class);
+    }
+
+    /**
+     * Removes a category from Search Result outright, deleting its
+     * checklist items too - see EventService#removeCategorySelection on
+     * the backend for why this is distinct from #setSupplierTypeSelection.
+     */
+    public void removeCategorySelection(String jwt, Long eventId, BusinessType vendorType) {
+        delete("/api/v1/events/" + eventId + "/supplier-types/" + vendorType.name(), jwt);
+    }
+
+    public PlannerChecklistItem addChecklistItem(String jwt, Long eventId, String label) {
+        return postJson(
+                "/api/v1/events/" + eventId + "/checklist", jwt, Map.of("label", label), PlannerChecklistItem.class);
+    }
+
+    /** status is one of the backend's ChecklistStatus names (TODO/DONE/DISMISSED) - passed through as-is, not re-interpreted here. */
+    public PlannerChecklistItem updateChecklistItemStatus(String jwt, Long eventId, Long itemId, String status) {
+        return putJson(
+                "/api/v1/events/" + eventId + "/checklist/" + itemId, jwt,
+                Map.of("status", status), PlannerChecklistItem.class);
+    }
+
+    /**
+     * Deliberate name search for a specific vendor the planner already has
+     * in mind - distinct from getEvent's AI-generated suggestions, which
+     * only ever surface vendors the matching algorithm picked for that
+     * event's category/location/date. See VendorSearchService#searchVendors
+     * on the backend.
+     */
+    public List<PlannerVendorSuggestion> searchVendors(String jwt, String query, BusinessType businessType) {
+        String uri = "/api/v1/vendors/search?query="
+                + java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8)
+                + (businessType != null ? "&businessType=" + businessType.name() : "");
+        return get(uri, jwt, new ParameterizedTypeReference<List<PlannerVendorSuggestion>>() {});
     }
 
     // --- Event tab badges (planner's per-event Quotations/Bookings tabs -

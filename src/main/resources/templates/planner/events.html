@@ -20,7 +20,10 @@
 				<!-- Content area -->
 				<div class="content">
 
-					<!-- No event selected: start a new one -->
+					<!-- No event selected: start a new one - a 2-step wizard (see
+					     the script block below). Nothing is saved to the
+					     backend until step 2's "Next" - that's the actual
+					     create-event-plus-categories save point. -->
 					<div th:if="${selectedEvent == null}" class="row justify-content-center">
 						<div class="col-lg-7">
 							<div class="card border-0 shadow-sm">
@@ -28,16 +31,22 @@
 
 									<div class="text-center mb-4">
 										<img th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs" class="mb-3" style="width:180px;height:auto;">
-										<h5 class="fw-bold mb-0">Tell me more about your event plans.</h5>
+										<h5 class="fw-bold mb-0" id="createWizardHeading">STEP 1: Tell me about your event.</h5>
 									</div>
 
 									<div th:if="${eventCreationError}" class="alert alert-danger alert-dismissible">
 										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 										<span th:text="${eventCreationError}"></span>
 									</div>
+									<div id="createWizardError" class="alert alert-danger alert-dismissible d-none">
+										<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+										<span></span>
+									</div>
 
-									<form th:action="@{/planner/events}" th:object="${plannerIntakeForm}" method="post">
-
+									<!-- Step 1: event details - th:object binding kept so a failed
+									     step-2 save (see JS) can still flash back pre-filled values
+									     the same way the old plain form submit used to. -->
+									<form id="createStep1" th:object="${plannerIntakeForm}">
 										<div class="row">
 											<div class="col-lg-6">
 												<div class="mb-3">
@@ -59,14 +68,14 @@
 										<div class="row">
 											<div class="col-lg-6">
 												<div class="mb-3">
-													<label class="form-label">Date <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-													<input type="date" th:field="*{eventDate}" class="form-control">
+													<label class="form-label">Date</label>
+													<input type="date" th:field="*{eventDate}" class="form-control" required>
 												</div>
 											</div>
 											<div class="col-lg-6">
 												<div class="mb-3">
 													<label class="form-label">Location <span class="text-muted fs-sm fw-normal">(helps us match nearby suppliers)</span></label>
-													<select th:field="*{location}" class="form-select">
+													<select th:field="*{location}" class="form-select" required>
 														<option value="">Select a province</option>
 														<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"></option>
 													</select>
@@ -74,55 +83,216 @@
 											</div>
 										</div>
 
-										<div class="mb-4">
-											<div class="d-flex align-items-center justify-content-between mb-1">
-												<label class="form-label mb-0">Tell us more <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
-												<button type="button" class="btn btn-light btn-icon btn-sm rounded-circle voice-input-btn" data-target-input="description" title="Speak instead of typing">
-													<i class="ph-microphone"></i>
-												</button>
+										<div class="row">
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Budget <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<div class="input-group">
+														<span class="input-group-text">&#8369;</span>
+														<input type="number" min="0" step="0.01" th:field="*{budget}" class="form-control" placeholder="e.g., 150000">
+													</div>
+												</div>
 											</div>
-											<textarea th:field="*{description}" rows="6" class="form-control" placeholder="Guest count, theme, budget - anything that helps us match you with the right suppliers."></textarea>
+											<div class="col-lg-6">
+												<div class="mb-3">
+													<label class="form-label">Guest Count <span class="text-muted fs-sm fw-normal">(Optional)</span></label>
+													<input type="number" min="1" step="1" th:field="*{guestCount}" class="form-control" placeholder="e.g., 100">
+												</div>
+											</div>
 										</div>
 
-										<button type="submit" id="intakeSubmitBtn" class="btn btn-primary w-100 fw-semibold py-3">
-											Continue
+										<!--/* Description hidden for now while we validate the supplier-matching
+										     flow on its own (see EventOverviewTab's Events Coordinator card,
+										     also hidden) - the field stays optional on the backend, just not
+										     collected here right now. */-->
+
+										<button type="submit" id="createStep1NextBtn" class="btn btn-primary w-100 fw-semibold py-3">
+											Next
 										</button>
-										<p class="text-muted fs-sm text-center mt-3 mb-0">By continuing, you agree that payment for any services is handled directly between you and the supplier. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 									</form>
+
+									<!-- Step 2: select categories - populated via fetch() once
+									     step 1 validates, from the backend's standalone
+									     essential/optional matrix (no event needs to exist yet). -->
+									<div id="createStep2" class="d-none">
+										<div id="createStep2Spinner" class="text-center py-4 d-none">
+											<div class="spinner-border text-primary mb-2" role="status"></div>
+										</div>
+										<div id="createStep2CategoryList"></div>
+										<div class="d-flex mt-3">
+											<button type="button" id="createStep2BackBtn" class="btn btn-outline-secondary">Back</button>
+											<button type="button" id="createStep2NextBtn" class="btn btn-primary ms-auto">Next</button>
+										</div>
+									</div>
+
+									<p class="text-muted fs-sm text-center mt-3 mb-0">By continuing, you agree that payment for any services is handled directly between you and the supplier. <a th:href="@{/terms}" target="_blank">Terms &amp; Agreement</a></p>
 								</div>
 							</div>
 						</div>
 					</div>
 					<!-- /no event selected -->
 
-					<!--/* Full-page freeze on submit - this is a plain form POST (the
-					     server redirects back to this same page either way, with the
-					     new event selected on success or eventCreationError flashed on
-					     failure), so there's no AJAX success/error branch to wire up
-					     here; the overlay just needs to stay up until the browser
-					     navigates away, and disabling the button stops a second click
-					     (e.g. an impatient double-click) from firing a duplicate
-					     /planner/events POST while the first one is still in flight. */-->
+					<!--/* Full-page freeze - shown only for step 2's "Next", the
+					     actual save point (create the event, then one
+					     #setSupplierTypeSelection call per checked category, all
+					     chained behind this one spinner - see the script block
+					     below). Not shown for step 1's "Next" (just a quick
+					     category-list fetch) or any other step transition. */-->
 					<div id="intakeProcessingOverlay" class="d-none position-fixed top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center" style="background:rgba(255,255,255,.85);z-index:1080;">
 						<div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status"></div>
-						<div class="fw-semibold">Processing&hellip;</div>
+						<div class="fw-semibold">Processing data&hellip;</div>
 					</div>
-					<script>
-						(function () {
+					<script th:if="${selectedEvent == null}" th:inline="javascript">
+						document.addEventListener('DOMContentLoaded', function () {
+							var step1 = document.getElementById('createStep1');
+							var step2 = document.getElementById('createStep2');
+							var heading = document.getElementById('createWizardHeading');
+							var errorBox = document.getElementById('createWizardError');
 							var overlay = document.getElementById('intakeProcessingOverlay');
-							var submitBtn = document.getElementById('intakeSubmitBtn');
-							var form = submitBtn ? submitBtn.closest('form') : null;
-							if (!form || !overlay || !submitBtn) {
-								return;
+							if (!step1 || !step2) { return; }
+
+							function showError(message) {
+								errorBox.querySelector('span').textContent = message;
+								errorBox.classList.remove('d-none');
 							}
-							form.addEventListener('submit', function () {
-								overlay.classList.remove('d-none');
-								// Disabling here (inside the submit handler, not before) still
-								// lets this same submit go through - the browser has already
-								// captured it - it just blocks any further click.
-								submitBtn.disabled = true;
+
+							// Essential type -> BusinessType.label (bundled here once so
+							// step 2 can render category/budget rows without a server round
+							// trip for the category labels themselves - only the essential/
+							// optional sets need to come from the backend).
+							function categoryRowHtml(opt) {
+								return '' +
+									'<div class="card mb-2">' +
+									'  <div class="card-header d-flex align-items-center py-2 bg-light">' +
+									'    <input type="checkbox" class="form-check-input flex-shrink-0 me-2 create-cat-toggle" data-type="' + opt.type + '">' +
+									'    <span class="fw-semibold flex-grow-1">' + opt.label + '</span>' +
+									'  </div>' +
+									'  <div class="px-3 py-2 border-top d-none create-cat-budget-row">' +
+									'    <label class="form-label fs-sm mb-1">Budget for this category <span class="text-muted fw-normal">(optional)</span></label>' +
+									'    <div class="input-group input-group-sm" style="max-width:220px;">' +
+									'      <span class="input-group-text">&#8369;</span>' +
+									'      <input type="number" min="0" step="0.01" class="form-control create-cat-budget-input" placeholder="0.00">' +
+									'    </div>' +
+									'  </div>' +
+									'</div>';
+							}
+
+							var showingOtherCategories = false;
+
+							function renderCategoryList(essential, optional) {
+								var list = document.getElementById('createStep2CategoryList');
+								var html = '<div class="fw-semibold fs-sm text-muted mb-1">Essential Suppliers</div>';
+								essential.forEach(function (opt) { html += categoryRowHtml(opt); });
+								if (optional.length > 0) {
+									html += '<button type="button" id="createStep2OtherToggle" class="btn btn-sm btn-light w-100 my-2">Show ' + optional.length + ' other categories</button>';
+									html += '<div id="createStep2OtherList" class="d-none">';
+									optional.forEach(function (opt) { html += categoryRowHtml(opt); });
+									html += '</div>';
+								}
+								list.innerHTML = html;
+
+								var otherToggle = document.getElementById('createStep2OtherToggle');
+								if (otherToggle) {
+									otherToggle.addEventListener('click', function () {
+										showingOtherCategories = !showingOtherCategories;
+										document.getElementById('createStep2OtherList').classList.toggle('d-none', !showingOtherCategories);
+										otherToggle.textContent = showingOtherCategories
+											? 'Hide other categories'
+											: 'Show ' + optional.length + ' other categories';
+									});
+								}
+
+								// Checking a category reveals its optional budget field -
+								// purely local state here, nothing persists until step 2's
+								// own "Next" (the real save point).
+								list.addEventListener('change', function (e) {
+									var toggle = e.target.closest('.create-cat-toggle');
+									if (!toggle) { return; }
+									var budgetRow = toggle.closest('.card').querySelector('.create-cat-budget-row');
+									budgetRow.classList.toggle('d-none', !toggle.checked);
+								});
+							}
+
+							step1.addEventListener('submit', function (e) {
+								e.preventDefault();
+								if (!step1.reportValidity()) { return; }
+
+								var eventType = step1.querySelector('[name=eventType]').value;
+								var spinner = document.getElementById('createStep2Spinner');
+								spinner.classList.remove('d-none');
+
+								fetch('/planner/events/recommendations?eventType=' + eventType)
+									.then(function (res) {
+										if (!res.ok) { throw new Error('Request failed'); }
+										return res.json();
+									})
+									.then(function (data) {
+										renderCategoryList(data.essential, data.optional);
+										step1.classList.add('d-none');
+										step2.classList.remove('d-none');
+										heading.textContent = "STEP 2: Select the suppliers you're interested in.";
+									})
+									.catch(function () {
+										showError('Could not load supplier categories. Please try again.');
+									})
+									.finally(function () {
+										spinner.classList.add('d-none');
+									});
 							});
-						})();
+
+							var step2BackBtn = document.getElementById('createStep2BackBtn');
+							step2BackBtn.addEventListener('click', function () {
+								step2.classList.add('d-none');
+								step1.classList.remove('d-none');
+								heading.textContent = 'STEP 1: Tell me about your event.';
+							});
+
+							var step2NextBtn = document.getElementById('createStep2NextBtn');
+							step2NextBtn.addEventListener('click', function () {
+								errorBox.classList.add('d-none');
+								overlay.classList.remove('d-none');
+								step2NextBtn.disabled = true;
+
+								var formData = new URLSearchParams();
+								new FormData(step1).forEach(function (value, key) { formData.set(key, value); });
+
+								fetch('/planner/events/create', { method: 'POST', body: formData })
+									.then(function (res) { return res.json(); })
+									.then(function (data) {
+										if (!data.success) { throw new Error(data.error || 'Could not create event'); }
+										var eventId = data.eventId;
+										// The event now exists - from here on, always land the
+										// planner on it rather than leaving them stuck on this
+										// screen (retrying "Next" would call /create again and
+										// produce a duplicate event). A category call failing is
+										// a best-effort miss they can redo once there, not a
+										// reason to abandon the event that's already saved.
+										// Fired concurrently, not chained one-at-a-time - each
+										// category writes its own event_suggested_vendors row and
+										// a distinctly-labeled checklist item (see EventService
+										// #setSupplierTypeSelection), so there's no shared state
+										// for parallel requests to race on, and running them
+										// together turns N sequential round-trips into one.
+										var checks = Array.prototype.slice.call(document.querySelectorAll('.create-cat-toggle:checked'));
+										var categoryCalls = checks.map(function (cb) {
+											var budgetInput = cb.closest('.card').querySelector('.create-cat-budget-input');
+											var params = new URLSearchParams();
+											params.set('selected', 'true');
+											if (budgetInput && budgetInput.value) { params.set('budget', budgetInput.value); }
+											return fetch('/planner/events/' + eventId + '/supplier-types/' + cb.getAttribute('data-type') + '?' + params.toString(), { method: 'POST' })
+												.catch(function () { /* best-effort - see comment above */ });
+										});
+										return Promise.all(categoryCalls).then(function () {
+											window.location.href = '/planner/events?eventId=' + eventId;
+										});
+									})
+									.catch(function (err) {
+										overlay.classList.add('d-none');
+										step2NextBtn.disabled = false;
+										showError(err.message || 'Something went wrong. Please try again.');
+									});
+							});
+						});
 					</script>
 
 
@@ -142,7 +312,13 @@
 							<li class="nav-item">
 								<a href="#tab-overview" class="nav-link" th:classappend="${activeTab == 'overview'} ? 'active'" data-bs-toggle="tab">
 									<i class="ph-sparkle me-2"></i>
-									Overview
+									Search Result
+								</a>
+							</li>
+							<li class="nav-item">
+								<a href="#tab-checklist" class="nav-link" th:classappend="${activeTab == 'checklist'} ? 'active'" data-bs-toggle="tab">
+									<i class="ph-check-square-offset me-2"></i>
+									Checklist
 								</a>
 							</li>
 							<li class="nav-item">
@@ -174,14 +350,12 @@
 							<div class="tab-pane fade" th:classappend="${activeTab == 'overview'} ? 'show active'" id="tab-overview">
 								<div class="row g-3">
 
-									<!-- Events Coordinator - scoped AI ideas/advice assistant. One
-									     real Claude call per question (CoordinatorController on the
-									     backend), never a simulated reply. Deliberately narrow: only
-									     ever sees this event's own type/date/location/description,
-									     never vendor/quotation/booking data, and its system prompt
-									     redirects anything vendor-specific back to the real
-									     planner-vendor conversation instead of answering for the
-									     vendor - see CoordinatorService. -->
+									<!-- Events Coordinator - hidden for now while we validate the
+									     supplier-matching flow on its own (see the user's "let's see
+									     the flow of matching suppliers first" direction). Still fully
+									     wired server-side (CoordinatorController) - just gated out
+									     here; flip this back to true to bring it back. -->
+									<th:block th:if="${false}">
 									<div class="col-lg-6">
 										<div class="card mb-0 h-100 d-flex flex-column">
 											<div class="card-header bg-white d-flex align-items-center">
@@ -240,114 +414,284 @@
 											</div>
 										</div>
 									</div>
+									</th:block>
 									<!-- /Events Coordinator -->
 
 
-									<!-- Recommended suppliers - location/date filter is always visible
-									     and editable, not just at creation (neither is required up
-									     front). Location is what actually triggers matching: changing
-									     it (or date, once location is already set) live-refreshes the
-									     results below via AJAX - see the script block near the bottom
-									     of this page and PlannerController#refreshSuppliers. -->
-									<div class="col-lg-6">
-										<div class="card mb-0 h-100 d-flex flex-column">
-											<div class="card-header bg-white d-flex align-items-center">
-												<h6 class="mb-0">
-													<i class="ph-users-three me-2"></i>
-													Recommended Suppliers
-												</h6>
-												<button type="button" class="btn btn-sm btn-outline-secondary ms-auto"
-													data-bs-toggle="modal" data-bs-target="#supplierFilterModal">
-													<i class="ph-funnel me-1"></i>Filter<span id="supplierFilterBadge" class="badge bg-primary ms-1 d-none">0</span>
-												</button>
-											</div>
-
-											<div class="card-body py-3 border-bottom">
-												<div class="row g-2">
-													<div class="col-6">
-														<label class="form-label fs-sm mb-1" for="supplierLocationInput">Location</label>
-														<select id="supplierLocationInput" class="form-select form-select-sm">
-															<option value="">Select a province</option>
-															<option th:each="province : ${provinces}" th:value="${province}" th:text="${province}"
-																th:selected="${selectedEvent.location() == province}"></option>
-														</select>
-													</div>
-													<div class="col-6">
-														<label class="form-label fs-sm mb-1" for="supplierDateInput">Date <span class="text-muted fs-sm fw-normal">(optional)</span></label>
-														<input type="date" id="supplierDateInput" class="form-control form-control-sm" th:value="${selectedEvent.eventDate()}">
-													</div>
+									<!-- "Search Result" - one row per category selected during the
+									     create-event wizard (see the "no event selected" branch
+									     above), each with a Browse button opening a pop-up of that
+									     category's matched suppliers. Category selection is a
+									     one-time step during creation now - unchecking/adding a
+									     category isn't editable from here. -->
+									<div class="col-lg-12">
+										<div class="card mb-0">
+											<div class="card-header bg-white d-flex align-items-center justify-content-between flex-wrap gap-2">
+												<h6 class="mb-0"><i class="ph-storefront me-2"></i>Search Result</h6>
+												<!--/* Two ways into a supplier that don't involve scrolling the
+												     category list below: already know who you want (name
+												     search, live after 3 letters) or want a category that
+												     wasn't picked during creation. Both are pop-ups now -
+												     see the two modals right after this card and their
+												     script block. Solid fill, not outline, and two distinct
+												     colors so neither reads as the "real" primary action over
+												     the other - they're equally valid entry points. */-->
+												<div class="d-flex gap-2">
+													<button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#supplierSearchModal">
+														<i class="ph-magnifying-glass me-1"></i> Do you have a supplier in mind?
+													</button>
+													<button type="button" class="btn btn-sm btn-purple" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+														<i class="ph-plus me-1"></i> Add category
+													</button>
 												</div>
 											</div>
-
-											<div class="card-body overflow-auto flex-grow-1" style="max-height:50vh;">
-												<div id="suppliersSpinner" class="text-center py-5 d-none">
+											<div class="card-body overflow-auto" style="max-height:60vh;">
+												<div id="searchResultSpinner" class="text-center py-5 d-none">
 													<div class="spinner-border text-primary mb-2" role="status"></div>
-													<div class="text-muted fs-sm">Matching Suppliers&hellip;</div>
+													<div class="text-muted fs-sm">Searching&hellip;</div>
 												</div>
-												<div id="suppliersResultWrapper">
-													<!--/* th:remove="tag" so the AJAX endpoint (returning just this
-													     fragment) emits its children only - no wrapper div to nest
-													     inside #suppliersResultWrapper on swap. */-->
-													<div th:fragment="suppliersResults" th:remove="tag">
+												<div id="searchResultWrapper">
+													<div th:fragment="searchResultContent" th:remove="tag">
 														<p class="text-muted mb-0" th:if="${suppliersError != null}" th:text="${suppliersError}">Error</p>
 														<th:block th:if="${suppliersError == null}">
-															<p class="text-muted mb-0" th:if="${selectedEvent.location() == null}">
-																Waiting for location before we can match you with relevant suppliers.
+															<p class="text-muted mb-0" th:if="${selectedSupplierGroups == null or #lists.isEmpty(selectedSupplierGroups)}">
+																No supplier categories were selected for this event yet.
 															</p>
-															<th:block th:if="${selectedEvent.location() != null}">
-																<div th:if="${supplierGroups != null and not #lists.isEmpty(supplierGroups)}">
+															<ul class="list-group list-group-flush" th:if="${selectedSupplierGroups != null and not #lists.isEmpty(selectedSupplierGroups)}">
+																<th:block th:each="group : ${selectedSupplierGroups}">
+																	<div th:replace="~{fragments/planner-suppliers :: categoryResultRow(${group}, ${selectedEvent.id()})}"></div>
+																</th:block>
+															</ul>
 
-																	<!--/* Match summary - the headline number, so the panel reads
-																	     as "here's roughly what's available" before the detail. */-->
-																	<div class="d-flex align-items-center justify-content-between mb-3">
-																		<span class="fs-sm text-muted">
-																			<span class="fw-semibold text-body" th:text="${supplierMatchTotal}">0</span> suppliers match this event<span class="supplier-shown-note"></span>
-																		</span>
-																		<span class="fs-sm text-success" th:if="${supplierVerifiedTotal > 0}">
-																			<i class="ph-shield-check"></i> <span th:text="${supplierVerifiedTotal}">0</span> verified
-																		</span>
-																	</div>
-
-																	<!--/* Categories that matter for this event type, in priority
-																	     order. The first few open on load (top 3 vendors, ranked
-																	     Top Vendor -> Verified -> rating by the backend); the rest
-																	     collapse to just a header you can tap open. */-->
-																	<th:block th:each="group, gs : ${supplierGroups}" th:if="${group.relevant()}">
-																		<div th:replace="~{fragments/planner-suppliers :: supplierCard(${group}, ${selectedEvent.id()}, ${gs.index < 3})}"></div>
-																	</th:block>
-
-																	<!--/* Everything else that matched, folded behind one button. */-->
-																	<th:block th:if="${supplierMoreCatCount > 0}">
-																		<button type="button" class="btn btn-sm btn-light w-100 my-2" data-supplier-toggle="more-cats"
-																			th:attr="data-label-more=|Show ${supplierMoreCatCount} more service categories|,data-label-less=|Hide extra categories|"
-																			th:text="|Show ${supplierMoreCatCount} more service categories|">Show more</button>
-																		<th:block th:each="group : ${supplierGroups}" th:if="${!group.relevant()}">
-																			<div th:replace="~{fragments/planner-suppliers :: supplierCard(${group}, ${selectedEvent.id()}, false)}"></div>
-																		</th:block>
-																	</th:block>
-
-																	<!--/* Categories with nothing in this area yet - one line, not
-																	     a dozen empty cards. */-->
-																	<p class="text-muted fs-sm mt-3 mb-0"
-																		th:if="${supplierEmptyTypes != null and not #lists.isEmpty(supplierEmptyTypes)}">
-																		<i class="ph-info me-1"></i>
-																		No matches yet in this area for
-																		<span th:text="${#strings.listJoin(supplierEmptyTypes, ', ')}">Arcade, Inflatables</span>.
-																	</p>
-																</div>
-																<p class="text-muted mb-0" th:if="${supplierGroups == null or #lists.isEmpty(supplierGroups)}">No suppliers matched this event's location yet.</p>
-															</th:block>
+<!--/* Swapped into #supplierSearchModalResults (in the "Do you have a
+     supplier in mind?" pop-up below) by its own script - lives here
+     rather than in that modal's markup only because it needs this same
+     Thymeleaf fragment-resolution trick the rest of this file uses
+     (resolves regardless of ancestor th:if nesting). Invisible shell on
+     a normal load - both model attributes are null until a search
+     actually runs. */-->
+<div th:fragment="supplierSearchResults" th:remove="tag">
+	<p class="text-muted fs-sm mb-0" th:if="${supplierSearchError != null}" th:text="${supplierSearchError}">Error</p>
+	<th:block th:if="${supplierSearchError == null and supplierSearchResults != null}">
+		<ul class="list-group list-group-flush" th:if="${not #lists.isEmpty(supplierSearchResults)}">
+			<th:block th:each="vendor : ${supplierSearchResults}">
+				<div th:replace="~{fragments/planner-suppliers :: supplierSearchResultRow(${vendor}, ${eventIdForSearch})}"></div>
+			</th:block>
+		</ul>
+		<p class="text-muted fs-sm mb-0" th:if="${#lists.isEmpty(supplierSearchResults)}">
+			No suppliers found matching &quot;<span th:text="${supplierSearchQuery}"></span>&quot;.
+		</p>
+	</th:block>
+</div>
 														</th:block>
 													</div>
 												</div>
 											</div>
 										</div>
+
+										<!--/* "Do you have a supplier in mind?" - name search, live
+										     after 3 letters (see the script block below), independent
+										     of the category list above. Reuses the same backend
+										     search endpoint/fragment the old inline search bar used. */-->
+										<div class="modal fade" id="supplierSearchModal" tabindex="-1" aria-hidden="true">
+											<div class="modal-dialog modal-dialog-scrollable">
+												<div class="modal-content">
+													<div class="modal-header">
+														<h5 class="modal-title">Search for a supplier</h5>
+														<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+													</div>
+													<div class="modal-body">
+														<input type="text" id="supplierSearchModalInput" class="form-control mb-3" placeholder="Type at least 3 letters&hellip;">
+														<div id="supplierSearchModalSpinner" class="text-center py-4 d-none">
+															<div class="spinner-border text-primary" role="status"></div>
+														</div>
+														<div id="supplierSearchModalResults">
+															<p class="text-muted fs-sm mb-0">Type at least 3 letters to search.</p>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+
+										<!--/* "Add category" - categories this event's type matches
+										     but the planner didn't check in the create-event wizard
+										     (or at least hasn't yet - unselectedSupplierGroups is just
+										     allGroups filtered to !selected(), see
+										     PlannerController#addSupplierPanelAttributes). Adding one
+										     reuses the exact endpoint the wizard's step 2 calls, but
+										     unlike that wizard this pop-up stays open - it just drops
+										     the row just added and quietly refreshes Search Result (and
+										     the Checklist tab, since adding a category also creates a
+										     "Book a X vendor" item server-side) behind it, so the
+										     planner can keep adding more without re-opening this modal
+										     each time. See the script block below. */-->
+										<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+											<div class="modal-dialog modal-dialog-scrollable">
+												<div class="modal-content">
+													<div class="modal-header">
+														<h5 class="modal-title">Add a category</h5>
+														<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+													</div>
+													<div class="modal-body">
+														<p id="addCategoryEmptyMessage" class="text-muted mb-0" th:if="${unselectedSupplierGroups == null or #lists.isEmpty(unselectedSupplierGroups)}">
+															Every matching category for this event is already in your Search Result.
+														</p>
+														<ul id="addCategoryList" class="list-group list-group-flush" th:if="${unselectedSupplierGroups != null and not #lists.isEmpty(unselectedSupplierGroups)}">
+															<li class="list-group-item d-flex align-items-center py-2" th:each="group : ${unselectedSupplierGroups}">
+																<span class="fw-semibold flex-grow-1" th:text="${group.label()}">Catering</span>
+																<span class="badge bg-secondary text-white ms-2" th:text="${group.matchCount()}">46</span>
+																<button type="button" class="btn btn-sm btn-primary ms-3 flex-shrink-0 addCategoryBtn"
+																	th:attr="data-type=${group.type()}">
+																	Add
+																</button>
+															</li>
+														</ul>
+													</div>
+												</div>
+											</div>
+										</div>
 									</div>
-									<!-- /recommended suppliers -->
 
 								</div>
 							</div>
 							<!-- /overview -->
+
+							<!-- Checklist -->
+							<div class="tab-pane fade" th:classappend="${activeTab == 'checklist'} ? 'show active'" id="tab-checklist">
+								<div class="card mb-0">
+									<div class="card-header bg-white">
+										<h6 class="mb-0"><i class="ph-check-square-offset me-2"></i>Checklist</h6>
+									</div>
+									<div class="card-body">
+										<div id="checklistSpinner" class="text-center py-4 d-none">
+											<div class="spinner-border text-primary" role="status"></div>
+										</div>
+										<div id="checklistResultWrapper">
+											<div th:fragment="checklistResults" th:remove="tag">
+												<p class="text-muted mb-0" th:if="${checklistError != null}" th:text="${checklistError}">Error</p>
+												<th:block th:if="${checklistError == null}">
+													<p class="text-muted mb-0" th:if="${#lists.isEmpty(selectedEvent.checklist())}">
+														Nothing on the checklist yet - select a category in Overview to add it here.
+													</p>
+													<!--/* One group per category - a category's own "Book a X
+														 vendor" item and any "Follow up with Y" bookmarked
+														 suppliers for that category land in the same group
+														 (see EventService#setVendorBookmark's category-context
+														 resolution), so bookmarks read as belonging to the
+														 category they were browsed from. */-->
+													<div class="mb-3" th:each="entry : ${checklistByCategory}">
+														<div class="d-flex align-items-center mb-1">
+															<span class="fw-semibold fs-sm" th:text="${entry.key.label}">Catering</span>
+															<!--/* Bookmarked suppliers in this category, not the total
+																 match count (that's what Search Result's own rows
+																 already show) - a bookmark-origin item is the one
+																 with a vendorSlug (see the "View Storefront" link
+																 below). */-->
+															<span class="badge bg-secondary ms-2"
+																th:with="bookmarkedCount=${#lists.size(entry.value.?[#this.vendorSlug() != null])}"
+																th:if="${bookmarkedCount > 0}"
+																th:text="${bookmarkedCount} + ' bookmarked'">2 bookmarked</span>
+														</div>
+														<ul class="list-group list-group-flush">
+															<li class="list-group-item d-flex align-items-center py-2" th:each="item : ${entry.value}"
+																th:with="itemStatus=${item.done() ? 'DONE' : (item.dismissed() ? 'DISMISSED' : 'TODO')}"
+																th:attr="data-status=${itemStatus}">
+																<span class="flex-grow-1 d-flex align-items-center gap-1">
+																	<span class="checklist-item-label" th:text="${item.label()}"
+																		th:classappend="${itemStatus == 'DONE'} ? ' text-success' : (${itemStatus == 'DISMISSED'} ? ' text-decoration-line-through text-danger' : '')">Book a venue</span>
+																	<i class="ph-check-circle text-success checklist-item-done-icon"
+																		th:classappend="${itemStatus != 'DONE'} ? ' d-none' : ''"></i>
+																</span>
+																<!--/* Bookmark-origin item (a specific vendor, from their
+																     storefront's Bookmark button) - link straight there.
+																     A category-origin item is browsed from Overview's
+																     step 3 instead. */-->
+																<a th:if="${item.vendorSlug() != null}" class="btn btn-sm btn-outline-primary flex-shrink-0 ms-2"
+																	th:href="@{'/vendor/storefront/' + ${item.vendorSlug()}(eventId=${selectedEvent.id()})}" target="_blank">
+																	View Storefront
+																</a>
+																<!--/* Both actions grouped together on the right, not split
+																     across the row - easier to scan/tap than one on each end. */-->
+																<div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+																	<button type="button" class="btn btn-sm btn-icon d-inline-flex align-items-center gap-1 checklist-item-check"
+																		th:classappend="${itemStatus != 'TODO'} ? ' d-none' : ' btn-outline-success'"
+																		th:attr="data-item-id=${item.id()}"
+																		title="Mark as done" aria-label="Mark as done">
+																		<i class="ph-check-circle"></i><span class="fs-xs">Done.</span>
+																	</button>
+																	<button type="button" class="btn btn-sm btn-icon btn-outline-danger d-inline-flex align-items-center gap-1 checklist-item-cross-out"
+																		th:classappend="${itemStatus != 'TODO'} ? ' d-none' : ''"
+																		th:attr="data-item-id=${item.id()}" title="Cross out (no longer interested)" aria-label="Cross out (no longer interested)">
+																		<i class="ph-x-circle"></i><span class="fs-xs">Remove.</span>
+																	</button>
+																	<!--/* "Done" is a completed/positive outcome, not a dismissal -
+																	     no strikethrough for it (see the label above), just this
+																	     check icon, clickable to undo same as the gray one below. */-->
+																	<button type="button" class="btn btn-sm btn-icon btn-outline-success d-inline-flex align-items-center gap-1 checklist-item-undo"
+																		th:classappend="${itemStatus != 'DONE'} ? ' d-none' : ''"
+																		th:attr="data-item-id=${item.id()},data-undo-for='DONE'" title="Undo" aria-label="Undo">
+																		<i class="ph-check-circle"></i><span class="fs-xs">Undo</span>
+																	</button>
+																	<button type="button" class="btn btn-sm btn-icon btn-outline-secondary d-inline-flex align-items-center gap-1 checklist-item-undo"
+																		th:classappend="${itemStatus != 'DISMISSED'} ? ' d-none' : ''"
+																		th:attr="data-item-id=${item.id()},data-undo-for='DISMISSED'" title="Undo" aria-label="Undo">
+																		<i class="ph-arrow-counter-clockwise"></i><span class="fs-xs">Undo</span>
+																	</button>
+																</div>
+															</li>
+														</ul>
+													</div>
+
+													<!--/* Planner-typed custom items, with no category at all. */-->
+													<div th:if="${uncategorizedChecklistItems != null and not #lists.isEmpty(uncategorizedChecklistItems)}">
+														<div class="fw-semibold fs-sm mb-1">Other</div>
+														<ul class="list-group list-group-flush">
+															<li class="list-group-item d-flex align-items-center py-2" th:each="item : ${uncategorizedChecklistItems}"
+																th:with="itemStatus=${item.done() ? 'DONE' : (item.dismissed() ? 'DISMISSED' : 'TODO')}"
+																th:attr="data-status=${itemStatus}">
+																<span class="flex-grow-1 d-flex align-items-center gap-1">
+																	<span class="checklist-item-label" th:text="${item.label()}"
+																		th:classappend="${itemStatus == 'DONE'} ? ' text-success' : (${itemStatus == 'DISMISSED'} ? ' text-decoration-line-through text-danger' : '')">Custom item</span>
+																	<i class="ph-check-circle text-success checklist-item-done-icon"
+																		th:classappend="${itemStatus != 'DONE'} ? ' d-none' : ''"></i>
+																</span>
+																<div class="d-flex align-items-center gap-2 flex-shrink-0 ms-2">
+																	<button type="button" class="btn btn-sm btn-icon d-inline-flex align-items-center gap-1 checklist-item-check"
+																		th:classappend="${itemStatus != 'TODO'} ? ' d-none' : ' btn-outline-success'"
+																		th:attr="data-item-id=${item.id()}"
+																		title="Mark as done" aria-label="Mark as done">
+																		<i class="ph-check-circle"></i><span class="fs-xs">Done.</span>
+																	</button>
+																	<button type="button" class="btn btn-sm btn-icon btn-outline-danger d-inline-flex align-items-center gap-1 checklist-item-cross-out"
+																		th:classappend="${itemStatus != 'TODO'} ? ' d-none' : ''"
+																		th:attr="data-item-id=${item.id()}" title="Cross out (no longer interested)" aria-label="Cross out (no longer interested)">
+																		<i class="ph-x-circle"></i><span class="fs-xs">Remove.</span>
+																	</button>
+																	<button type="button" class="btn btn-sm btn-icon btn-outline-success d-inline-flex align-items-center gap-1 checklist-item-undo"
+																		th:classappend="${itemStatus != 'DONE'} ? ' d-none' : ''"
+																		th:attr="data-item-id=${item.id()},data-undo-for='DONE'" title="Undo" aria-label="Undo">
+																		<i class="ph-check-circle"></i><span class="fs-xs">Undo</span>
+																	</button>
+																	<button type="button" class="btn btn-sm btn-icon btn-outline-secondary d-inline-flex align-items-center gap-1 checklist-item-undo"
+																		th:classappend="${itemStatus != 'DISMISSED'} ? ' d-none' : ''"
+																		th:attr="data-item-id=${item.id()},data-undo-for='DISMISSED'" title="Undo" aria-label="Undo">
+																		<i class="ph-arrow-counter-clockwise"></i><span class="fs-xs">Undo</span>
+																	</button>
+																</div>
+															</li>
+														</ul>
+													</div>
+												</th:block>
+											</div>
+										</div>
+										<form id="checklistAddForm" class="d-flex gap-2 mt-3">
+											<input type="text" id="checklistAddInput" class="form-control form-control-sm" placeholder="Add a custom checklist item&hellip;">
+											<button type="submit" class="btn btn-sm btn-primary flex-shrink-0">Add</button>
+										</form>
+									</div>
+								</div>
+							</div>
+							<!-- /Checklist -->
 
 
 							<!-- Chats -->
@@ -1320,274 +1664,295 @@
 	<!-- /page content -->
 
 
-	<!--/* Filter hide - own class with !important so it wins over Bootstrap's
-	     d-flex (display:flex !important) on the vendor rows. */-->
-	<style>.supplier-filtered{display:none !important;}</style>
-
-	<!-- Recommended-suppliers filter - pure client-side over the already
-	     rendered cards (no re-fetch). Unchecked categories hide their whole
-	     card; "verified only" hides non-verified vendor rows. State is kept
-	     per event in localStorage and re-applied after each AJAX refresh. -->
-	<div class="modal fade" id="supplierFilterModal" tabindex="-1" aria-hidden="true" th:if="${selectedEvent != null}">
-		<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title"><i class="ph-funnel me-2"></i>Filter suppliers</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-				</div>
-				<div class="modal-body">
-					<div class="fw-semibold mb-2">Show</div>
-					<div class="form-check">
-						<input class="form-check-input" type="radio" name="supplierVerifiedFilter" id="supFilterAll" value="all" checked>
-						<label class="form-check-label" for="supFilterAll">All suppliers</label>
-					</div>
-					<div class="form-check">
-						<input class="form-check-input" type="radio" name="supplierVerifiedFilter" id="supFilterVerified" value="verified">
-						<label class="form-check-label" for="supFilterVerified">Verified suppliers only</label>
-					</div>
-
-					<hr>
-
-					<div class="d-flex align-items-center justify-content-between mb-2">
-						<span class="fw-semibold">Service categories</span>
-						<span>
-							<button type="button" class="btn btn-link btn-sm p-0 me-3" data-sup-cat-bulk="all">Select all</button>
-							<button type="button" class="btn btn-link btn-sm p-0" data-sup-cat-bulk="none">Clear all</button>
-						</span>
-					</div>
-					<div class="row g-1">
-						<div class="col-sm-6" th:each="bt : ${businessTypes}">
-							<div class="form-check">
-								<input class="form-check-input supplier-cat-check" type="checkbox"
-									th:id="'supCat-' + ${bt}" th:value="${bt}" checked>
-								<label class="form-check-label fs-sm" th:for="'supCat-' + ${bt}" th:text="${bt.label}">Venue</label>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-light" data-sup-filter-reset>Reset</button>
-					<button type="button" class="btn btn-primary" data-sup-filter-apply data-bs-dismiss="modal">Apply</button>
-				</div>
-			</div>
-		</div>
-	</div>
-	<!-- /suppliers filter modal -->
+	<!-- The old "Filter suppliers" modal (verified-only / hide-category,
+	     client-side over the full category list) is gone now that Search
+	     Result only ever shows the planner's own already-selected
+	     categories - a short, deliberate list, not something that needs
+	     filtering down. -->
 
 
-	<!-- Live vendor matching - fires on location/date change, no submit
-	     button. Location is the trigger: with it blank, changing date does
-	     nothing (there's nothing to match against yet) and no request is
-	     made at all. -->
+	<!-- "Search Result" quick name search, plus the Checklist card's own
+	     AJAX wiring. Category selection itself is no longer editable from
+	     this page - it only ever happens once, in the create-event wizard
+	     above (see the "no event selected" branch's script block). -->
 	<th:block th:if="${selectedEvent != null}">
 		<script th:inline="javascript">
 			document.addEventListener('DOMContentLoaded', function () {
 				var eventId = /*[[${selectedEvent.id()}]]*/ 0;
-				var locationInput = document.getElementById('supplierLocationInput');
-				var dateInput = document.getElementById('supplierDateInput');
-				var spinner = document.getElementById('suppliersSpinner');
-				var resultWrapper = document.getElementById('suppliersResultWrapper');
-				if (!locationInput || !dateInput || !resultWrapper) {
-					return;
+				// "Do you have a supplier in mind?" pop-up - live search, triggers
+				// once the query is at least 3 letters, debounced so it doesn't fire
+				// on every keystroke. Reuses the same backend search endpoint/fragment
+				// the old inline search bar used.
+				var supplierSearchModalInput = document.getElementById('supplierSearchModalInput');
+				var supplierSearchModalSpinner = document.getElementById('supplierSearchModalSpinner');
+				var supplierSearchModalResults = document.getElementById('supplierSearchModalResults');
+				if (supplierSearchModalInput && supplierSearchModalResults) {
+					var searchDebounceTimer = null;
+					var searchHint = '<p class="text-muted fs-sm mb-0">Type at least 3 letters to search.</p>';
+
+					supplierSearchModalInput.addEventListener('input', function () {
+						var query = supplierSearchModalInput.value.trim();
+						if (searchDebounceTimer) { clearTimeout(searchDebounceTimer); }
+						if (query.length < 3) {
+							supplierSearchModalResults.innerHTML = searchHint;
+							return;
+						}
+						searchDebounceTimer = setTimeout(function () {
+							supplierSearchModalSpinner.classList.remove('d-none');
+							fetch('/planner/events/' + eventId + '/suppliers/search?query=' + encodeURIComponent(query))
+								.then(function (res) { return res.text(); })
+								.then(function (html) { supplierSearchModalResults.innerHTML = html; })
+								.catch(function () {
+									supplierSearchModalResults.innerHTML = '<p class="text-muted fs-sm mb-0">Couldn\'t search suppliers. Please try again.</p>';
+								})
+								.finally(function () {
+									supplierSearchModalSpinner.classList.add('d-none');
+								});
+						}, 300);
+					});
+
+					var supplierSearchModalEl = document.getElementById('supplierSearchModal');
+					if (supplierSearchModalEl) {
+						supplierSearchModalEl.addEventListener('hidden.bs.modal', function () {
+							if (searchDebounceTimer) { clearTimeout(searchDebounceTimer); }
+							supplierSearchModalInput.value = '';
+							supplierSearchModalResults.innerHTML = searchHint;
+						});
+					}
 				}
 
-				function refreshSuppliers() {
-					var location = locationInput.value;
-					if (!location) {
-						resultWrapper.innerHTML = '<p class="text-muted mb-0">Waiting for location before we can match you with relevant suppliers.</p>';
-						return;
-					}
+				// "Add category" pop-up - reuses the exact endpoint the create-event
+				// wizard's step 2 calls, but stays open afterward (per the comment
+				// on the modal's markup above): drop the row just added, then
+				// quietly refresh Search Result and Checklist (adding a category
+				// also creates a checklist item server-side - see
+				// EventService#addSupplierCategoryChecklistItem) behind the pop-up.
+				Array.prototype.slice.call(document.querySelectorAll('.addCategoryBtn')).forEach(function (btn) {
+					btn.addEventListener('click', function () {
+						btn.disabled = true;
+						var params = new URLSearchParams();
+						params.set('selected', 'true');
+						fetch('/planner/events/' + eventId + '/supplier-types/' + btn.getAttribute('data-type') + '?' + params.toString(), { method: 'POST' })
+							.then(function (res) {
+								if (!res.ok) { throw new Error('Request failed'); }
+								var row = btn.closest('li');
+								if (row) { row.remove(); }
+								var list = document.getElementById('addCategoryList');
+								if (list && list.children.length === 0 && !document.getElementById('addCategoryEmptyMessage')) {
+									list.insertAdjacentHTML('beforebegin',
+										'<p id="addCategoryEmptyMessage" class="text-muted mb-0">Every matching category for this event is already in your Search Result.</p>');
+								}
+								fetch('/planner/events/' + eventId + '/search-result')
+									.then(function (res) { return res.text(); })
+									.then(function (html) {
+										var wrapper = document.getElementById('searchResultWrapper');
+										if (wrapper) { wrapper.innerHTML = html; }
+									})
+									.catch(function () { /* best-effort - still correct on next full load */ });
+								fetch('/planner/events/' + eventId + '/checklist')
+									.then(function (res) { return res.text(); })
+									.then(function (html) {
+										var checklistWrapperEl = document.getElementById('checklistResultWrapper');
+										if (checklistWrapperEl) { checklistWrapperEl.innerHTML = html; }
+									})
+									.catch(function () { /* best-effort - see comment above */ });
+							})
+							.catch(function () {
+								btn.disabled = false;
+								if (window.showAlert) { window.showAlert('Could not add that category. Please try again.'); }
+							});
+					});
+				});
 
-					spinner.classList.remove('d-none');
-					resultWrapper.classList.add('d-none');
+				// "Remove category" (Search Result's own rows, not the "Add
+				// category" pop-up) - confirm first, since unlike unchecking
+				// this deletes every checklist item under the category too
+				// (see EventService#removeCategorySelection), then quietly
+				// refresh Search Result and Checklist. Delegated, not bound
+				// per-button like .addCategoryBtn above - Search Result's
+				// rows get replaced wholesale after an Add Category action,
+				// so a listener attached once at page load would go stale
+				// for any row added afterward.
+				document.addEventListener('click', function (e) {
+					var removeBtn = e.target.closest('.categoryRemoveBtn');
+					if (!removeBtn) { return; }
+					var categoryLabel = removeBtn.getAttribute('data-label');
+					window.confirmAction(
+						'Remove "' + categoryLabel + '" from your Search Result? This also deletes every checklist item under this category - this can\'t be undone.',
+						function () {
+							removeBtn.disabled = true;
+							// Two sequential round-trips (delete, then two refetches) are
+							// slow enough to read as "nothing happened" without this -
+							// same spinner/wrapper pair each panel already uses elsewhere
+							// on this page (see swapChecklist above).
+							var searchSpinnerEl = document.getElementById('searchResultSpinner');
+							var searchWrapperEl = document.getElementById('searchResultWrapper');
+							var checklistSpinnerEl = document.getElementById('checklistSpinner');
+							var checklistWrapperEl = document.getElementById('checklistResultWrapper');
+							if (searchSpinnerEl && searchWrapperEl) {
+								searchSpinnerEl.classList.remove('d-none');
+								searchWrapperEl.classList.add('d-none');
+							}
+							if (checklistSpinnerEl && checklistWrapperEl) {
+								checklistSpinnerEl.classList.remove('d-none');
+								checklistWrapperEl.classList.add('d-none');
+							}
+							fetch('/planner/events/' + eventId + '/supplier-types/' + removeBtn.getAttribute('data-type'), { method: 'DELETE' })
+								.then(function (res) {
+									if (!res.ok) { throw new Error('Request failed'); }
+									fetch('/planner/events/' + eventId + '/search-result')
+										.then(function (res2) { return res2.text(); })
+										.then(function (html) {
+											if (searchWrapperEl) { searchWrapperEl.innerHTML = html; }
+										})
+										.catch(function () { /* best-effort - still correct on next full load */ })
+										.finally(function () {
+											if (searchSpinnerEl && searchWrapperEl) {
+												searchSpinnerEl.classList.add('d-none');
+												searchWrapperEl.classList.remove('d-none');
+											}
+										});
+									fetch('/planner/events/' + eventId + '/checklist')
+										.then(function (res2) { return res2.text(); })
+										.then(function (html) {
+											if (checklistWrapperEl) { checklistWrapperEl.innerHTML = html; }
+										})
+										.catch(function () { /* best-effort - see comment above */ })
+										.finally(function () {
+											if (checklistSpinnerEl && checklistWrapperEl) {
+												checklistSpinnerEl.classList.add('d-none');
+												checklistWrapperEl.classList.remove('d-none');
+											}
+										});
+								})
+								.catch(function () {
+									removeBtn.disabled = false;
+									if (searchSpinnerEl && searchWrapperEl) {
+										searchSpinnerEl.classList.add('d-none');
+										searchWrapperEl.classList.remove('d-none');
+									}
+									if (checklistSpinnerEl && checklistWrapperEl) {
+										checklistSpinnerEl.classList.add('d-none');
+										checklistWrapperEl.classList.remove('d-none');
+									}
+									if (window.showAlert) { window.showAlert('Could not remove that category. Please try again.'); }
+								});
+						},
+						{ label: 'Yes, Remove' }
+					);
+				});
 
-					var params = new URLSearchParams();
-					params.set('location', location);
-					if (dateInput.value) {
-						params.set('eventDate', dateInput.value);
-					}
+				// --- Checklist (one item per checked category, plus custom items) ---
+				var checklistSpinner = document.getElementById('checklistSpinner');
+				var checklistWrapper = document.getElementById('checklistResultWrapper');
 
-					fetch('/planner/events/' + eventId + '/suppliers?' + params.toString(), { method: 'POST' })
+				function swapChecklist(fetchPromise) {
+					if (!checklistWrapper) { return; }
+					checklistSpinner.classList.remove('d-none');
+					checklistWrapper.classList.add('d-none');
+					fetchPromise
 						.then(function (res) { return res.text(); })
-						.then(function (html) {
-							resultWrapper.innerHTML = html;
-						})
+						.then(function (html) { checklistWrapper.innerHTML = html; })
 						.catch(function () {
-							resultWrapper.innerHTML = '<p class="text-muted mb-0">Couldn\'t update supplier matches. Please try again.</p>';
+							checklistWrapper.innerHTML = '<p class="text-muted mb-0">Couldn\'t update checklist. Please try again.</p>';
 						})
 						.finally(function () {
-							spinner.classList.add('d-none');
-							resultWrapper.classList.remove('d-none');
-							applySupplierFilter();
+							checklistSpinner.classList.add('d-none');
+							checklistWrapper.classList.remove('d-none');
 						});
 				}
 
-				locationInput.addEventListener('change', refreshSuppliers);
-				dateInput.addEventListener('change', refreshSuppliers);
+				// Flips one checklist row between its "pending" (Done/Remove
+				// visible), "done" (green text + check icon) and "dismissed"
+				// (crossed-out red text) states, persists in the background, and
+				// reverts the row on failure. Shared by all four buttons below -
+				// Done, Remove and both Undo buttons all just set this one status;
+				// Done and Remove differ only in their confirmation wording, and
+				// Undo (a deliberate "oops" escape hatch) skips confirmation
+				// entirely.
+				function applyChecklistItemStatusUI(row, status) {
+					if (!row) { return; }
+					row.setAttribute('data-status', status);
+					var label = row.querySelector('.checklist-item-label');
+					if (label) {
+						label.classList.toggle('text-success', status === 'DONE');
+						label.classList.toggle('text-danger', status === 'DISMISSED');
+						label.classList.toggle('text-decoration-line-through', status === 'DISMISSED');
+					}
+					var doneIcon = row.querySelector('.checklist-item-done-icon');
+					if (doneIcon) { doneIcon.classList.toggle('d-none', status !== 'DONE'); }
+					var checkBtn = row.querySelector('.checklist-item-check');
+					var crossBtn = row.querySelector('.checklist-item-cross-out');
+					if (checkBtn) { checkBtn.classList.toggle('d-none', status !== 'TODO'); }
+					if (crossBtn) { crossBtn.classList.toggle('d-none', status !== 'TODO'); }
+					Array.prototype.slice.call(row.querySelectorAll('.checklist-item-undo')).forEach(function (undoBtn) {
+						undoBtn.classList.toggle('d-none', undoBtn.getAttribute('data-undo-for') !== status);
+					});
+				}
 
-				// Delegated so it keeps working after the results fragment is
-				// swapped in by refreshSuppliers(). "See all N" reveals the
-				// hidden rows in one category; "show more service categories"
-				// reveals the non-relevant category cards.
+				function setChecklistItemStatus(row, itemId, status) {
+					if (!row) { return; }
+					var previousStatus = row.getAttribute('data-status') || 'TODO';
+					applyChecklistItemStatusUI(row, status);
+					var params = new URLSearchParams();
+					params.set('status', status);
+					fetch('/planner/events/' + eventId + '/checklist/' + itemId + '/toggle?' + params.toString(), { method: 'POST' })
+						.then(function (res) { if (!res.ok) { throw new Error('toggle failed'); } })
+						.catch(function () {
+							applyChecklistItemStatusUI(row, previousStatus);
+							if (window.showAlert) { window.showAlert('Could not update checklist. Please try again.'); }
+						});
+				}
+
 				document.addEventListener('click', function (e) {
-					var catHeader = e.target.closest('[data-supplier-toggle="cat"]');
-					if (catHeader) {
-						var body = catHeader.parentElement.querySelector('.supplier-body');
-						var caret = catHeader.querySelector('.supplier-caret');
-						if (body) {
-							var collapsed = body.classList.toggle('d-none');
-							if (caret) {
-								caret.classList.toggle('ph-caret-down', collapsed);
-								caret.classList.toggle('ph-caret-up', !collapsed);
-							}
-						}
+					var checkBtn = e.target.closest('.checklist-item-check');
+					if (checkBtn) {
+						var row = checkBtn.closest('li');
+						window.confirmAction(
+							'Mark this item as done?',
+							function () { setChecklistItemStatus(row, checkBtn.getAttribute('data-item-id'), 'DONE'); },
+							{ label: 'Yes, Mark Done', btnClass: 'btn-success' }
+						);
 						return;
 					}
-					var seeAll = e.target.closest('[data-supplier-toggle="see-all"]');
-					if (seeAll) {
-						var card = seeAll.closest('.supplier-group');
-						var rows = card ? card.querySelectorAll('.supplier-hidden') : [];
-						if (!rows.length) { return; }
-						var reveal = rows[0].classList.contains('d-none');
-						rows.forEach(function (r) { r.classList.toggle('d-none', !reveal); });
-						seeAll.textContent = reveal ? seeAll.dataset.labelLess : seeAll.dataset.labelMore;
+
+					var crossBtn = e.target.closest('.checklist-item-cross-out');
+					if (crossBtn) {
+						var crossRow = crossBtn.closest('li');
+						window.confirmAction(
+							'No longer interested in this? It will be crossed out but stays on your checklist.',
+							function () { setChecklistItemStatus(crossRow, crossBtn.getAttribute('data-item-id'), 'DISMISSED'); }
+						);
 						return;
 					}
-					var moreCats = e.target.closest('[data-supplier-toggle="more-cats"]');
-					if (moreCats) {
-						var cards = document.querySelectorAll('.supplier-cat-extra');
-						if (!cards.length) { return; }
-						var reveal2 = cards[0].classList.contains('d-none');
-						cards.forEach(function (c) { c.classList.toggle('d-none', !reveal2); });
-						moreCats.textContent = reveal2 ? moreCats.dataset.labelLess : moreCats.dataset.labelMore;
+
+					var undoBtn = e.target.closest('.checklist-item-undo');
+					if (undoBtn) {
+						var undoRow = undoBtn.closest('li');
+						setChecklistItemStatus(undoRow, undoBtn.getAttribute('data-item-id'), 'TODO');
 					}
 				});
 
-				// --- Supplier filter (client-side, per-event, persisted) ---
-				function filterKey() { return 'supplierFilter:' + eventId; }
-				function loadFilterState() {
-					try { return JSON.parse(localStorage.getItem(filterKey()) || '{}') || {}; }
-					catch (err) { return {}; }
-				}
-				function saveFilterState(s) {
-					try { localStorage.setItem(filterKey(), JSON.stringify(s)); } catch (err) { /* private mode */ }
-				}
-
-				function updateFilterBadge(st) {
-					var badge = document.getElementById('supplierFilterBadge');
-					if (!badge) { return; }
-					var n = (st.hiddenTypes ? st.hiddenTypes.length : 0) + (st.verifiedOnly ? 1 : 0);
-					badge.textContent = n;
-					badge.classList.toggle('d-none', n === 0);
-				}
-
-				function applySupplierFilter() {
-					var st = loadFilterState();
-					var hidden = {};
-					(st.hiddenTypes || []).forEach(function (t) { hidden[t] = true; });
-					var vOnly = st.verifiedOnly === true;
-					var shownVendors = 0;
-
-					document.querySelectorAll('.supplier-group').forEach(function (card) {
-						var type = card.getAttribute('data-type');
-						var visRows = 0;
-						card.querySelectorAll('.supplier-vendor-row').forEach(function (row) {
-							var pass = !vOnly || row.getAttribute('data-verified') === 'true';
-							row.classList.toggle('supplier-filtered', !pass);
-							if (pass) { visRows++; }
-						});
-						var hideCard = !!hidden[type] || visRows === 0;
-						card.classList.toggle('supplier-filtered', hideCard);
-
-						// Header badge and the "See all N" button both follow the
-						// "verified only" filter, so they stay in sync with each
-						// other (this used to drift - the badge updated, the
-						// button kept showing the unfiltered total). Category
-						// unchecking doesn't thin a shown card's list, so both
-						// stay at the full match count for that.
-						var displayCount = vOnly ? visRows : null;
-						var badge = card.querySelector('.supplier-count-badge');
-						if (badge) {
-							badge.textContent = displayCount !== null ? displayCount : (badge.getAttribute('data-total') || visRows);
-						}
-						var seeAllBtn = card.querySelector('[data-supplier-toggle="see-all"]');
-						if (seeAllBtn) {
-							var total = seeAllBtn.getAttribute('data-total');
-							var count = displayCount !== null ? displayCount : total;
-							var moreLabel = 'See all ' + count;
-							seeAllBtn.dataset.labelMore = moreLabel;
-							// Only overwrite the visible text while collapsed - if
-							// it's already expanded ("Show less"), leave that as-is;
-							// the corrected count is picked up next time it toggles.
-							var hiddenRows = card.querySelectorAll('.supplier-hidden');
-							var collapsed = hiddenRows.length === 0 || hiddenRows[0].classList.contains('d-none');
-							if (collapsed) {
-								seeAllBtn.textContent = moreLabel;
-							}
-						}
-
-						if (!hideCard) { shownVendors += visRows; }
-					});
-
-					var active = (st.hiddenTypes && st.hiddenTypes.length) || vOnly;
-					document.querySelectorAll('.supplier-shown-note').forEach(function (n) {
-						n.textContent = active ? ('  ·  ' + shownVendors + ' shown') : '';
-					});
-					updateFilterBadge(st);
-				}
-
-				function syncFilterModalFromState() {
-					var st = loadFilterState();
-					var hidden = {};
-					(st.hiddenTypes || []).forEach(function (t) { hidden[t] = true; });
-					document.querySelectorAll('.supplier-cat-check').forEach(function (cb) {
-						cb.checked = !hidden[cb.value];
-					});
-					var vOnly = st.verifiedOnly === true;
-					var rAll = document.getElementById('supFilterAll');
-					var rVer = document.getElementById('supFilterVerified');
-					if (rAll) { rAll.checked = !vOnly; }
-					if (rVer) { rVer.checked = vOnly; }
-				}
-
-				var filterModal = document.getElementById('supplierFilterModal');
-				if (filterModal) {
-					filterModal.addEventListener('show.bs.modal', syncFilterModalFromState);
-				}
-				document.querySelectorAll('[data-sup-cat-bulk]').forEach(function (b) {
-					b.addEventListener('click', function () {
-						var check = b.getAttribute('data-sup-cat-bulk') === 'all';
-						document.querySelectorAll('.supplier-cat-check').forEach(function (cb) { cb.checked = check; });
-					});
-				});
-				var applyBtn = document.querySelector('[data-sup-filter-apply]');
-				if (applyBtn) {
-					applyBtn.addEventListener('click', function () {
-						var hiddenTypes = [];
-						document.querySelectorAll('.supplier-cat-check').forEach(function (cb) {
-							if (!cb.checked) { hiddenTypes.push(cb.value); }
-						});
-						var vEl = document.getElementById('supFilterVerified');
-						saveFilterState({ hiddenTypes: hiddenTypes, verifiedOnly: !!(vEl && vEl.checked) });
-						applySupplierFilter();
+				var checklistAddForm = document.getElementById('checklistAddForm');
+				var checklistAddInput = document.getElementById('checklistAddInput');
+				if (checklistAddForm && checklistAddInput) {
+					checklistAddForm.addEventListener('submit', function (e) {
+						e.preventDefault();
+						var label = checklistAddInput.value.trim();
+						if (!label) { return; }
+						var params = new URLSearchParams();
+						params.set('label', label);
+						swapChecklist(fetch('/planner/events/' + eventId + '/checklist?' + params.toString(), { method: 'POST' })
+							.then(function (res) {
+								checklistAddInput.value = '';
+								return res;
+							}));
 					});
 				}
-				var resetBtn = document.querySelector('[data-sup-filter-reset]');
-				if (resetBtn) {
-					resetBtn.addEventListener('click', function () {
-						saveFilterState({ hiddenTypes: [], verifiedOnly: false });
-						syncFilterModalFromState();
-						applySupplierFilter();
-					});
-				}
-
-				// Apply any stored filter to the server-rendered cards on load
-				// (refreshSuppliers() re-applies it after each AJAX swap).
-				applySupplierFilter();
 			});
 		</script>
 	</th:block>
-	<!-- /live vendor matching -->
+	<!-- /Search Result + Checklist AJAX wiring -->
 
 
 	<!-- Voice input - speak instead of typing, for the coordinator chat and
@@ -1816,6 +2181,7 @@
 	<div th:replace="~{fragments/common :: imageLightbox}"></div>
 	<div th:replace="~{fragments/common :: fullPageSpinner}"></div>
 	<div th:replace="~{fragments/common :: genericConfirmModal}"></div>
+	<div th:replace="~{fragments/common :: confirmActionModal}"></div>
 
 	<!-- Chat reply attachment - shows the picked filename under the reply
 	     box, since a bare file input has no visible feedback once it's

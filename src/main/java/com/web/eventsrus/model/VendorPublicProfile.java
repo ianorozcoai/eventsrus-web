@@ -34,6 +34,7 @@ import java.util.List;
  */
 public record VendorPublicProfile(
         long vendorUserId,
+        Long vendorProfileId,
         String businessName,
         String ownerName,
         String description,

@@ -43,6 +43,14 @@ public class NavController {
         return "privacy";
     }
 
+    // Public account-deletion page - Google Play requires a web link where
+    // users can request deletion without opening the app (give this URL to
+    // Play Console's Data safety form).
+    @GetMapping("/delete-account")
+    public String deleteAccount() {
+        return "delete-account";
+    }
+
     // PlannerController owns the real page logic at /planner/events (class-level
     // @RequestMapping there, so it can't itself expose a plain /planner/dashboard
     // path) - this just gives the literal URL asked for in the login flow.

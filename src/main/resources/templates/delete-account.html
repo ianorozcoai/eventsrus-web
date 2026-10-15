@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>Delete your account - EventsRUs</title>
+
+	<!-- Favicon -->
+	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">
+	<link rel="icon" type="image/png" sizes="32x32" th:href="@{/assets/images/favicon-32x32.png}">
+	<link rel="icon" type="image/png" sizes="16x16" th:href="@{/assets/images/favicon-16x16.png}">
+	<link rel="apple-touch-icon" th:href="@{/assets/images/apple-touch-icon.png}">
+	<!-- /favicon -->
+
+	<!-- Global stylesheets -->
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+	<!-- /global stylesheets -->
+
+	<!-- Core JS files -->
+	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+	<!-- /core JS files -->
+
+	<!-- Theme JS files -->
+	<script th:src="@{/assets/js/app.js}"></script>
+	<!-- /theme JS files -->
+
+</head>
+
+<body>
+
+	<!-- Main navbar -->
+	<div class="navbar navbar-dark navbar-static py-2" style="background:#000;">
+		<div class="container-fluid">
+			<div class="navbar-brand">
+				<a th:href="@{/}" class="d-inline-flex align-items-center text-white text-decoration-none">
+					<span class="d-flex align-items-center justify-content-center bg-primary rounded-pill fw-bold" style="width:28px;height:28px;">E</span>
+					<span class="d-none d-sm-inline-block fw-bold fs-lg ms-2 text-white">EventsRUs</span>
+				</a>
+			</div>
+			<a th:href="@{/privacy}" class="text-white-50 text-decoration-none fs-sm">Privacy Policy</a>
+		</div>
+	</div>
+	<!-- /main navbar -->
+
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div class="row justify-content-center">
+						<div class="col-lg-8">
+
+							<div class="card border-0 shadow-sm">
+								<div class="card-body p-4 p-md-5">
+
+									<h4 class="fw-bold mb-1">Delete your EventsRUs account</h4>
+									<p class="text-muted fs-sm mb-4">This page applies to the EventsRUs Android app and to eventsrus.app, for both Planners and Suppliers.</p>
+
+									<h6 class="fw-semibold mt-4">Delete it yourself in the app (fastest)</h6>
+									<ol class="text-muted">
+										<li>Open the EventsRUs app and sign in.</li>
+										<li>Tap the three-dot menu at the top right, then <strong>Delete account</strong>. (Planners can also use <strong>Profile</strong> and scroll to the bottom.)</li>
+										<li>Read the warning, tick &ldquo;I understand and accept&rdquo;, type DELETE, and confirm.</li>
+									</ol>
+
+									<h6 class="fw-semibold mt-4">No app, or can't sign in? Ask us to delete it</h6>
+									<p class="text-muted">Email <a href="mailto:support@eventsrus.app?subject=Delete%20my%20EventsRUs%20account">support@eventsrus.app</a> with the subject &ldquo;Delete my EventsRUs account&rdquo;, from the email address you signed up with (the Google account you use to sign in). Tell us whether you were a Planner or a Supplier. We may reply to confirm it is really you, and we will confirm by email once the request is in progress.</p>
+
+									<h6 class="fw-semibold mt-4">What happens after you ask</h6>
+									<ul class="text-muted">
+										<li><strong>30-day grace period.</strong> Your records are permanently deleted 30 days after you confirm. If you sign in again during those 30 days, the deletion is cancelled and nothing is lost.</li>
+										<li><strong>Active subscription?</strong> A Supplier with an active subscription must cancel it first (PayPal, GCash or Google Play), and anyone with an upcoming booking must cancel that booking first. Planning to come back? Cancelling your subscription keeps your storefront data safe; it is not the same as deleting your account.</li>
+									</ul>
+
+									<h6 class="fw-semibold mt-4">What we delete</h6>
+									<ul class="text-muted">
+										<li>Your name, email address, phone number and address.</li>
+										<li>Your sign-in and push notification connections, and your notifications.</li>
+										<li>The notes and details of your events, and the comments of reviews you wrote.</li>
+										<li>For Suppliers: your storefront, photos, social links, payment instructions and QR codes, Google Calendar connection, and your ID card, selfie and business documents. Your packages are removed from public view.</li>
+									</ul>
+
+									<h6 class="fw-semibold mt-4">What we keep, and why</h6>
+									<ul class="text-muted">
+										<li>Bookings, quotations (including quotation PDFs), reviews and payment and billing records are kept <strong>without your name</strong>. The other person involved still needs their record of what was agreed, and we must keep financial records for legal and fraud-prevention reasons.</li>
+										<li>Messages you sent to another EventsRUs user stay in that person's conversation history, shown as coming from a &ldquo;Deleted user&rdquo;.</li>
+										<li>Standard security and backup copies may exist for a short period before they are overwritten.</li>
+									</ul>
+
+									<h6 class="fw-semibold mt-4">Inactive Supplier accounts</h6>
+									<p class="text-muted mb-0">If a Supplier has no active subscription and has not signed in for 12 months, we remove their stored ID card and selfie. After 24 months, we email a warning and delete the account 30 days later unless the Supplier signs in before then.</p>
+
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+
+				<!-- Footer -->
+				<div th:replace="~{fragments/legal-footer :: legalFooter}"></div>
+				<!-- /footer -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

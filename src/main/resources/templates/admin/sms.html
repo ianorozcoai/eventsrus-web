@@ -103,6 +103,7 @@
 											<span class="badge bg-info text-dark" th:if="${entry.triggerType().name() == 'VENDOR_QUOTATION_REQUEST'}">Quote request</span>
 											<span class="badge bg-info text-dark" th:if="${entry.triggerType().name() == 'VENDOR_PAYMENT_SCREENSHOT'}">Payment screenshot</span>
 											<span class="badge bg-info text-dark" th:if="${entry.triggerType().name() == 'VENDOR_AMENDMENT_PROPOSED'}">Amendment proposed</span>
+												<span class="badge bg-warning text-dark" th:if="${entry.triggerType().name() == 'SUBSCRIPTION_REMINDER'}">Renewal reminder</span>
 										</td>
 										<td>
 											<span class="badge bg-success" th:if="${entry.success()}">Sent</span>

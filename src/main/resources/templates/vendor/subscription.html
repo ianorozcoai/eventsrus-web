@@ -118,6 +118,10 @@
 										th:text="${paywallPaymentFailed ? 'Re-upload Payment Screenshot' : (status.plan() != null ? 'Renew Subscription' : 'Subscribe to PRO')}">Renew Subscription</h6>
 								</div>
 								<div class="card-body">
+									<p class="text-muted fs-sm" th:if="${status.plan() != null and !status.expired() and !status.inGracePeriod()}">
+										Paying early? No problem - the time you have left on your current plan is
+										added on top of the plan you choose, so you lose nothing.
+									</p>
 									<div th:replace="~{fragments/common :: proPlanPickerForm}"></div>
 								</div>
 							</div>

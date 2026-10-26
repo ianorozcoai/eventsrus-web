@@ -35,6 +35,11 @@
 						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
 					</div>
 
+					<div th:if="${vendorsSuccess}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${vendorsSuccess}">Done</span>
+					</div>
+
 					<div th:if="${vendorsError}" class="alert alert-danger alert-dismissible">
 						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 						<span th:text="${vendorsError}">Error</span>
@@ -166,6 +171,10 @@
 															     (switches it to a vendor WebSession) - same
 															     form-around-a-dropdown-item-button pattern as the
 															     profile dropdown's own Log out. */-->
+															<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#extendAccessModal"
+																th:attr="data-vendor-id=${vendor.vendorUserId()},data-vendor-name=${vendor.businessName()}">
+																<i class="ph-calendar-plus me-2"></i> Extend access
+															</button>
 															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
 																<button type="submit" class="dropdown-item">
 																	<i class="ph-squares-four me-2"></i> View Dashboard
@@ -223,6 +232,10 @@
 															<a th:href="@{'/admin/verifications/' + ${vendor.vendorUserId()}}" class="dropdown-item">
 																<i class="ph-identification-badge me-2"></i> Manage
 															</a>
+															<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#extendAccessModal"
+																th:attr="data-vendor-id=${vendor.vendorUserId()},data-vendor-name=${vendor.businessName()}">
+																<i class="ph-calendar-plus me-2"></i> Extend access
+															</button>
 															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
 																<button type="submit" class="dropdown-item">
 																	<i class="ph-squares-four me-2"></i> View Dashboard
@@ -284,6 +297,10 @@
 																<i class="ph-storefront me-2"></i> View Storefront
 																<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
 															</a>
+															<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#extendAccessModal"
+																th:attr="data-vendor-id=${vendor.vendorUserId()},data-vendor-name=${vendor.businessName()}">
+																<i class="ph-calendar-plus me-2"></i> Extend access
+															</button>
 															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
 																<button type="submit" class="dropdown-item">
 																	<i class="ph-squares-four me-2"></i> View Dashboard
@@ -342,6 +359,10 @@
 																<i class="ph-storefront me-2"></i> View Storefront
 																<i class="ph-arrow-square-out fs-sm ms-1 opacity-50"></i>
 															</a>
+															<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#extendAccessModal"
+																th:attr="data-vendor-id=${vendor.vendorUserId()},data-vendor-name=${vendor.businessName()}">
+																<i class="ph-calendar-plus me-2"></i> Extend access
+															</button>
 															<form th:action="@{'/admin/vendors/' + ${vendor.vendorUserId()} + '/view-dashboard'}" method="post">
 																<button type="submit" class="dropdown-item">
 																	<i class="ph-squares-four me-2"></i> View Dashboard
@@ -414,6 +435,43 @@
 	     where they're actually used, rather than in the shared admin-shell. */-->
 	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
 	<link th:href="@{/assets/css/multiselect.css}" rel="stylesheet" type="text/css">
+	<!-- Extend access: one shared form, opened from the "Extend access" item of any supplier row. -->
+	<div id="extendAccessModal" class="modal fade" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<form class="modal-content" method="post" th:action="@{/admin/vendors/0/extend-access}">
+				<div class="modal-header">
+					<h5 class="modal-title">Extend access</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p class="mb-3">Give <strong id="extendAccessVendorName">this supplier</strong> more time. The days are added on top of where their access ends now (or from today if it already ended). Their billing is not touched.</p>
+					<div class="mb-3">
+						<label class="form-label">Days to add</label>
+						<input type="number" name="days" class="form-control" min="1" max="365" value="30" required>
+					</div>
+					<div class="mb-0">
+						<label class="form-label">Reason</label>
+						<textarea name="reason" class="form-control" rows="3" maxlength="300" required placeholder="Why is this extension being given? It is kept in the supplier history."></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-primary">Extend access</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		document.getElementById('extendAccessModal').addEventListener('show.bs.modal', function (event) {
+			var trigger = event.relatedTarget;
+			var form = this.querySelector('form');
+			form.action = form.getAttribute('action').replace('/vendors/0/', '/vendors/' + trigger.getAttribute('data-vendor-id') + '/');
+			document.getElementById('extendAccessVendorName').textContent = trigger.getAttribute('data-vendor-name');
+			this.querySelector('[name=reason]').value = '';
+		});
+	</script>
+
 	<script th:src="@{/assets/js/jquery/jquery.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.min.js}"></script>
 	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>

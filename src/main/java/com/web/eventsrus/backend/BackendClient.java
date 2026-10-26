@@ -1175,6 +1175,23 @@ public class BackendClient {
                 .toBodilessEntity();
     }
 
+    /** Support tool: give one supplier more access time - see AdminVendorController#extendSubscription on the backend. */
+    public BackendExtendAccessResult extendVendorAccess(
+            String adminJwt, Long vendorUserId, int days, String reason, String adminUsername) {
+        StringBuilder uri = new StringBuilder("/api/v1/admin/vendors/" + vendorUserId + "/extend-subscription")
+                .append("?days=").append(days)
+                .append("&reason=").append(java.net.URLEncoder.encode(reason, java.nio.charset.StandardCharsets.UTF_8));
+        if (adminUsername != null && !adminUsername.isBlank()) {
+            uri.append("&adminUsername=").append(java.net.URLEncoder.encode(adminUsername, java.nio.charset.StandardCharsets.UTF_8));
+        }
+        return backendRestClient.post()
+                .uri(uri.toString())
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(BackendExtendAccessResult.class);
+    }
+
     public void setTopVendor(String adminJwt, Long vendorUserId, boolean topVendor) {
         backendRestClient.post()
                 .uri("/api/v1/admin/vendors/" + vendorUserId + (topVendor ? "/mark-top" : "/unmark-top"))

@@ -179,6 +179,31 @@ public class AdminController {
         return "redirect:/vendor/dashboard";
     }
 
+    /**
+     * "Extend access" from the Vendors tables: gives one supplier more access time (the days are added on top of
+     * where their access ends now). The reason is required and is kept in the supplier's history.
+     */
+    @PostMapping("/vendors/{userId}/extend-access")
+    public String extendVendorAccess(
+            @PathVariable Long userId, @RequestParam int days, @RequestParam String reason,
+            HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("vendorsError", "Not connected to eventsrus-backend right now - log out and back in to retry.");
+            return "redirect:/admin/vendors";
+        }
+        try {
+            var result = backendClient.extendVendorAccess(jwt, userId, days, reason, AdminSession.username(session));
+            String until = result.accessEndsAt() == null ? "" : " Access now runs until "
+                    + java.time.format.DateTimeFormatter.ofPattern("MMMM d, yyyy", java.util.Locale.ENGLISH)
+                            .withZone(java.time.ZoneId.of("Asia/Manila")).format(result.accessEndsAt()) + ".";
+            redirectAttributes.addFlashAttribute("vendorsSuccess", "Added " + result.daysAdded() + " days." + until);
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("vendorsError", e.getMessage());
+        }
+        return "redirect:/admin/vendors";
+    }
+
     @PostMapping("/vendors/exit-impersonation")
     public String exitImpersonation(HttpSession session) {
         WebSession.clear(session);

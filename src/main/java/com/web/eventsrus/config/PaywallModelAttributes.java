@@ -44,8 +44,8 @@ public class PaywallModelAttributes {
     @Value("${paypal.client-id}")
     private String paypalClientId;
 
-    /** The free-trial reminder popup only shows in the trial's last week. */
-    private static final long FREE_TRIAL_REMINDER_DAYS = 7;
+    /** The free-trial reminder popup only shows in the trial's last two weeks. */
+    private static final long FREE_TRIAL_REMINDER_DAYS = 14;
 
     @ModelAttribute
     public void addPaywallState(HttpServletRequest request, Model model) {

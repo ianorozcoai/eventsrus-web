@@ -91,7 +91,7 @@
 									</a>
 									<p class="mb-1" th:if="${status.expiresAt() != null}">
 										<span th:if="${status.expired() or status.inGracePeriod()}">Expired on</span>
-										<span th:unless="${status.expired() or status.inGracePeriod()}">Renews on / expires</span>
+										<span th:unless="${status.expired() or status.inGracePeriod()}">Access until</span>
 										<span th:text="${#temporals.format(status.expiresAt(), 'MMMM d, yyyy')}">January 1, 2026</span>
 									</p>
 									<p class="text-muted fs-sm mb-0" th:if="${status.expired()}">

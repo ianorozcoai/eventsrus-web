@@ -44,6 +44,9 @@ public class PaywallModelAttributes {
     @Value("${paypal.client-id}")
     private String paypalClientId;
 
+    /** The free-trial reminder popup only shows in the trial's last week. */
+    private static final long FREE_TRIAL_REMINDER_DAYS = 7;
+
     @ModelAttribute
     public void addPaywallState(HttpServletRequest request, Model model) {
         // Most pages in this app have no session at all (login is scoped only
@@ -59,6 +62,9 @@ public class PaywallModelAttributes {
         boolean awaitingGcashVerification = false;
         boolean paymentFailed = false;
         boolean showProWelcomeModal = false;
+        boolean onFreeTrial = false;
+        long freeTrialDaysLeft = 0;
+        boolean realInGracePeriod = false;
 
         HttpSession session = request.getSession(false);
         // Only a real vendor has a subscription concept at all - a planner
@@ -75,6 +81,19 @@ public class PaywallModelAttributes {
                 expired = status.expired();
                 inGracePeriod = status.inGracePeriod();
                 graceEndsAt = status.graceEndsAt();
+                realInGracePeriod = inGracePeriod;
+
+                // A new supplier's free trial IS the grace period of a free grant: word it as a trial
+                // (never "expired" - that is for suppliers who stopped paying) and only pop the reminder
+                // up in the trial's last week.
+                if (inGracePeriod && graceEndsAt != null && "FREE_GRANT".equals(status.billingSource())) {
+                    onFreeTrial = true;
+                    long minutesLeft = java.time.Duration.between(java.time.Instant.now(), graceEndsAt).toMinutes();
+                    freeTrialDaysLeft = Math.max(1, (minutesLeft + 1439) / 1440);
+                    if (freeTrialDaysLeft > FREE_TRIAL_REMINDER_DAYS) {
+                        inGracePeriod = false;
+                    }
+                }
 
                 // A GCash submission still under review holds a real
                 // temporary period (see VendorSubscriptionService#
@@ -104,7 +123,7 @@ public class PaywallModelAttributes {
                 showProWelcomeModal = status.showWelcomePopup();
 
                 WebSession.storeSubscription(session, status.plan(), status.expiresAt(), expiringSoon, expired,
-                        inGracePeriod, graceEndsAt, status.billingSource());
+                        realInGracePeriod, graceEndsAt, status.billingSource());
                 model.addAttribute("status", status);
             }
 
@@ -119,6 +138,8 @@ public class PaywallModelAttributes {
         model.addAttribute("paywallExpired", expired);
         model.addAttribute("paywallInGracePeriod", inGracePeriod);
         model.addAttribute("paywallGraceEndsAt", graceEndsAt);
+        model.addAttribute("paywallOnFreeTrial", onFreeTrial);
+        model.addAttribute("paywallFreeTrialDaysLeft", freeTrialDaysLeft);
         model.addAttribute("paywallAlreadyShown", alreadyShown);
         model.addAttribute("paywallRequiresPlanSelection", requiresPlanSelection);
         model.addAttribute("paywallAwaitingGcashVerification", awaitingGcashVerification);

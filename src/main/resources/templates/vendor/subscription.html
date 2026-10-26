@@ -76,7 +76,8 @@
 											<span th:if="${paywallPaymentFailed}" class="badge bg-danger">Payment verification failed</span>
 											<th:block th:unless="${paywallAwaitingGcashVerification or paywallPaymentFailed}">
 												<span th:if="${status.plan() != null and status.expired()}" class="badge bg-danger">Expired</span>
-												<span th:if="${status.plan() != null and status.inGracePeriod()}" class="badge bg-danger">Grace Period</span>
+												<span th:if="${status.plan() != null and status.inGracePeriod() and !paywallOnFreeTrial}" class="badge bg-danger">Grace Period</span>
+												<span th:if="${paywallOnFreeTrial}" class="badge bg-success">Free trial</span>
 												<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-warning text-dark">Renews soon</span>
 												<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-success">Active</span>
 											</th:block>
@@ -90,15 +91,20 @@
 										<i class="ph-upload-simple me-1"></i> Re-upload Payment Screenshot
 									</a>
 									<p class="mb-1" th:if="${status.expiresAt() != null}">
-										<span th:if="${status.expired() or status.inGracePeriod()}">Expired on</span>
-										<span th:unless="${status.expired() or status.inGracePeriod()}">Access until</span>
-										<span th:text="${#temporals.format(status.expiresAt(), 'MMMM d, yyyy')}">January 1, 2026</span>
+										<span th:if="${paywallOnFreeTrial}">Free trial ends on</span>
+										<span th:if="${!paywallOnFreeTrial and (status.expired() or status.inGracePeriod())}">Expired on</span>
+										<span th:if="${!paywallOnFreeTrial and !(status.expired() or status.inGracePeriod())}">Access until</span>
+										<span th:text="${#temporals.format(paywallOnFreeTrial ? status.graceEndsAt() : status.expiresAt(), 'MMMM d, yyyy')}">January 1, 2026</span>
 									</p>
 									<p class="text-muted fs-sm mb-0" th:if="${status.expired()}">
 										Quotations, chat, and bookings are disabled, and your storefront no longer
 										appears in planner search, until you renew.
 									</p>
-									<p class="text-muted fs-sm mb-0" th:if="${status.inGracePeriod()}">
+									<p class="text-muted fs-sm mb-0" th:if="${paywallOnFreeTrial}">
+											Your free trial gives you full access to every supplier feature. Choose a plan
+											any time before it ends to keep quotations, chat, bookings and your place in planner search.
+										</p>
+										<p class="text-muted fs-sm mb-0" th:if="${status.inGracePeriod() and !paywallOnFreeTrial}">
 										You still have full access and stay recommended to planners until
 										<span th:text="${#temporals.format(status.graceEndsAt(), 'MMMM d, yyyy')}">January 1, 2026</span> -
 										renew before then to avoid losing access.
@@ -115,7 +121,7 @@
 							<div class="card" id="renewSubscribeCard">
 								<div class="card-header">
 									<h6 class="mb-0"
-										th:text="${paywallPaymentFailed ? 'Re-upload Payment Screenshot' : (status.plan() != null ? 'Renew Subscription' : 'Subscribe to PRO')}">Renew Subscription</h6>
+										th:text="${paywallPaymentFailed ? 'Re-upload Payment Screenshot' : (status.plan() != null and !paywallOnFreeTrial ? 'Renew Subscription' : (paywallOnFreeTrial ? 'Choose your plan' : 'Subscribe to PRO'))}">Renew Subscription</h6>
 								</div>
 								<div class="card-body">
 									<p class="text-muted fs-sm" th:if="${status.plan() != null and !status.expired() and !status.inGracePeriod()}">

@@ -120,7 +120,9 @@ public class PaywallModelAttributes {
                 // point but gets its own notice instead.
                 requiresPlanSelection = status.plan() == null && status.expiresAt() == null
                         && !expiringSoon && !expired && !inGracePeriod && !paymentFailed;
-                showProWelcomeModal = status.showWelcomePopup();
+                // "Your subscription is active" is not true during the free trial, and the popup would take
+                // the one modal slot from the trial reminder - the welcome shows after the first real plan.
+                showProWelcomeModal = status.showWelcomePopup() && !onFreeTrial;
 
                 WebSession.storeSubscription(session, status.plan(), status.expiresAt(), expiringSoon, expired,
                         realInGracePeriod, graceEndsAt, status.billingSource());

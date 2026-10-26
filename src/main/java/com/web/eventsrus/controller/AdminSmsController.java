@@ -61,7 +61,12 @@ public class AdminSmsController {
             return "redirect:/admin/sms";
         }
         try {
-            var result = backendClient.sendAdhocSms(jwt, number, message);
+            // Browsers submit a typed Enter as CRLF; the SMS should carry a single line break, otherwise as typed.
+            String sms = message.replace("
+", "
+").replace('', '
+');
+            var result = backendClient.sendAdhocSms(jwt, number, sms);
             if (result.success()) {
                 redirectAttributes.addFlashAttribute("smsSent", true);
             } else {

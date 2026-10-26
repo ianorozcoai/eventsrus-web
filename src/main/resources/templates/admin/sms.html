@@ -62,7 +62,7 @@
 								</div>
 								<div class="col-md-6">
 									<label class="form-label">Message</label>
-									<input type="text" name="message" class="form-control" maxlength="480" required>
+									<textarea name="message" class="form-control" rows="4" maxlength="480" required style="white-space: pre-wrap; resize: vertical;" placeholder="Type the message. Line breaks and spaces are sent as typed."></textarea>
 								</div>
 								<div class="col-md-2 d-flex align-items-end">
 									<button type="submit" class="btn btn-primary w-100">
@@ -96,7 +96,7 @@
 										<td th:text="${#temporals.format(entry.createdAt(), 'MMM d, yyyy h:mm a')}">-</td>
 										<td th:text="${entry.recipientNumber()}">-</td>
 										<td>
-											<div class="text-truncate" style="max-width: 320px;" th:text="${entry.message()}">-</div>
+											<div class="text-truncate" style="max-width: 320px;" th:text="${entry.message()}" th:title="${entry.message()}">-</div>
 										</td>
 										<td>
 											<span class="badge bg-secondary" th:if="${entry.triggerType().name() == 'ADMIN_ADHOC'}">Admin ad-hoc</span>

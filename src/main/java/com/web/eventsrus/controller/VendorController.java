@@ -975,6 +975,8 @@ public class VendorController {
             Model model) {
         String jwt = WebSession.isLoggedIn(session) ? WebSession.token(session) : null;
         loadStorefront(model, slug, eventId, category, jwt, session);
+        // Search/share tags (only added to the page when the backend says it may be indexed).
+        model.addAllAttributes(StorefrontSeo.attributes((VendorPublicProfile) model.getAttribute("profile"), slug, objectMapper));
         return "vendor/storefront";
     }
 
@@ -1244,6 +1246,8 @@ public class VendorController {
         form.setOperatingAreas(settings.operatingAreas());
         form.setCateredEventTypes(settings.cateredEventTypes());
         form.setPaymentInstructions(settings.paymentInstructions());
+        // An older backend does not send the flag: treat that as the default (on), never as an opt-out.
+        form.setSearchVisible(settings.searchVisible() == null || settings.searchVisible());
         return form;
     }
 

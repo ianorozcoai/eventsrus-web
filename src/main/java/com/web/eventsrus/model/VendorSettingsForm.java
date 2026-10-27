@@ -72,4 +72,7 @@ public class VendorSettingsForm {
 
     // Tab 4 - Payment Methods
     private String paymentInstructions;
+
+    // Tab 1 - may search engines (Google) list this public storefront? Null = not on the form.
+    private Boolean searchVisible;
 }

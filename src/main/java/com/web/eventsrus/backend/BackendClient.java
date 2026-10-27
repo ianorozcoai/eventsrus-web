@@ -1032,6 +1032,26 @@ public class BackendClient {
         return get("/api/v1/admin/vendors", adminJwt, new ParameterizedTypeReference<List<BackendAdminVendorListItem>>() {});
     }
 
+    /** Admin: email one incomplete sign-up the "finish your sign-up" reminder. */
+    public BackendReminderEmailResult sendIncompleteSignupReminder(String adminJwt, Long userId) {
+        return backendRestClient.post()
+                .uri("/api/v1/admin/vendors/incomplete-signups/" + userId + "/reminder-email")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(BackendReminderEmailResult.class);
+    }
+
+    /** Admin: email every incomplete sign-up that is allowed another reminder. */
+    public List<BackendReminderEmailResult> sendAllIncompleteSignupReminders(String adminJwt) {
+        return backendRestClient.post()
+                .uri("/api/v1/admin/vendors/incomplete-signups/reminder-emails")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(new ParameterizedTypeReference<List<BackendReminderEmailResult>>() {});
+    }
+
     public List<BackendIncompleteVendorSignup> listIncompleteVendorSignups(String adminJwt) {
         return get("/api/v1/admin/vendors/incomplete-signups", adminJwt,
                 new ParameterizedTypeReference<List<BackendIncompleteVendorSignup>>() {});

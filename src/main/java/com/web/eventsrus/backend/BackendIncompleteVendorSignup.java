@@ -9,4 +9,6 @@ public record BackendIncompleteVendorSignup(
         String lastName,
         String email,
         String mobileNumber,
-        Instant signedUpAt) {}
+        Instant signedUpAt,
+        Integer reminderCount,
+        Instant lastReminderAt) {}

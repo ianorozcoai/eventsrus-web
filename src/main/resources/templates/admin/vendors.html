@@ -390,6 +390,13 @@
 												<th>Email</th>
 												<th>Mobile Number</th>
 												<th>Signed Up</th>
+												<th>Reminder emails</th>
+												<th class="text-end">
+													<form th:action="@{/admin/vendors/incomplete-signups/reminder-emails}" method="post" th:if="${!incompleteSignups.isEmpty()}"
+													      onsubmit="return confirm('Email every incomplete sign-up that is allowed another reminder?');">
+														<button type="submit" class="btn btn-sm btn-primary"><i class="ph-envelope-simple me-1"></i> Email everyone</button>
+													</form>
+												</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -398,6 +405,17 @@
 												<td th:text="${signup.email()}">Email</td>
 												<td th:text="${signup.mobileNumber() ?: '—'}">Mobile Number</td>
 												<td th:text="${#temporals.format(signup.signedUpAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td>
+													<span th:if="${signup.reminderCount() == null or signup.reminderCount() == 0}" class="text-muted">None sent</span>
+													<span th:if="${signup.reminderCount() != null and signup.reminderCount() > 0}"
+													      th:text="${signup.reminderCount()} + ' sent, last ' + ${#temporals.format(signup.lastReminderAt(), 'MMM d, yyyy')}">1 sent</span>
+												</td>
+												<td class="text-end">
+													<form th:action="@{/admin/vendors/incomplete-signups/{id}/reminder-email(id=${signup.id()})}" method="post"
+													      th:attr="onsubmit=|return confirm('Email this person a reminder to finish signing up?');|">
+														<button type="submit" class="btn btn-sm btn-outline-primary"><i class="ph-envelope-simple me-1"></i> Email reminder</button>
+													</form>
+												</td>
 											</tr>
 										</tbody>
 									</table>

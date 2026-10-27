@@ -392,10 +392,11 @@
 												<th>Signed Up</th>
 												<th>Reminder emails</th>
 												<th class="text-end">
-													<form th:action="@{/admin/vendors/incomplete-signups/reminder-emails}" method="post" th:if="${!incompleteSignups.isEmpty()}"
-													      onsubmit="return confirm('Email every incomplete sign-up that is allowed another reminder?');">
-														<button type="submit" class="btn btn-sm btn-primary"><i class="ph-envelope-simple me-1"></i> Email everyone</button>
-													</form>
+													<button type="button" class="btn btn-sm btn-primary" th:if="${!incompleteSignups.isEmpty()}"
+													        data-bs-toggle="modal" data-bs-target="#sendReminderModal"
+													        data-mode="all" th:attr="data-count=${#lists.size(incompleteSignups)}">
+														<i class="ph-envelope-simple me-1"></i> Email everyone
+													</button>
 												</th>
 											</tr>
 										</thead>
@@ -411,10 +412,12 @@
 													      th:text="${signup.reminderCount()} + ' sent, last ' + ${#temporals.format(signup.lastReminderAt(), 'MMM d, yyyy')}">1 sent</span>
 												</td>
 												<td class="text-end">
-													<form th:action="@{/admin/vendors/incomplete-signups/{id}/reminder-email(id=${signup.id()})}" method="post"
-													      th:attr="onsubmit=|return confirm('Email this person a reminder to finish signing up?');|">
-														<button type="submit" class="btn btn-sm btn-outline-primary"><i class="ph-envelope-simple me-1"></i> Email reminder</button>
-													</form>
+													<button type="button" class="btn btn-sm btn-outline-primary"
+													        data-bs-toggle="modal" data-bs-target="#sendReminderModal"
+													        data-mode="one"
+													        th:attr="data-action=@{/admin/vendors/incomplete-signups/{id}/reminder-email(id=${signup.id()})},data-name=${signup.firstName() + ' ' + signup.lastName()},data-email=${signup.email()}">
+														<i class="ph-envelope-simple me-1"></i> Email reminder
+													</button>
 												</td>
 											</tr>
 										</tbody>
@@ -454,6 +457,26 @@
 	<link th:href="@{/assets/css/dataTables.bootstrap5.min.css}" rel="stylesheet" type="text/css">
 	<link th:href="@{/assets/css/multiselect.css}" rel="stylesheet" type="text/css">
 	<!-- Extend access: one shared form, opened from the "Extend access" item of any supplier row. -->
+	<div id="sendReminderModal" class="modal fade" tabindex="-1">
+		<div class="modal-dialog modal-dialog-centered">
+			<form class="modal-content" method="post" th:action="@{/admin/vendors/incomplete-signups/reminder-emails}"
+			      data-all-action="/admin/vendors/incomplete-signups/reminder-emails">
+				<div class="modal-header">
+					<h5 class="modal-title" id="sendReminderTitle">Email a reminder</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<p class="mb-2" id="sendReminderText"></p>
+					<p class="text-muted fs-sm mb-0">The email asks them to finish signing up, says it only takes basic business details, and links back to the supplier sign-up. It comes from support@eventsrus.app and replies go there. Each person gets at most 3 reminders, at least 7 days apart.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+					<button type="submit" class="btn btn-primary" id="sendReminderSubmit"><i class="ph-envelope-simple me-1"></i> Send email</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 	<div id="extendAccessModal" class="modal fade" tabindex="-1">
 		<div class="modal-dialog modal-dialog-centered">
 			<form class="modal-content" method="post" th:action="@{/admin/vendors/0/extend-access}">
@@ -479,6 +502,35 @@
 			</form>
 		</div>
 	</div>
+
+	<script>
+		document.getElementById('sendReminderModal').addEventListener('show.bs.modal', function (event) {
+			var trigger = event.relatedTarget;
+			var form = this.querySelector('form');
+			var text = document.getElementById('sendReminderText');
+			text.textContent = '';
+			if (trigger.getAttribute('data-mode') === 'all') {
+				form.action = form.getAttribute('data-all-action');
+				document.getElementById('sendReminderTitle').textContent = 'Email everyone?';
+				var count = trigger.getAttribute('data-count');
+				text.textContent = 'Send the reminder to all ' + count + ' incomplete sign-ups. Anyone who was emailed in the last 7 days, or has already had 3 reminders, is skipped.';
+				document.getElementById('sendReminderSubmit').lastChild.textContent = ' Email everyone';
+			} else {
+				form.action = trigger.getAttribute('data-action');
+				document.getElementById('sendReminderTitle').textContent = 'Email a reminder';
+				var strong = document.createElement('strong');
+				strong.textContent = trigger.getAttribute('data-name');
+				text.appendChild(document.createTextNode('Send '));
+				text.appendChild(strong);
+				text.appendChild(document.createTextNode(' (' + trigger.getAttribute('data-email') + ') a reminder to finish signing up?'));
+				document.getElementById('sendReminderSubmit').lastChild.textContent = ' Send email';
+			}
+		});
+		document.getElementById('sendReminderModal').addEventListener('submit', function () {
+			var button = document.getElementById('sendReminderSubmit');
+			button.disabled = true;
+		});
+	</script>
 
 	<script>
 		document.getElementById('extendAccessModal').addEventListener('show.bs.modal', function (event) {
@@ -522,7 +574,7 @@
 
 			document.querySelector('a[href="#tab-incomplete"]').addEventListener('shown.bs.tab', function () {
 				if (!incompleteTable) {
-					incompleteTable = $('#incompleteSignupsTable').DataTable({ pageLength: 20 });
+					incompleteTable = $('#incompleteSignupsTable').DataTable({ pageLength: 20, columnDefs: [{ targets: [4, 5], orderable: false }] });
 				}
 			});
 

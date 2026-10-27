@@ -736,6 +736,40 @@
 		</script>
 	</th:block>
 
+	<!--/* One-time sign-up welcome: shown once to a supplier who has just signed up and is on the free trial
+	     (User.trialWelcomePending on the backend). Either button answers it for good: "Subscribe now" continues to
+	     the plan picker, "Continue with free trial" back to the dashboard. Same plain POST-and-redirect idiom as
+	     proWelcomeModal above. */-->
+	<th:block th:fragment="trialWelcomeModal">
+		<div th:if="${showTrialWelcomeModal}" class="modal fade" id="trialWelcomeModal" tabindex="-1"
+			data-bs-backdrop="static" data-bs-keyboard="false">
+			<div class="modal-dialog modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-body p-4 text-center">
+						<i class="ph-confetti text-primary" style="font-size:3rem;"></i>
+						<h5 class="mt-3 mb-2">Welcome to EventsRUs!</h5>
+						<p class="mb-2">
+							Your supplier account is ready. You have a <strong th:text="${freeAccessDaysLeft} + '-day free trial'">30-day free trial</strong>:
+							every supplier tool is unlocked and no payment is needed today.
+						</p>
+						<p class="text-muted mb-3">
+							You can subscribe now, or keep exploring and choose a plan any time before the trial ends.
+						</p>
+						<form th:action="@{/vendor/subscription/trial-welcome-shown}" method="post" class="d-grid gap-2">
+							<button type="submit" name="next" value="subscribe" class="btn btn-primary">Subscribe now</button>
+							<button type="submit" name="next" value="continue" class="btn btn-light">Continue with free trial</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script th:if="${showTrialWelcomeModal}">
+			document.addEventListener('DOMContentLoaded', function () {
+				new bootstrap.Modal(document.getElementById('trialWelcomeModal')).show();
+			});
+		</script>
+	</th:block>
+
 	<!--/* Paywall pop-up - shown once per login (PaywallModelAttributes flips
 	     WebSession.PAYWALL_SHOWN the first time these attributes come back
 	     false, on any page other than /vendor/subscription itself), starting

@@ -81,6 +81,21 @@ public class VendorSubscriptionWebController {
         return "redirect:/vendor/dashboard";
     }
 
+    /**
+     * Either button of the one-time sign-up welcome (fragments/common.html :: trialWelcomeModal) ends it for good:
+     * "Subscribe now" continues to the plan picker, "Continue with free trial" back to the dashboard.
+     */
+    @PostMapping("/trial-welcome-shown")
+    public String trialWelcomeShown(@RequestParam(defaultValue = "continue") String next, HttpSession session) {
+        String jwt = WebSession.token(session);
+        try {
+            backendClient.markTrialWelcomeShown(jwt);
+        } catch (BackendApiException e) {
+            log.warn("Failed to mark trial-welcome-shown - the welcome will just show again next login", e);
+        }
+        return "subscribe".equals(next) ? "redirect:/vendor/subscription#renewSubscribeCard" : "redirect:/vendor/dashboard";
+    }
+
     /** "Got it" on the one-time Welcome to PRO popup - see fragments/common.html :: proWelcomeModal. */
     @PostMapping("/welcome-shown")
     public String welcomeShown(HttpSession session) {

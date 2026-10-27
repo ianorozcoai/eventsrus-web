@@ -119,6 +119,16 @@ public class BackendClient {
         return postMultipart("/api/v1/vendors/me/subscription/gcash-payment", jwt, body, BackendSubscriptionStatus.class);
     }
 
+    /** Answering the one-time sign-up welcome - see fragments/common.html :: trialWelcomeModal. */
+    public void markTrialWelcomeShown(String jwt) {
+        backendRestClient.post()
+                .uri("/api/v1/vendors/me/subscription/trial-welcome-shown")
+                .header("Authorization", "Bearer " + jwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .toBodilessEntity();
+    }
+
     /** "Got it" on the one-time Welcome to PRO popup - see fragments/common.html :: proWelcomeModal. */
     public void markProWelcomeShown(String jwt) {
         backendRestClient.post()

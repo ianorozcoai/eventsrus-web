@@ -63,6 +63,11 @@ public class PaywallModelAttributes {
         boolean paymentFailed = false;
         boolean showProWelcomeModal = false;
         boolean onFreeTrial = false;
+        boolean freeAccessCard = false;
+        boolean freeAccessIsTrial = false;
+        java.time.Instant freeAccessEndsAt = null;
+        long freeAccessDaysLeft = 0;
+        boolean showTrialWelcomeModal = false;
         long freeTrialDaysLeft = 0;
         boolean realInGracePeriod = false;
 
@@ -120,6 +125,21 @@ public class PaywallModelAttributes {
                 // point but gets its own notice instead.
                 requiresPlanSelection = status.plan() == null && status.expiresAt() == null
                         && !expiringSoon && !expired && !inGracePeriod && !paymentFailed;
+                // Always-visible "you are on a free trial/free plan" card on the dashboard, so a new supplier knows
+                // the free period ends and a plan is needed - not only in its last two weeks.
+                if (onFreeTrial) {
+                    freeAccessCard = true;
+                    freeAccessIsTrial = true;
+                    freeAccessEndsAt = graceEndsAt;
+                    freeAccessDaysLeft = freeTrialDaysLeft;
+                } else if (status.plan() != null && "FREE_GRANT".equals(status.billingSource()) && !status.expired()
+                        && !status.inGracePeriod() && status.expiresAt() != null) {
+                    freeAccessCard = true;
+                    freeAccessEndsAt = status.expiresAt();
+                    long minutes = java.time.Duration.between(java.time.Instant.now(), status.expiresAt()).toMinutes();
+                    freeAccessDaysLeft = Math.max(1, (minutes + 1439) / 1440);
+                }
+                showTrialWelcomeModal = status.showTrialWelcome() && freeAccessCard;
                 // "Your subscription is active" is not true during the free trial, and the popup would take
                 // the one modal slot from the trial reminder - the welcome shows after the first real plan.
                 showProWelcomeModal = status.showWelcomePopup() && !onFreeTrial;
@@ -141,6 +161,11 @@ public class PaywallModelAttributes {
         model.addAttribute("paywallInGracePeriod", inGracePeriod);
         model.addAttribute("paywallGraceEndsAt", graceEndsAt);
         model.addAttribute("paywallOnFreeTrial", onFreeTrial);
+        model.addAttribute("freeAccessCard", freeAccessCard);
+        model.addAttribute("freeAccessIsTrial", freeAccessIsTrial);
+        model.addAttribute("freeAccessEndsAt", freeAccessEndsAt);
+        model.addAttribute("freeAccessDaysLeft", freeAccessDaysLeft);
+        model.addAttribute("showTrialWelcomeModal", showTrialWelcomeModal);
         model.addAttribute("paywallFreeTrialDaysLeft", freeTrialDaysLeft);
         model.addAttribute("paywallAlreadyShown", alreadyShown);
         model.addAttribute("paywallRequiresPlanSelection", requiresPlanSelection);

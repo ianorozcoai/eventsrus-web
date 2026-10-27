@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--/* Search + share tags for the few PUBLIC pages (landing, terms, privacy, delete-account).
+     Put it inside <head> right after <title>: <th:block th:replace="~{fragments/seo :: meta('/terms', 'Page title', 'Short description')}"/>
+     Every page that uses fragments/common or admin-shell is logged-in or private and carries noindex instead. */-->
+<th:block th:fragment="meta(path, title, description)" th:with="site='https://eventsrus.app'">
+	<meta name="description" th:content="${description}">
+	<link rel="canonical" th:href="${site + path}">
+	<meta property="og:site_name" content="EventsRUs">
+	<meta property="og:type" content="website">
+	<meta property="og:locale" content="en_PH">
+	<meta property="og:title" th:content="${title}">
+	<meta name="twitter:title" th:content="${title}">
+	<meta property="og:description" th:content="${description}">
+	<meta property="og:url" th:content="${site + path}">
+	<meta property="og:image" th:content="${site + '/assets/images/new-logo-login-fb.jpg'}">
+	<meta property="og:image:width" content="800">
+	<meta property="og:image:height" content="617">
+	<meta property="og:image:alt" content="EventsRUs logo">
+	<meta name="twitter:card" content="summary_large_image">
+	<meta name="twitter:description" th:content="${description}">
+	<meta name="twitter:image" th:content="${site + '/assets/images/new-logo-login-fb.jpg'}">
+</th:block>
+</html>

@@ -1154,6 +1154,26 @@ public class BackendClient {
                 BackendSmsLogItem.class);
     }
 
+    // ---- Moderation visibility (reports, blocks, account deletions) - read mostly, reports can be resolved.
+
+    public List<BackendAdminReport> listAdminReports(String adminJwt) {
+        return get("/api/v1/admin/reports", adminJwt, new ParameterizedTypeReference<List<BackendAdminReport>>() {});
+    }
+
+    public void resolveAdminReport(String adminJwt, Long reportId, String note) {
+        postJson("/api/v1/admin/reports/" + reportId + "/resolve", adminJwt,
+                java.util.Map.of("note", note == null ? "" : note), BackendAdminReport.class);
+    }
+
+    public List<BackendAdminBlock> listAdminBlocks(String adminJwt) {
+        return get("/api/v1/admin/blocks", adminJwt, new ParameterizedTypeReference<List<BackendAdminBlock>>() {});
+    }
+
+    public List<BackendAdminAccountDeletion> listAdminAccountDeletions(String adminJwt) {
+        return get("/api/v1/admin/account-deletions", adminJwt,
+                new ParameterizedTypeReference<List<BackendAdminAccountDeletion>>() {});
+    }
+
     public List<BackendSmsLogItem> listSmsHistory(String adminJwt) {
         return get("/api/v1/admin/sms/history", adminJwt, new ParameterizedTypeReference<List<BackendSmsLogItem>>() {});
     }

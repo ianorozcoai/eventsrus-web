@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Reports & Blocks - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<!-- Page content -->
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('moderation')}"></div>
+
+		<!-- Main content -->
+		<div class="content-wrapper">
+
+			<!-- Inner content -->
+			<div class="content-inner">
+
+				<!-- Page header -->
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Reports &amp; Blocks</h4>
+						</div>
+					</div>
+				</div>
+				<!-- /page header -->
+
+				<!-- Content area -->
+				<div class="content">
+
+					<div th:if="${moderationSuccess}" class="alert alert-success alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${moderationSuccess}">Done</span>
+					</div>
+					<div th:if="${moderationError}" class="alert alert-danger alert-dismissible">
+						<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+						<span th:text="${moderationError}">Error</span>
+					</div>
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<!--/* What the mobile app's Report / Block / Delete account features produce. The website itself
+					     has no such controls for suppliers or planners; this page is how an admin sees them. */-->
+					<div class="card" th:unless="${backendUnavailable}">
+						<div class="card-header">
+							<ul class="nav nav-tabs nav-tabs-highlight card-header-tabs" role="tablist">
+								<li class="nav-item" role="presentation">
+									<a href="#tab-reports" class="nav-link active" data-bs-toggle="tab" role="tab">
+										Open Reports
+										<span class="badge ms-2" th:classappend="${#lists.isEmpty(openReports)} ? 'bg-secondary' : 'bg-danger'" th:text="${#lists.size(openReports)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item" role="presentation">
+									<a href="#tab-resolved" class="nav-link" data-bs-toggle="tab" role="tab">
+										Resolved
+										<span class="badge bg-secondary ms-2" th:text="${#lists.size(resolvedReports)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item" role="presentation">
+									<a href="#tab-blocks" class="nav-link" data-bs-toggle="tab" role="tab">
+										Blocks
+										<span class="badge bg-secondary ms-2" th:text="${#lists.size(blocks)}">0</span>
+									</a>
+								</li>
+								<li class="nav-item" role="presentation">
+									<a href="#tab-deletions" class="nav-link" data-bs-toggle="tab" role="tab">
+										Account Deletions
+										<span class="badge ms-2" th:classappend="${#lists.isEmpty(pendingDeletions)} ? 'bg-secondary' : 'bg-warning text-dark'" th:text="${#lists.size(pendingDeletions)}">0</span>
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<div class="tab-content">
+
+							<!-- Open reports: each can be marked resolved with an optional note -->
+							<div class="tab-pane fade show active" id="tab-reports" role="tabpanel">
+								<div class="table-responsive">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Reported</th>
+												<th>What</th>
+												<th>Reason</th>
+												<th>Reported person</th>
+												<th>Reported by</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="report : ${openReports}">
+												<td th:text="${#temporals.format(report.createdAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td style="max-width:320px;">
+													<span class="badge bg-info text-dark" th:text="${report.contentType()}">MESSAGE</span>
+													<div class="mt-1" th:if="${report.contentPreview() != null}" th:text="${report.contentPreview()}">Reported text</div>
+													<div class="text-muted fs-sm mt-1" th:if="${report.details() != null and !report.details().isBlank()}" th:text="'Note: ' + ${report.details()}">Note</div>
+												</td>
+												<td><span class="badge bg-warning text-dark" th:text="${report.reason()}">SPAM</span></td>
+												<td>
+													<div class="fw-semibold" th:text="${report.reportedName()}">Name</div>
+													<div class="text-muted fs-sm" th:text="'User #' + ${report.reportedUserId()}">User #1</div>
+												</td>
+												<td>
+													<div th:text="${report.reporterName()}">Name</div>
+													<div class="text-muted fs-sm" th:text="'User #' + ${report.reporterUserId()}">User #2</div>
+												</td>
+												<td class="text-end" style="min-width:260px;">
+													<form th:action="@{'/admin/moderation/reports/' + ${report.id()} + '/resolve'}" method="post" class="d-flex gap-2">
+														<input type="text" name="note" class="form-control form-control-sm" maxlength="1000" placeholder="Note (optional)">
+														<button type="submit" class="btn btn-sm btn-success text-nowrap">Mark resolved</button>
+													</form>
+												</td>
+											</tr>
+											<tr th:if="${#lists.isEmpty(openReports)}">
+												<td colspan="6" class="text-center text-muted py-4">No open reports.</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Resolved reports -->
+							<div class="tab-pane fade" id="tab-resolved" role="tabpanel">
+								<div class="table-responsive">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Reported</th>
+												<th>What</th>
+												<th>Reason</th>
+												<th>Reported person</th>
+												<th>Resolved</th>
+												<th>Note</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="report : ${resolvedReports}">
+												<td th:text="${#temporals.format(report.createdAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td style="max-width:300px;">
+													<span class="badge bg-info text-dark" th:text="${report.contentType()}">MESSAGE</span>
+													<div class="mt-1" th:if="${report.contentPreview() != null}" th:text="${report.contentPreview()}">Reported text</div>
+												</td>
+												<td><span class="badge bg-secondary" th:text="${report.reason()}">SPAM</span></td>
+												<td th:text="${report.reportedName()}">Name</td>
+												<td th:text="${report.resolvedAt() != null} ? ${#temporals.format(report.resolvedAt(), 'MMM d, yyyy h:mm a')} : '-'">Jan 2, 2026</td>
+												<td th:text="${report.resolvedNote() != null} ? ${report.resolvedNote()} : '-'">-</td>
+											</tr>
+											<tr th:if="${#lists.isEmpty(resolvedReports)}">
+												<td colspan="6" class="text-center text-muted py-4">Nothing resolved yet.</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Who has blocked whom -->
+							<div class="tab-pane fade" id="tab-blocks" role="tabpanel">
+								<div class="table-responsive">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Blocked on</th>
+												<th>Blocked by</th>
+												<th>Person blocked</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="block : ${blocks}">
+												<td th:text="${#temporals.format(block.createdAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td>
+													<span th:text="${block.blockerName()}">Name</span>
+													<span class="badge bg-light text-body border ms-1" th:text="${block.blockerRole()}">PLANNER</span>
+													<div class="text-muted fs-sm" th:text="'User #' + ${block.blockerUserId()}">User #1</div>
+												</td>
+												<td>
+													<span class="fw-semibold" th:text="${block.blockedName()}">Name</span>
+													<span class="badge bg-light text-body border ms-1" th:text="${block.blockedRole()}">VENDOR</span>
+													<div class="text-muted fs-sm" th:text="'User #' + ${block.blockedUserId()}">User #2</div>
+												</td>
+											</tr>
+											<tr th:if="${#lists.isEmpty(blocks)}">
+												<td colspan="3" class="text-center text-muted py-4">Nobody has blocked anybody yet.</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Account deletion requests -->
+							<div class="tab-pane fade" id="tab-deletions" role="tabpanel">
+								<div class="card-body border-bottom">
+									<p class="mb-0 text-muted fs-sm">
+										Pending: the person asked to delete their account and is inside the 30-day grace period (signing in again cancels it).
+										Completed: the account has been scrubbed, so name and email are no longer kept.
+									</p>
+								</div>
+								<div class="table-responsive">
+									<table class="table table-hover">
+										<thead>
+											<tr>
+												<th>Status</th>
+												<th>Person</th>
+												<th>Requested</th>
+												<th>Will be deleted on</th>
+												<th>Deleted on</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr th:each="d : ${pendingDeletions}">
+												<td><span class="badge bg-warning text-dark">Pending</span></td>
+												<td>
+													<div class="fw-semibold" th:text="${d.name() != null} ? ${d.name()} : 'EventsRUs user'">Name</div>
+													<div th:text="${d.email()}">email@example.com</div>
+													<span class="badge bg-light text-body border" th:text="${d.role()}">PLANNER</span>
+												</td>
+												<td th:text="${d.requestedAt() != null} ? ${#temporals.format(d.requestedAt(), 'MMM d, yyyy')} : '-'">Jan 1, 2026</td>
+												<td th:text="${d.scheduledDeletionAt() != null} ? ${#temporals.format(d.scheduledDeletionAt(), 'MMM d, yyyy')} : '-'">Jan 31, 2026</td>
+												<td>-</td>
+											</tr>
+											<tr th:each="d : ${completedDeletions}">
+												<td><span class="badge bg-secondary">Completed</span></td>
+												<td>
+													<div class="text-muted">Removed</div>
+													<span class="badge bg-light text-body border" th:text="${d.role()}">PLANNER</span>
+													<span class="text-muted fs-sm ms-1" th:text="'User #' + ${d.userId()}">User #1</span>
+												</td>
+												<td th:text="${d.requestedAt() != null} ? ${#temporals.format(d.requestedAt(), 'MMM d, yyyy')} : '-'">Jan 1, 2026</td>
+												<td>-</td>
+												<td th:text="${d.deletedAt() != null} ? ${#temporals.format(d.deletedAt(), 'MMM d, yyyy')} : '-'">Jan 31, 2026</td>
+											</tr>
+											<tr th:if="${#lists.isEmpty(pendingDeletions) and #lists.isEmpty(completedDeletions)}">
+												<td colspan="5" class="text-center text-muted py-4">No deletion requests yet.</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+						</div>
+					</div>
+
+				</div>
+				<!-- /content area -->
+
+			</div>
+			<!-- /inner content -->
+
+		</div>
+		<!-- /main content -->
+
+	</div>
+	<!-- /page content -->
+
+</body>
+</html>

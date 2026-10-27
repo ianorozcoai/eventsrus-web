@@ -467,6 +467,7 @@
 				</div>
 				<div class="modal-body">
 					<p class="mb-2" id="sendReminderText"></p>
+					<p class="text-primary fs-sm mb-2 d-none" id="sendReminderWait">Sending the email. This can take up to a minute - please keep this page open.</p>
 					<p class="text-muted fs-sm mb-0">The email asks them to finish signing up, says it only takes basic business details, and links back to the supplier sign-up. It comes from support@eventsrus.app and replies go there. Each person gets at most 3 reminders, at least 7 days apart.</p>
 				</div>
 				<div class="modal-footer">
@@ -526,9 +527,15 @@
 				document.getElementById('sendReminderSubmit').lastChild.textContent = ' Send email';
 			}
 		});
+		// Sending can take several seconds (one email per person), so show that something is happening.
 		document.getElementById('sendReminderModal').addEventListener('submit', function () {
 			var button = document.getElementById('sendReminderSubmit');
-			button.disabled = true;
+			setTimeout(function () {
+				button.disabled = true;
+				button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Sending...';
+				document.getElementById('sendReminderWait').classList.remove('d-none');
+				document.querySelectorAll('#sendReminderModal [data-bs-dismiss]').forEach(function (el) { el.disabled = true; });
+			}, 0);
 		});
 	</script>
 

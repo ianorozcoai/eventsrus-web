@@ -736,6 +736,46 @@
 		</script>
 	</th:block>
 
+	<!--/* One-time sign-up welcome: shown once to a supplier who has just signed up and is on the free trial
+	     (User.trialWelcomePending on the backend). Either button answers it for good: "Subscribe now" continues to
+	     the plan picker, "Continue with free trial" back to the dashboard. Same plain POST-and-redirect idiom as
+	     proWelcomeModal above. */-->
+	<th:block th:fragment="trialWelcomeModal">
+		<div th:if="${showTrialWelcomeModal}" class="modal fade" id="trialWelcomeModal" tabindex="-1"
+			data-bs-backdrop="static" data-bs-keyboard="false">
+			<!--/* Full page, not a pop-up: modal-fullscreen. The logo sits on its own dark chip so it reads on any theme. */-->
+			<div class="modal-dialog modal-fullscreen">
+				<div class="modal-content">
+					<div class="modal-body d-flex justify-content-center align-items-center p-4">
+						<div style="max-width:480px;width:100%;">
+							<div class="d-inline-block rounded-3 px-3 py-2 mb-5" style="background:#12151c;">
+								<img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs" style="height:34px;width:auto;">
+							</div>
+							<h2 class="fw-bold mb-2">Welcome to EventsRUs!</h2>
+							<p class="text-muted fs-lg mb-4">Your supplier account is ready.</p>
+							<span class="badge bg-primary bg-opacity-10 text-primary fs-base rounded-pill px-3 py-2 mb-4"
+								th:text="${freeAccessDaysLeft} + '-day free trial'">30-day free trial</span>
+							<ul class="list-unstyled mb-5">
+								<li class="d-flex align-items-start mb-3"><i class="ph-check-circle text-primary me-3 fs-4"></i><span>Every supplier tool is unlocked</span></li>
+								<li class="d-flex align-items-start mb-3"><i class="ph-check-circle text-primary me-3 fs-4"></i><span>No payment is needed today</span></li>
+								<li class="d-flex align-items-start"><i class="ph-check-circle text-primary me-3 fs-4"></i><span>Subscribe any time before the trial ends</span></li>
+							</ul>
+							<form th:action="@{/vendor/subscription/trial-welcome-shown}" method="post" class="d-grid gap-3">
+								<button type="submit" name="next" value="subscribe" class="btn btn-primary btn-lg">Subscribe now</button>
+								<button type="submit" name="next" value="continue" class="btn btn-outline-secondary btn-lg">Continue with free trial</button>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script th:if="${showTrialWelcomeModal}">
+			document.addEventListener('DOMContentLoaded', function () {
+				new bootstrap.Modal(document.getElementById('trialWelcomeModal')).show();
+			});
+		</script>
+	</th:block>
+
 	<!--/* Paywall pop-up - shown once per login (PaywallModelAttributes flips
 	     WebSession.PAYWALL_SHOWN the first time these attributes come back
 	     false, on any page other than /vendor/subscription itself), starting

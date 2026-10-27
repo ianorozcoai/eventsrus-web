@@ -22,4 +22,5 @@ public record BackendSubscriptionStatus(
         boolean showWelcomePopup,
         boolean gcashAwaitingVerification,
         boolean gcashRejected,
-        String gcashRejectionReason) {}
+        String gcashRejectionReason,
+        boolean showTrialWelcome) {}

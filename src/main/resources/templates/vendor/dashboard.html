@@ -25,6 +25,7 @@
 	<div th:replace="~{fragments/common :: planSelectionModal}"></div>
 	<div th:replace="~{fragments/common :: gcashPaymentModal}"></div>
 	<div th:replace="~{fragments/common :: proWelcomeModal}"></div>
+	<div th:replace="~{fragments/common :: trialWelcomeModal}"></div>
 
 	<!-- Page content -->
 	<div class="page-content">
@@ -63,6 +64,27 @@
 
 				<!-- Content area -->
 				<div class="content">
+
+					<!-- Always-visible free trial / free access card: a new supplier otherwise has no idea the free period ends. -->
+					<div th:if="${freeAccessCard}" class="card" th:classappend="${freeAccessDaysLeft <= 14} ? 'border-warning' : ''" id="freeAccessCard">
+						<div class="card-body d-flex align-items-start gap-3">
+							<i th:class="${freeAccessDaysLeft <= 14} ? 'ph-hourglass-medium text-warning' : 'ph-seal-check text-primary'" style="font-size:2rem;"></i>
+							<div class="flex-fill">
+								<h6 class="mb-1" th:text="${freeAccessIsTrial ? 'Free trial' : 'Free access'} + ': ' + ${freeAccessDaysLeft} + (${freeAccessDaysLeft == 1} ? ' day left' : ' days left')">Free trial: 30 days left</h6>
+								<p class="mb-0 text-muted" th:if="${freeAccessDaysLeft <= 14}">
+									Your free period ends on <span th:text="${#temporals.format(freeAccessEndsAt, 'MMMM d, yyyy')}">January 1, 2027</span>.
+									Choose a plan now to keep quotations, chat, bookings and your place in planner search.
+								</p>
+								<p class="mb-0 text-muted" th:unless="${freeAccessDaysLeft <= 14}">
+									Everything is free until <span th:text="${#temporals.format(freeAccessEndsAt, 'MMMM d, yyyy')}">January 1, 2027</span>.
+									After that you need a plan to keep your supplier tools. You can choose one any time.
+								</p>
+							</div>
+							<a th:href="@{/vendor/subscription} + '#renewSubscribeCard'" class="btn"
+								th:classappend="${freeAccessDaysLeft <= 14} ? 'btn-warning' : 'btn-outline-primary'"
+								th:text="${freeAccessDaysLeft <= 14} ? 'Choose a plan' : 'See plans'">See plans</a>
+						</div>
+					</div>
 
 					<!-- Quick stats boxes -->
 					<div class="row">

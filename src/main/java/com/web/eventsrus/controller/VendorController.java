@@ -22,6 +22,7 @@ import com.web.eventsrus.model.VendorConversation;
 import com.web.eventsrus.model.VendorConversationMessage;
 import com.web.eventsrus.model.VendorDashboard;
 import com.web.eventsrus.model.VendorLead;
+import com.web.eventsrus.model.PhoneNumbers;
 import com.web.eventsrus.model.VendorOnboardingForm;
 import com.web.eventsrus.model.VendorPackageForm;
 import com.web.eventsrus.model.VendorPackageImageItem;
@@ -218,6 +219,11 @@ public class VendorController {
             @RequestParam(required = false) List<String> legalDocumentTypes,
             @RequestParam(required = false) List<String> legalDocumentLabels,
             HttpSession session) {
+        // Website only: the mobile app and backend accept any number for now (see PhoneNumbers).
+        if (!PhoneNumbers.isPhilippineMobile(vendorOnboardingForm.getPhoneNumber())) {
+            return new OnboardingResult(false,
+                    "Please enter a valid Philippine mobile number, like 0917 123 4567 or +63 917 123 4567.", null);
+        }
         try {
             BackendAuthResponse response = backendClient.becomeVendor(
                     WebSession.token(session), vendorOnboardingForm, logo, idCard, selfie,

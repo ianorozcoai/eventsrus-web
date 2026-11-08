@@ -278,6 +278,7 @@
 													<div class="fw-semibold" th:text="${vendor.ownerName()}">Owner Name</div>
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
+													<div class="text-muted fs-sm" th:text="'Signed up from: ' + ${vendor.signupSourceLabel()}">Signed up from: Website</div>
 												</td>
 												<td>
 													<span class="badge bg-secondary" th:text="${vendor.billingSource()}">PAYPAL</span>
@@ -343,6 +344,7 @@
 													<div class="fw-semibold" th:text="${vendor.ownerName()}">Owner Name</div>
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
+													<div class="text-muted fs-sm" th:text="'Signed up from: ' + ${vendor.signupSourceLabel()}">Signed up from: Website</div>
 												</td>
 												<td>
 													<span th:each="bt, iter : ${vendor.businessTypes()}"
@@ -405,7 +407,10 @@
 												<td th:text="${signup.firstName()} + ' ' + ${signup.lastName()}">Name</td>
 												<td th:text="${signup.email()}">Email</td>
 												<td th:text="${signup.mobileNumber() ?: '—'}">Mobile Number</td>
-												<td th:text="${#temporals.format(signup.signedUpAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</td>
+												<td>
+													<div th:text="${#temporals.format(signup.signedUpAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</div>
+													<div class="text-muted fs-sm" th:text="'From: ' + ${signup.signupSourceLabel()}">From: Website</div>
+												</td>
 												<td>
 													<span th:if="${signup.reminderCount() == null or signup.reminderCount() == 0}" class="text-muted">None sent</span>
 													<span th:if="${signup.reminderCount() != null and signup.reminderCount() > 0}"

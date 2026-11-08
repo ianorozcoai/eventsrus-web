@@ -16,6 +16,7 @@ public class BackendClientConfig {
 
     @Bean
     public RestClient backendRestClient(@Value("${eventsrus.backend.base-url}") String baseUrl) {
-        return RestClient.builder().baseUrl(baseUrl).build();
+        // X-Client-Platform tells the backend which client an account first signed up from.
+        return RestClient.builder().baseUrl(baseUrl).defaultHeader("X-Client-Platform", "web").build();
     }
 }

@@ -18,4 +18,10 @@ public record AdminPlannerSummary(
         String city,
         String state,
         Instant joinedAt,
-        int eventsCount) {}
+        int eventsCount,
+        String signupSource) {
+
+    public String signupSourceLabel() {
+        return SignupSourceLabels.label(signupSource);
+    }
+}

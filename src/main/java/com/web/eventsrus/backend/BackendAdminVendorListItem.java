@@ -39,7 +39,14 @@ public record BackendAdminVendorListItem(
         String billingSource,
         boolean planExpired,
         boolean planInGracePeriod,
-        Instant planOverdueSince) {
+        Instant planOverdueSince,
+        // WEB, ANDROID, IOS, MOBILE, UNKNOWN or null (account older than the tracking).
+        String signupSource) {
+
+    public String signupSourceLabel() {
+        return com.web.eventsrus.model.SignupSourceLabels.label(signupSource);
+    }
+
 
     /** True for a vendor who has a real (non-free) subscription that's currently lapsed or in its grace period. */
     public boolean isPaymentOverdue() {

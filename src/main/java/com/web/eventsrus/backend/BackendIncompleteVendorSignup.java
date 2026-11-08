@@ -11,4 +11,10 @@ public record BackendIncompleteVendorSignup(
         String mobileNumber,
         Instant signedUpAt,
         Integer reminderCount,
-        Instant lastReminderAt) {}
+        Instant lastReminderAt,
+        String signupSource) {
+
+    public String signupSourceLabel() {
+        return com.web.eventsrus.model.SignupSourceLabels.label(signupSource);
+    }
+}

@@ -41,7 +41,13 @@ public record BackendAdminVendorListItem(
         boolean planInGracePeriod,
         Instant planOverdueSince,
         // WEB, ANDROID, IOS, MOBILE, UNKNOWN or null (account older than the tracking).
-        String signupSource) {
+        String signupSource,
+        // Reasons an admin should look twice at this sign-up (empty or null when nothing looks off).
+        java.util.List<String> suspiciousReasons) {
+
+    public boolean isSuspicious() {
+        return suspiciousReasons != null && !suspiciousReasons.isEmpty();
+    }
 
     public String signupSourceLabel() {
         return com.web.eventsrus.model.SignupSourceLabels.label(signupSource);

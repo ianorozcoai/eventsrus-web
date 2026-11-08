@@ -279,6 +279,7 @@
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
 													<div class="text-muted fs-sm" th:text="'Signed up from: ' + ${vendor.signupSourceLabel()}">Signed up from: Website</div>
+													<span class="badge bg-danger" th:if="${vendor.isSuspicious()}" th:title="${#strings.listJoin(vendor.suspiciousReasons(), '; ')}">Check this account</span>
 												</td>
 												<td>
 													<span class="badge bg-secondary" th:text="${vendor.billingSource()}">PAYPAL</span>
@@ -345,6 +346,7 @@
 													<div th:text="${vendor.contactEmail()}">email@example.com</div>
 													<div class="text-muted fs-sm" th:text="${vendor.phoneNumber()}">Phone</div>
 													<div class="text-muted fs-sm" th:text="'Signed up from: ' + ${vendor.signupSourceLabel()}">Signed up from: Website</div>
+													<span class="badge bg-danger" th:if="${vendor.isSuspicious()}" th:title="${#strings.listJoin(vendor.suspiciousReasons(), '; ')}">Check this account</span>
 												</td>
 												<td>
 													<span th:each="bt, iter : ${vendor.businessTypes()}"
@@ -410,6 +412,7 @@
 												<td>
 													<div th:text="${#temporals.format(signup.signedUpAt(), 'MMM d, yyyy h:mm a')}">Jan 1, 2026</div>
 													<div class="text-muted fs-sm" th:text="'From: ' + ${signup.signupSourceLabel()}">From: Website</div>
+													<span class="badge bg-danger" th:if="${signup.isSuspicious()}" th:title="${#strings.listJoin(signup.suspiciousReasons(), '; ')}">Check this account</span>
 												</td>
 												<td>
 													<span th:if="${signup.reminderCount() == null or signup.reminderCount() == 0}" class="text-muted">None sent</span>

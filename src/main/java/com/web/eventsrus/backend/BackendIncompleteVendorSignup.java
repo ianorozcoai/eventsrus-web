@@ -12,7 +12,12 @@ public record BackendIncompleteVendorSignup(
         Instant signedUpAt,
         Integer reminderCount,
         Instant lastReminderAt,
-        String signupSource) {
+        String signupSource,
+        java.util.List<String> suspiciousReasons) {
+
+    public boolean isSuspicious() {
+        return suspiciousReasons != null && !suspiciousReasons.isEmpty();
+    }
 
     public String signupSourceLabel() {
         return com.web.eventsrus.model.SignupSourceLabels.label(signupSource);

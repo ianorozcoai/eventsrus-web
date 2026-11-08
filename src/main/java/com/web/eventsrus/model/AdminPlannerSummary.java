@@ -19,7 +19,12 @@ public record AdminPlannerSummary(
         String state,
         Instant joinedAt,
         int eventsCount,
-        String signupSource) {
+        String signupSource,
+        java.util.List<String> suspiciousReasons) {
+
+    public boolean isSuspicious() {
+        return suspiciousReasons != null && !suspiciousReasons.isEmpty();
+    }
 
     public String signupSourceLabel() {
         return SignupSourceLabels.label(signupSource);

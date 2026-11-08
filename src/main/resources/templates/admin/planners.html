@@ -59,6 +59,7 @@
 										<td>
 											<div th:text="${planner.firstName()} + ' ' + ${planner.lastName()}">Name</div>
 											<div class="text-muted fs-sm" th:text="'Signed up from: ' + ${planner.signupSourceLabel()}">Signed up from: Website</div>
+											<span class="badge bg-danger" th:if="${planner.isSuspicious()}" th:title="${#strings.listJoin(planner.suspiciousReasons(), '; ')}">Check this account</span>
 										</td>
 										<td th:text="${planner.email()}">email@example.com</td>
 										<td th:text="${planner.mobileNumber()}">+63 900 000 0000</td>

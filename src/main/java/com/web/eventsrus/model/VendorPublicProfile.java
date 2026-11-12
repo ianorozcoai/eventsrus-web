@@ -61,4 +61,5 @@ public record VendorPublicProfile(
         List<VendorPackageImageItem> galleryImages,
         List<String> availableImageTags,
         List<String> availableGroups,
-        List<VendorSocialMediaLinkItem> socialMediaLinks) {}
+        List<VendorSocialMediaLinkItem> socialMediaLinks,
+        Boolean searchIndexable) {}

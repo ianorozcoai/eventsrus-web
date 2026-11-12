@@ -204,6 +204,73 @@ public class AdminController {
         return "redirect:/admin/vendors";
     }
 
+    /** The "Email reminder" button on the Incomplete Sign-ups tab. */
+    @PostMapping("/vendors/incomplete-signups/{userId}/reminder-email")
+    public String emailIncompleteSignup(@PathVariable Long userId, HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("vendorsError", "Not connected to eventsrus-backend right now - log out and back in to retry.");
+            return "redirect:/admin/vendors";
+        }
+        try {
+            addReminderFlash(redirectAttributes, List.of(backendClient.sendIncompleteSignupReminder(jwt, userId)));
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("vendorsError", e.getMessage());
+        }
+        return "redirect:/admin/vendors";
+    }
+
+    /** The "Email everyone" button on the Incomplete Sign-ups tab. */
+    @PostMapping("/vendors/incomplete-signups/reminder-emails")
+    public String emailAllIncompleteSignups(HttpSession session, RedirectAttributes redirectAttributes) {
+        String jwt = AdminSession.token(session);
+        if (jwt == null) {
+            redirectAttributes.addFlashAttribute("vendorsError", "Not connected to eventsrus-backend right now - log out and back in to retry.");
+            return "redirect:/admin/vendors";
+        }
+        try {
+            addReminderFlash(redirectAttributes, backendClient.sendAllIncompleteSignupReminders(jwt));
+        } catch (BackendApiException e) {
+            redirectAttributes.addFlashAttribute("vendorsError", e.getMessage());
+        }
+        return "redirect:/admin/vendors";
+    }
+
+    /** Plain-language summary of what the backend did: how many were emailed and why anyone was skipped. */
+    static String reminderSummary(List<com.web.eventsrus.backend.BackendReminderEmailResult> results) {
+        if (results.isEmpty()) {
+            return "There is nobody to email.";
+        }
+        long sent = results.stream().filter(r -> "SENT".equals(r.outcome())).count();
+        long tooSoon = results.stream().filter(r -> "TOO_SOON".equals(r.outcome())).count();
+        long limit = results.stream().filter(r -> "LIMIT_REACHED".equals(r.outcome())).count();
+        long off = results.stream().filter(r -> "EMAIL_OFF".equals(r.outcome())).count();
+        long failed = results.stream().filter(r -> "FAILED".equals(r.outcome())).count();
+        long other = results.size() - sent - tooSoon - limit - off - failed;
+        if (off > 0) {
+            return "Email is switched off on this server, so nothing was sent.";
+        }
+        StringBuilder text = new StringBuilder(sent == 1 ? "1 reminder email sent." : sent + " reminder emails sent.");
+        if (tooSoon > 0) {
+            text.append(" ").append(tooSoon).append(" skipped: emailed less than 7 days ago.");
+        }
+        if (limit > 0) {
+            text.append(" ").append(limit).append(" skipped: already got 3 reminders.");
+        }
+        if (other > 0) {
+            text.append(" ").append(other).append(" skipped: no longer an incomplete sign-up.");
+        }
+        if (failed > 0) {
+            text.append(" ").append(failed).append(" could not be sent - try again in a minute.");
+        }
+        return text.toString();
+    }
+
+    private void addReminderFlash(RedirectAttributes redirectAttributes, List<com.web.eventsrus.backend.BackendReminderEmailResult> results) {
+        boolean problem = results.stream().anyMatch(r -> "FAILED".equals(r.outcome()) || "EMAIL_OFF".equals(r.outcome()));
+        redirectAttributes.addFlashAttribute(problem ? "vendorsError" : "vendorsSuccess", reminderSummary(results));
+    }
+
     @PostMapping("/vendors/exit-impersonation")
     public String exitImpersonation(HttpSession session) {
         WebSession.clear(session);

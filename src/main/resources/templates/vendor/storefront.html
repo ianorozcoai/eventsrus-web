@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/common :: head(${profile.businessName()} + ' - EventsRUs')}"></head>
+<head th:replace="~{fragments/common :: head(${seoTitle != null} ? ${seoTitle} : ${profile.businessName() + ' - EventsRUs'})}"></head>
 
 <body>
 

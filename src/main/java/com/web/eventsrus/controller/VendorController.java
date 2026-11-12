@@ -22,6 +22,7 @@ import com.web.eventsrus.model.VendorConversation;
 import com.web.eventsrus.model.VendorConversationMessage;
 import com.web.eventsrus.model.VendorDashboard;
 import com.web.eventsrus.model.VendorLead;
+import com.web.eventsrus.model.PhoneNumbers;
 import com.web.eventsrus.model.VendorOnboardingForm;
 import com.web.eventsrus.model.VendorPackageForm;
 import com.web.eventsrus.model.VendorPackageImageItem;
@@ -218,6 +219,11 @@ public class VendorController {
             @RequestParam(required = false) List<String> legalDocumentTypes,
             @RequestParam(required = false) List<String> legalDocumentLabels,
             HttpSession session) {
+        // Website only: the mobile app and backend accept any number for now (see PhoneNumbers).
+        if (!PhoneNumbers.isPhilippineMobile(vendorOnboardingForm.getPhoneNumber())) {
+            return new OnboardingResult(false,
+                    "Please enter a valid Philippine mobile number, like 0917 123 4567 or +63 917 123 4567.", null);
+        }
         try {
             BackendAuthResponse response = backendClient.becomeVendor(
                     WebSession.token(session), vendorOnboardingForm, logo, idCard, selfie,
@@ -975,6 +981,8 @@ public class VendorController {
             Model model) {
         String jwt = WebSession.isLoggedIn(session) ? WebSession.token(session) : null;
         loadStorefront(model, slug, eventId, category, jwt, session);
+        // Search/share tags (only added to the page when the backend says it may be indexed).
+        model.addAllAttributes(StorefrontSeo.attributes((VendorPublicProfile) model.getAttribute("profile"), slug, objectMapper));
         return "vendor/storefront";
     }
 
@@ -1244,6 +1252,8 @@ public class VendorController {
         form.setOperatingAreas(settings.operatingAreas());
         form.setCateredEventTypes(settings.cateredEventTypes());
         form.setPaymentInstructions(settings.paymentInstructions());
+        // An older backend does not send the flag: treat that as the default (on), never as an opt-out.
+        form.setSearchVisible(settings.searchVisible() == null || settings.searchVisible());
         return form;
     }
 

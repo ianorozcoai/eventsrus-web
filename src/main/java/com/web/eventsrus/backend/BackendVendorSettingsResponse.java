@@ -41,4 +41,5 @@ public record BackendVendorSettingsResponse(
         List<EventType> cateredEventTypes,
         String cancellationPolicyUrl,
         String refundTermsUrl,
-        String paymentInstructions) {}
+        String paymentInstructions,
+        Boolean searchVisible) {}

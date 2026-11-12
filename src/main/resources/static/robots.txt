@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /planner
+Disallow: /vendor
+Allow: /vendor/storefront/
+
+Sitemap: https://eventsrus.app/sitemap.xml

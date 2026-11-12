@@ -50,7 +50,7 @@ class VendorControllerStorefrontTest {
                 vendorUserId, null, "Business", "Owner", "Description", null, java.util.List.of(), "City", "State",
                 "Country", "contact@example.com", "0900", null, null, null, null, null, java.util.List.of(), false,
                 java.util.List.of(), java.util.List.of(), null, 0, null, java.util.List.of(), java.util.List.of(),
-                java.util.List.of(), java.util.List.of(), java.util.List.of());
+                java.util.List.of(), java.util.List.of(), java.util.List.of(), false);
     }
 
     @Test

@@ -5,6 +5,7 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<title>Become a Supplier - EventsRUs</title>
+	<meta name="robots" content="noindex, nofollow">
 
 	<!-- Favicon -->
 	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">
@@ -177,7 +178,9 @@
 												<div class="mb-3">
 													<label class="form-label">Mobile number</label>
 													<div class="form-control-feedback form-control-feedback-start">
-														<input type="tel" th:field="*{phoneNumber}" class="form-control" placeholder="+63 917 123 4567" required>
+														<input type="tel" th:field="*{phoneNumber}" class="form-control" placeholder="+63 917 123 4567" required
+															pattern="^(\+?63|0)[\s\-]?9\d{2}[\s\-]?\d{3}[\s\-]?\d{4}$"
+															title="Enter a Philippine mobile number, like 0917 123 4567 or +63 917 123 4567">
 														<div class="form-control-feedback-icon">
 															<i class="ph-phone text-muted"></i>
 														</div>

@@ -9,4 +9,17 @@ public record BackendIncompleteVendorSignup(
         String lastName,
         String email,
         String mobileNumber,
-        Instant signedUpAt) {}
+        Instant signedUpAt,
+        Integer reminderCount,
+        Instant lastReminderAt,
+        String signupSource,
+        java.util.List<String> suspiciousReasons) {
+
+    public boolean isSuspicious() {
+        return suspiciousReasons != null && !suspiciousReasons.isEmpty();
+    }
+
+    public String signupSourceLabel() {
+        return com.web.eventsrus.model.SignupSourceLabels.label(signupSource);
+    }
+}

@@ -780,6 +780,9 @@ public class BackendClient {
         }
         addIfPresent(body, "storefrontOverview", form.getStorefrontOverview());
         addIfPresent(body, "paymentInstructions", form.getPaymentInstructions());
+        if (form.getSearchVisible() != null) {
+            body.add("searchVisible", String.valueOf(form.getSearchVisible()));
+        }
         if (form.getOperatingAreas() != null) {
             form.getOperatingAreas().forEach(area -> body.add("operatingAreas", area));
         }
@@ -846,6 +849,13 @@ public class BackendClient {
      * one IS available (a logged-in planner) lets the backend record/refresh
      * a Lead for eventId, same as it always has.
      */
+    /** Public (no login): the storefronts search engines may list, for sitemap.xml. */
+    public java.util.List<com.web.eventsrus.model.SitemapEntry> listSitemapEntries() {
+        return backendRestClient.get().uri("/api/v1/vendors/sitemap").retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(new ParameterizedTypeReference<java.util.List<com.web.eventsrus.model.SitemapEntry>>() {});
+    }
+
     public VendorPublicProfile getVendorProfile(String jwt, String slug, Long eventId) {
         String uri = "/api/v1/vendors/" + slug + (eventId != null ? "?eventId=" + eventId : "");
         RestClient.RequestHeadersSpec<?> request = backendRestClient.get().uri(uri);
@@ -1020,6 +1030,26 @@ public class BackendClient {
 
     public List<BackendAdminVendorListItem> listVendorsForAdmin(String adminJwt) {
         return get("/api/v1/admin/vendors", adminJwt, new ParameterizedTypeReference<List<BackendAdminVendorListItem>>() {});
+    }
+
+    /** Admin: email one incomplete sign-up the "finish your sign-up" reminder. */
+    public BackendReminderEmailResult sendIncompleteSignupReminder(String adminJwt, Long userId) {
+        return backendRestClient.post()
+                .uri("/api/v1/admin/vendors/incomplete-signups/" + userId + "/reminder-email")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(BackendReminderEmailResult.class);
+    }
+
+    /** Admin: email every incomplete sign-up that is allowed another reminder. */
+    public List<BackendReminderEmailResult> sendAllIncompleteSignupReminders(String adminJwt) {
+        return backendRestClient.post()
+                .uri("/api/v1/admin/vendors/incomplete-signups/reminder-emails")
+                .header("Authorization", "Bearer " + adminJwt)
+                .retrieve()
+                .onStatus(HttpStatusCode::isError, this::raise)
+                .body(new ParameterizedTypeReference<List<BackendReminderEmailResult>>() {});
     }
 
     public List<BackendIncompleteVendorSignup> listIncompleteVendorSignups(String adminJwt) {

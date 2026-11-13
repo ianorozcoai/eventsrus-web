@@ -42,6 +42,9 @@ public final class WebSession {
     // sign-in, and attached to the onboarding form if this visitor becomes a
     // vendor - see AuthWebController#vendorLogin and vendor/onboarding.html.
     public static final String REFERRAL_CODE = "auth.referralCode";
+    // Stashed from /vendor/?promo=CODE the same way, so a supplier who opens the link from an outreach
+    // email arrives at the onboarding form with the Promo Code box already filled in.
+    public static final String PROMO_CODE = "auth.promoCode";
     // Set only when an admin used "View Dashboard" (see AdminController) to
     // open this vendor's dashboard without their own Google login - drives
     // the "Viewing as ... - Exit" banner on every vendor page. Never set by
@@ -101,6 +104,24 @@ public final class WebSession {
         }
     }
 
+    public static String promoCode(HttpSession session) {
+        return session == null ? null : (String) session.getAttribute(PROMO_CODE);
+    }
+
+    /**
+     * Remembers a promo code from /vendor/?promo=CODE. A newer non-blank code replaces an older one; a reload
+     * without ?promo= keeps it. Only short letters/digits/dash/underscore values are kept (it ends up in a form field).
+     */
+    public static void stashPromoCode(HttpSession session, String code) {
+        if (code == null) {
+            return;
+        }
+        String trimmed = code.trim();
+        if (!trimmed.isEmpty() && trimmed.length() <= 40 && trimmed.matches("[A-Za-z0-9_-]+")) {
+            session.setAttribute(PROMO_CODE, trimmed);
+        }
+    }
+
     public static boolean isImpersonating(HttpSession session) {
         return session != null && Boolean.TRUE.equals(session.getAttribute(IMPERSONATING_BY_ADMIN));
     }
@@ -132,6 +153,7 @@ public final class WebSession {
         session.removeAttribute(PAYWALL_SHOWN);
         session.removeAttribute(FIRST_PACKAGE_NUDGE_SHOWN);
         session.removeAttribute(REFERRAL_CODE);
+        session.removeAttribute(PROMO_CODE);
         session.removeAttribute(IMPERSONATING_BY_ADMIN);
     }
 

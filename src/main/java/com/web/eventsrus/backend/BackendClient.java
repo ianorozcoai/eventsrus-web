@@ -1099,6 +1099,10 @@ public class BackendClient {
                 CoordinatorQuestion.class);
     }
 
+    public BackendAdminAnalytics getAdminAnalytics(String adminJwt, int days) {
+        return get("/api/v1/admin/analytics?days=" + days, adminJwt, BackendAdminAnalytics.class);
+    }
+
     public BackendAdminDashboardStats getAdminDashboardStats(String adminJwt) {
         return get("/api/v1/admin/dashboard", adminJwt, BackendAdminDashboardStats.class);
     }

@@ -4,7 +4,13 @@
 <!--/* Search + share tags for the few PUBLIC pages (landing, terms, privacy, delete-account).
      Put it inside <head> right after <title>: <th:block th:replace="~{fragments/seo :: meta('/terms', 'Page title', 'Short description')}"/>
      Every page that uses fragments/common or admin-shell is logged-in or private and carries noindex instead. */-->
+<!--/* Cloudflare Web Analytics (visitors by country and page). Only renders when cloudflare.beacon-token is set. */-->
+<th:block th:fragment="beacon" th:with="bt=${@environment.getProperty('cloudflare.beacon-token')}">
+	<script th:if="${bt != null and !bt.isEmpty()}" defer src="https://static.cloudflareinsights.com/beacon.min.js" th:attr="data-cf-beacon='{&quot;token&quot;: &quot;' + ${bt} + '&quot;}'"></script>
+</th:block>
+
 <th:block th:fragment="meta(path, title, description)" th:with="site='https://eventsrus.app'">
+	<th:block th:replace="~{fragments/seo :: beacon}"></th:block>
 	<meta name="description" th:content="${description}">
 	<link rel="canonical" th:href="${site + path}">
 	<meta property="og:site_name" content="EventsRUs">
@@ -25,6 +31,7 @@
 
 <!--/* A public supplier storefront the backend marked searchIndexable; see StorefrontSeo. The page title comes from common's head. */-->
 <th:block th:fragment="supplier">
+	<th:block th:replace="~{fragments/seo :: beacon}"></th:block>
 	<meta name="robots" content="index, follow">
 	<meta name="description" th:content="${seoDescription}">
 	<link rel="canonical" th:href="${seoUrl}">

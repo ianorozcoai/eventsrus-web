@@ -117,6 +117,12 @@
 						</a>
 					</li>
 					<li class="nav-item">
+						<a th:href="@{/admin/analytics}" class="nav-link" th:classappend="${activePage == 'analytics'} ? 'active'">
+							<i class="ph-chart-line-up"></i>
+							<span>Analytics</span>
+						</a>
+					</li>
+					<li class="nav-item">
 						<a th:href="@{/admin/planners}" class="nav-link" th:classappend="${activePage == 'planners'} ? 'active'">
 							<i class="ph-users"></i>
 							<span>Planners</span>

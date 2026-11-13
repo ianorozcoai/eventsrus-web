@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" class="layout-static" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/admin-shell :: head('Analytics - EventsRUs Admin')}"></head>
+
+<body>
+
+	<div th:replace="~{fragments/admin-shell :: topnavbar}"></div>
+
+	<div class="page-content">
+
+		<div th:replace="~{fragments/admin-shell :: sidebar('analytics')}"></div>
+
+		<div class="content-wrapper">
+			<div class="content-inner">
+
+				<div class="page-header page-header-light shadow">
+					<div class="page-header-content d-lg-flex">
+						<div class="d-flex">
+							<h4 class="page-title mb-0">Analytics</h4>
+						</div>
+						<div class="ms-lg-auto mt-2 mt-lg-0">
+							<div class="btn-group">
+								<a th:href="@{/admin/analytics(days=7)}" class="btn btn-light" th:classappend="${days == 7} ? 'active'">7 days</a>
+								<a th:href="@{/admin/analytics(days=30)}" class="btn btn-light" th:classappend="${days == 30} ? 'active'">30 days</a>
+								<a th:href="@{/admin/analytics(days=90)}" class="btn btn-light" th:classappend="${days == 90} ? 'active'">90 days</a>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="content">
+
+					<style>
+						.bars { display:flex; align-items:flex-end; gap:2px; height:130px; }
+						.bars .col { flex:1; display:flex; flex-direction:column; justify-content:flex-end; min-width:2px; height:100%; }
+						.bars .seg-a { background:#7b5cf0; }
+						.bars .seg-b { background:#cfc6f7; }
+						.legend-dot { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:4px; }
+					</style>
+
+					<!-- ============ 1. WEBSITE VISITORS (Cloudflare) ============ -->
+					<h5 class="mb-2">Website visitors <span class="text-muted fs-sm">last <span th:text="${days}">30</span> days, bots excluded</span></h5>
+
+					<div th:unless="${traffic.configured}" class="alert alert-info">
+						<div class="fw-semibold mb-1">Visitor numbers are not connected yet</div>
+						<div th:text="${traffic.error}"></div>
+						<div class="mt-2 fs-sm">
+							<span th:unless="${beaconInstalled}">The tracking snippet is not on the website yet.</span>
+							<span th:if="${beaconInstalled}">The tracking snippet is on the website; only the read token is missing.</span>
+							Once Cloudflare is connected this section shows visits per day, Philippines vs other countries, and the pages Filipino visitors open.
+						</div>
+					</div>
+
+					<div th:if="${traffic.configured}">
+						<div class="row">
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${traffic.phVisits}">0</h3>
+								<div class="text-muted">Visits from the Philippines</div>
+							</div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0"><span th:text="${traffic.visits > 0 ? traffic.phVisits * 100 / traffic.visits : 0}">0</span>%</h3>
+								<div class="text-muted">Share of all visits that are Filipino</div>
+							</div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${traffic.phViews}">0</h3>
+								<div class="text-muted">Page views from the Philippines</div>
+							</div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${traffic.visits}">0</h3>
+								<div class="text-muted">Visits from everywhere</div>
+							</div></div></div>
+						</div>
+
+						<div class="card">
+							<div class="card-header"><h6 class="mb-0">Visits per day
+								<span class="ms-3 fs-sm fw-normal"><span class="legend-dot" style="background:#7b5cf0"></span>Philippines
+									<span class="legend-dot ms-2" style="background:#cfc6f7"></span>Other countries</span></h6></div>
+							<div class="card-body">
+								<div th:with="mx=${#aggregates.max(traffic.days.![visits]) ?: 1}">
+									<div class="bars" th:if="${!traffic.days.isEmpty()}">
+										<div class="col" th:each="d : ${traffic.days}" th:title="${d.date + ': ' + d.phVisits + ' PH, ' + (d.visits - d.phVisits) + ' other'}">
+											<div class="seg-b" th:style="'height:' + ${(d.visits - d.phVisits) * 100 / (mx > 0 ? mx : 1)} + '%'"></div>
+											<div class="seg-a" th:style="'height:' + ${d.phVisits * 100 / (mx > 0 ? mx : 1)} + '%'"></div>
+										</div>
+									</div>
+									<div th:if="${traffic.days.isEmpty()}" class="text-muted">No visits recorded in this period yet.</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-xl-6">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Pages Filipino visitors open</h6></div>
+									<div class="table-responsive"><table class="table">
+										<thead><tr><th>Page</th><th class="text-end">Visits</th><th class="text-end">Views</th></tr></thead>
+										<tbody>
+											<tr th:each="p : ${traffic.phPages}"><td th:text="${p.label}">/</td><td class="text-end" th:text="${p.visits}">0</td><td class="text-end" th:text="${p.views}">0</td></tr>
+											<tr th:if="${traffic.phPages.isEmpty()}"><td colspan="3" class="text-muted">No Filipino visits yet.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+							<div class="col-xl-6">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Visits by country</h6></div>
+									<div class="table-responsive"><table class="table">
+										<thead><tr><th>Country</th><th class="text-end">Visits</th></tr></thead>
+										<tbody>
+											<tr th:each="c : ${traffic.countries}" th:classappend="${c.label == 'PH'} ? 'fw-semibold'"><td th:text="${c.label == 'PH' ? 'PH (Philippines)' : c.label}">PH</td><td class="text-end" th:text="${c.visits}">0</td></tr>
+											<tr th:if="${traffic.countries.isEmpty()}"><td colspan="2" class="text-muted">No visits yet.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-xl-6">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Where Filipino visitors come from</h6></div>
+									<div class="table-responsive"><table class="table">
+										<thead><tr><th>Site</th><th class="text-end">Visits</th></tr></thead>
+										<tbody>
+											<tr th:each="r : ${traffic.phReferrers}"><td th:text="${r.label}">facebook.com</td><td class="text-end" th:text="${r.visits}">0</td></tr>
+											<tr th:if="${traffic.phReferrers.isEmpty()}"><td colspan="2" class="text-muted">No data yet.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+							<div class="col-xl-6">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Phone vs computer (Filipino visitors)</h6></div>
+									<div class="table-responsive"><table class="table">
+										<thead><tr><th>Device</th><th class="text-end">Visits</th></tr></thead>
+										<tbody>
+											<tr th:each="r : ${traffic.phDevices}"><td th:text="${r.label}">mobile</td><td class="text-end" th:text="${r.visits}">0</td></tr>
+											<tr th:if="${traffic.phDevices.isEmpty()}"><td colspan="2" class="text-muted">No data yet.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- ============ 2. SIGN-UPS AND BUSINESS ============ -->
+					<h5 class="mt-4 mb-2">Sign-ups and business <span class="text-muted fs-sm">from our own database, real accounts only</span></h5>
+
+					<div th:if="${backendUnavailable}" class="alert alert-warning d-flex align-items-center">
+						<i class="ph-plugs me-3"></i>
+						<span>Not connected to eventsrus-backend right now - log out and back in to retry.</span>
+					</div>
+
+					<div th:unless="${backendUnavailable}">
+
+						<div class="row">
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.planners}">0</h3><div class="text-muted">Planners (all time)</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.suppliers}">0</h3><div class="text-muted">Suppliers (all time)</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.suppliersWithListing}">0</h3><div class="text-muted">Suppliers with a package listed</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.proSuppliers}">0</h3><div class="text-muted">Active PRO suppliers</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.suppliersVerified}">0</h3><div class="text-muted">Verified suppliers</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.active7d}">0</h3><div class="text-muted">Signed in, last 7 days</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.active30d}">0</h3><div class="text-muted">Signed in, last 30 days</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.funnel.signups}">0</h3><div class="text-muted">New sign-ups, last <span th:text="${days}">30</span> days</div></div></div></div>
+						</div>
+
+						<!-- Goals -->
+						<div class="card">
+							<div class="card-header"><h6 class="mb-0">Goals</h6></div>
+							<div class="card-body">
+								<div class="mb-3">
+									<div class="d-flex justify-content-between"><span>Suppliers with a listing</span><span><span th:text="${a.totals.suppliersWithListing}">0</span> / <span th:text="${goalSuppliers}">50</span></span></div>
+									<div class="progress"><div class="progress-bar" th:style="'width:' + ${suppliersPct} + '%'"></div></div>
+								</div>
+								<div>
+									<div class="d-flex justify-content-between"><span>Planners signed up</span><span><span th:text="${a.totals.planners}">0</span> / <span th:text="${goalPlanners}">100</span></span></div>
+									<div class="progress"><div class="progress-bar bg-success" th:style="'width:' + ${plannersPct} + '%'"></div></div>
+								</div>
+								<div class="text-muted fs-sm mt-2">Targets are set in the website settings (ANALYTICS_GOAL_SUPPLIERS, ANALYTICS_GOAL_PLANNERS).</div>
+							</div>
+						</div>
+
+						<!-- Sign-ups per day -->
+						<div class="card">
+							<div class="card-header"><h6 class="mb-0">Sign-ups per day
+								<span class="ms-3 fs-sm fw-normal"><span class="legend-dot" style="background:#7b5cf0"></span>Planners
+									<span class="legend-dot ms-2" style="background:#cfc6f7"></span>Suppliers</span></h6></div>
+							<div class="card-body">
+								<div class="bars">
+									<div class="col" th:each="d : ${a.signupsByDay}" th:title="${d.date + ': ' + d.planners + ' planners, ' + d.suppliers + ' suppliers'}">
+										<div class="seg-b" th:style="'height:' + ${d.suppliers * 100 / maxSignup} + '%'"></div>
+										<div class="seg-a" th:style="'height:' + ${d.planners * 100 / maxSignup} + '%'"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Funnel -->
+						<div class="card">
+							<div class="card-header"><h6 class="mb-0">Funnel, last <span th:text="${days}">30</span> days</h6></div>
+							<div class="table-responsive"><table class="table">
+								<thead><tr><th>Step</th><th class="text-end">People / items</th><th class="text-end">% of step above</th></tr></thead>
+								<tbody>
+									<tr><td>New sign-ups</td><td class="text-end" th:text="${a.funnel.signups}">0</td><td class="text-end text-muted">-</td></tr>
+									<tr><td class="ps-4">Planners</td><td class="text-end" th:text="${a.funnel.planners}">0</td><td class="text-end"><span th:text="${a.funnel.signups > 0 ? a.funnel.planners * 100 / a.funnel.signups : 0}">0</span>%</td></tr>
+									<tr><td class="ps-5">created an event</td><td class="text-end" th:text="${a.funnel.plannersWithEvent}">0</td><td class="text-end"><span th:text="${a.funnel.planners > 0 ? a.funnel.plannersWithEvent * 100 / a.funnel.planners : 0}">0</span>%</td></tr>
+									<tr><td class="ps-5">asked a supplier for a quotation</td><td class="text-end" th:text="${a.funnel.plannersWhoRequestedQuote}">0</td><td class="text-end"><span th:text="${a.funnel.plannersWithEvent > 0 ? a.funnel.plannersWhoRequestedQuote * 100 / a.funnel.plannersWithEvent : 0}">0</span>%</td></tr>
+									<tr><td class="ps-4">Suppliers</td><td class="text-end" th:text="${a.funnel.suppliers}">0</td><td class="text-end"><span th:text="${a.funnel.signups > 0 ? a.funnel.suppliers * 100 / a.funnel.signups : 0}">0</span>%</td></tr>
+									<tr><td class="ps-5">finished a package listing</td><td class="text-end" th:text="${a.funnel.suppliersWithListing}">0</td><td class="text-end"><span th:text="${a.funnel.suppliers > 0 ? a.funnel.suppliersWithListing * 100 / a.funnel.suppliers : 0}">0</span>%</td></tr>
+									<tr class="table-light"><td>Planner activity in this period: storefront visits (leads)</td><td class="text-end" th:text="${a.funnel.leads}">0</td><td class="text-end text-muted">-</td></tr>
+									<tr class="table-light"><td>Quotation requests</td><td class="text-end" th:text="${a.funnel.quotations}">0</td><td class="text-end text-muted">-</td></tr>
+									<tr class="table-light"><td>Bookings</td><td class="text-end" th:text="${a.funnel.bookings}">0</td><td class="text-end text-muted">-</td></tr>
+								</tbody></table></div>
+						</div>
+
+						<div class="row">
+							<div class="col-xl-4">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Sign-ups by app / website, last <span th:text="${days}">30</span> days</h6></div>
+									<div class="table-responsive"><table class="table">
+										<tbody>
+											<tr th:each="s : ${a.signupsBySource}"><td th:text="${s.label}">ANDROID</td><td class="text-end" th:text="${s.count}">0</td></tr>
+											<tr th:if="${a.signupsBySource.isEmpty()}"><td class="text-muted">No sign-ups in this period.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+							<div class="col-xl-4">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Suppliers by city</h6></div>
+									<div class="table-responsive"><table class="table">
+										<tbody>
+											<tr th:each="s : ${a.suppliersByCity}"><td th:text="${s.label}">Quezon City</td><td class="text-end" th:text="${s.count}">0</td></tr>
+											<tr th:if="${a.suppliersByCity.isEmpty()}"><td class="text-muted">No suppliers with a city yet.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+							<div class="col-xl-4">
+								<div class="card">
+									<div class="card-header"><h6 class="mb-0">Suppliers by business type</h6></div>
+									<div class="table-responsive"><table class="table">
+										<tbody>
+											<tr th:each="s : ${a.suppliersByBusinessType}"><td th:text="${s.label}">CATERING</td><td class="text-end" th:text="${s.count}">0</td></tr>
+											<tr th:if="${a.suppliersByBusinessType.isEmpty()}"><td class="text-muted">No suppliers yet.</td></tr>
+										</tbody></table></div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<div class="alert alert-light border mt-3">
+						<div class="fw-semibold mb-1">Not tracked yet (needs new tracking first)</div>
+						<ul class="mb-0 fs-sm">
+							<li>Planner searches that found no supplier (shows which suppliers to recruit).</li>
+							<li>Supplier outreach: contacted, replied, signed up.</li>
+							<li>Button clicks such as "Download" or "Sign up" on the website.</li>
+						</ul>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>

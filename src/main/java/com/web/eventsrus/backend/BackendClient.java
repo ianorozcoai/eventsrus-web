@@ -1393,10 +1393,40 @@ public class BackendClient {
         String message;
         try {
             Map<String, Object> body = (Map<String, Object>) objectMapper.readValue(rawBody, Map.class);
-            message = String.valueOf(body.getOrDefault("message", "Request to eventsrus-backend failed"));
+            message = messageFrom(body);
         } catch (Exception e) {
             message = "Request to eventsrus-backend failed (" + response.getStatusCode() + ")";
         }
         throw new BackendApiException(message, response.getStatusCode().value());
+    }
+
+    /**
+     * The text shown to the user for a backend error. A validation error from the backend is
+     * {"message":"Validation failed","fieldErrors":{"businessTypes":"Select at least one business type"}} -
+     * on its own "Validation failed" tells the person nothing, so the field messages are appended:
+     * "Validation failed: Select at least one business type". A default Jakarta message such as
+     * "must not be blank" has no subject, so the humanised field name goes in front of it
+     * ("Business name must not be blank").
+     */
+    @SuppressWarnings("unchecked")
+    static String messageFrom(Map<String, Object> body) {
+        String message = String.valueOf(body.getOrDefault("message", "Request to eventsrus-backend failed"));
+        Object fieldErrors = body.get("fieldErrors");
+        if (fieldErrors instanceof Map<?, ?> map && !map.isEmpty()) {
+            java.util.List<String> parts = new java.util.ArrayList<>();
+            for (Map.Entry<String, Object> entry : new java.util.TreeMap<>((Map<String, Object>) map).entrySet()) {
+                String detail = String.valueOf(entry.getValue());
+                boolean customSentence = !detail.isEmpty() && Character.isUpperCase(detail.charAt(0));
+                parts.add(customSentence ? detail : humanize(entry.getKey()) + " " + detail);
+            }
+            return message + ": " + String.join("; ", parts);
+        }
+        return message;
+    }
+
+    /** "businessName" becomes "Business name". */
+    private static String humanize(String fieldName) {
+        String spaced = fieldName.replaceAll("([a-z0-9])([A-Z])", "$1 $2").toLowerCase();
+        return spaced.isEmpty() ? spaced : Character.toUpperCase(spaced.charAt(0)) + spaced.substring(1);
     }
 }

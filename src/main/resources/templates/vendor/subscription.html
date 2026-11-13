@@ -77,7 +77,8 @@
 											<th:block th:unless="${paywallAwaitingGcashVerification or paywallPaymentFailed}">
 												<span th:if="${status.plan() != null and status.expired()}" class="badge bg-danger">Expired</span>
 												<span th:if="${status.plan() != null and status.inGracePeriod() and !paywallOnFreeTrial}" class="badge bg-danger">Grace Period</span>
-												<span th:if="${paywallOnFreeTrial}" class="badge bg-success">Free trial</span>
+												<span th:if="${paywallOnFreeTrial}" class="badge bg-success">Free access</span>
+												<span th:if="${freeUntilBookings}" class="badge bg-success">Free access</span>
 												<span th:if="${status.plan() != null and status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-warning text-dark">Renews soon</span>
 												<span th:if="${status.plan() != null and !status.expiringSoon() and !status.expired() and !status.inGracePeriod()}" class="badge bg-success">Active</span>
 											</th:block>
@@ -90,8 +91,11 @@
 									<a th:if="${paywallPaymentFailed}" href="#renewSubscribeCard" class="btn btn-danger w-100 mb-2">
 										<i class="ph-upload-simple me-1"></i> Re-upload Payment Screenshot
 									</a>
-									<p class="mb-1" th:if="${status.expiresAt() != null}">
-										<span th:if="${paywallOnFreeTrial}">Free trial ends on</span>
+									<p class="mb-1" th:if="${freeUntilBookings}">
+										Free until your first <span th:text="${bookingsGoalCount}">3</span> bookings
+									</p>
+									<p class="mb-1" th:if="${status.expiresAt() != null and !freeUntilBookings}">
+										<span th:if="${paywallOnFreeTrial}">Free access ends on</span>
 										<span th:if="${!paywallOnFreeTrial and (status.expired() or status.inGracePeriod())}">Expired on</span>
 										<span th:if="${!paywallOnFreeTrial and !(status.expired() or status.inGracePeriod())}">Access until</span>
 										<span th:text="${#temporals.format(paywallOnFreeTrial ? status.graceEndsAt() : status.expiresAt(), 'MMMM d, yyyy')}">January 1, 2026</span>
@@ -101,7 +105,7 @@
 										appears in planner search, until you renew.
 									</p>
 									<p class="text-muted fs-sm mb-0" th:if="${paywallOnFreeTrial}">
-											Your free trial gives you full access to every supplier feature. Choose a plan
+											Your free access gives you full access to every supplier feature. Choose a plan
 											any time before it ends to keep quotations, chat, bookings and your place in planner search.
 										</p>
 										<p class="text-muted fs-sm mb-0" th:if="${status.inGracePeriod() and !paywallOnFreeTrial}">

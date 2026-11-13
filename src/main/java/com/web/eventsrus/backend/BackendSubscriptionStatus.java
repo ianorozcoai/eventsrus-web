@@ -23,4 +23,6 @@ public record BackendSubscriptionStatus(
         boolean gcashAwaitingVerification,
         boolean gcashRejected,
         String gcashRejectionReason,
-        boolean showTrialWelcome) {}
+        boolean showTrialWelcome,
+        Integer bookingsGoal,
+        Boolean bookingsGoalReached) {}

@@ -70,6 +70,12 @@ public class PaywallModelAttributes {
         boolean showTrialWelcomeModal = false;
         long freeTrialDaysLeft = 0;
         boolean realInGracePeriod = false;
+        // Free access "until the first N bookings" (the default rule for new suppliers): the pages word it without a
+        // day count. freeUntilBookings = the free access is live; bookingsGoalReached = the N bookings are done
+        // (the grace countdown is then running).
+        boolean freeUntilBookings = false;
+        int bookingsGoalCount = 0;
+        boolean bookingsGoalReached = false;
 
         HttpSession session = request.getSession(false);
         // Only a real vendor has a subscription concept at all - a planner
@@ -87,6 +93,11 @@ public class PaywallModelAttributes {
                 inGracePeriod = status.inGracePeriod();
                 graceEndsAt = status.graceEndsAt();
                 realInGracePeriod = inGracePeriod;
+                if (status.bookingsGoal() != null && "FREE_GRANT".equals(status.billingSource())) {
+                    bookingsGoalCount = status.bookingsGoal();
+                    bookingsGoalReached = Boolean.TRUE.equals(status.bookingsGoalReached());
+                    freeUntilBookings = status.plan() != null && !status.expired() && !realInGracePeriod;
+                }
 
                 // A new supplier's free trial IS the grace period of a free grant: word it as a trial
                 // (never "expired" - that is for suppliers who stopped paying) and only pop the reminder
@@ -167,6 +178,9 @@ public class PaywallModelAttributes {
         model.addAttribute("freeAccessDaysLeft", freeAccessDaysLeft);
         model.addAttribute("showTrialWelcomeModal", showTrialWelcomeModal);
         model.addAttribute("paywallFreeTrialDaysLeft", freeTrialDaysLeft);
+        model.addAttribute("freeUntilBookings", freeUntilBookings);
+        model.addAttribute("bookingsGoalCount", bookingsGoalCount);
+        model.addAttribute("bookingsGoalReached", bookingsGoalReached);
         model.addAttribute("paywallAlreadyShown", alreadyShown);
         model.addAttribute("paywallRequiresPlanSelection", requiresPlanSelection);
         model.addAttribute("paywallAwaitingGcashVerification", awaitingGcashVerification);

@@ -70,12 +70,23 @@
 						<div class="card-body d-flex align-items-start gap-3">
 							<i th:class="${freeAccessDaysLeft <= 14} ? 'ph-hourglass-medium text-warning' : 'ph-seal-check text-primary'" style="font-size:2rem;"></i>
 							<div class="flex-fill">
-								<h6 class="mb-1" th:text="${freeAccessIsTrial ? 'Free trial' : 'Free access'} + ': ' + ${freeAccessDaysLeft} + (${freeAccessDaysLeft == 1} ? ' day left' : ' days left')">Free trial: 30 days left</h6>
-								<p class="mb-0 text-muted" th:if="${freeAccessDaysLeft <= 14}">
+								<h6 class="mb-1" th:if="${freeUntilBookings and freeAccessDaysLeft > 14}"
+									th:text="'Free until your first ' + ${bookingsGoalCount} + ' bookings'">Free until your first 3 bookings</h6>
+								<h6 class="mb-1" th:if="${freeAccessIsTrial and bookingsGoalReached}"
+									th:text="'Congratulations on your first ' + ${bookingsGoalCount} + ' bookings!'">Congratulations on your first 3 bookings!</h6>
+								<h6 class="mb-1" th:unless="${(freeUntilBookings and freeAccessDaysLeft > 14) or (freeAccessIsTrial and bookingsGoalReached)}"
+									th:text="${freeAccessIsTrial and bookingsGoalCount == 0 ? 'Free trial' : 'Free access'} + ': ' + ${freeAccessDaysLeft} + (${freeAccessDaysLeft == 1} ? ' day left' : ' days left')">Free trial: 30 days left</h6>
+								<p class="mb-0 text-muted" th:if="${freeAccessIsTrial and bookingsGoalReached}">
+									Choose a plan within <span th:text="${freeAccessDaysLeft}">30</span> day(s) to keep quotations, chat and bookings working.
+								</p>
+								<p class="mb-0 text-muted" th:if="${freeUntilBookings and freeAccessDaysLeft > 14}">
+									Every supplier tool is unlocked. You can choose a plan any time.
+								</p>
+								<p class="mb-0 text-muted" th:if="${freeAccessDaysLeft <= 14 and !(freeAccessIsTrial and bookingsGoalReached)}">
 									Your free period ends on <span th:text="${#temporals.format(freeAccessEndsAt, 'MMMM d, yyyy')}">January 1, 2027</span>.
 									Choose a plan now to keep quotations, chat, bookings and your place in planner search.
 								</p>
-								<p class="mb-0 text-muted" th:unless="${freeAccessDaysLeft <= 14}">
+								<p class="mb-0 text-muted" th:if="${freeAccessDaysLeft > 14 and !freeUntilBookings and !(freeAccessIsTrial and bookingsGoalReached)}">
 									Everything is free until <span th:text="${#temporals.format(freeAccessEndsAt, 'MMMM d, yyyy')}">January 1, 2027</span>.
 									After that you need a plan to keep your supplier tools. You can choose one any time.
 								</p>

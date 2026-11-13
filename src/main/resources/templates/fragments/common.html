@@ -748,19 +748,21 @@
 			<!--/* Full page, not a pop-up: modal-fullscreen. The logo sits on its own dark chip so it reads on any theme. */-->
 			<div class="modal-dialog modal-fullscreen">
 				<div class="modal-content">
-					<div class="modal-body d-flex justify-content-center align-items-center p-4">
-						<div style="max-width:480px;width:100%;">
-							<div class="d-inline-block rounded-3 px-3 py-2 mb-5" style="background:#12151c;">
-								<img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs" style="height:34px;width:auto;">
+					<div class="modal-body d-flex p-4">
+						<div class="m-auto" style="max-width:480px;width:100%;">
+							<div class="text-center mb-4">
+								<div class="d-inline-block rounded-3 px-3 py-2" style="background:#12151c;">
+									<img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs" style="height:34px;width:auto;">
+								</div>
 							</div>
 							<h2 class="fw-bold mb-2">Welcome to EventsRUs!</h2>
 							<p class="text-muted fs-lg mb-4">Your supplier account is ready.</p>
 							<span class="badge bg-primary bg-opacity-10 text-primary fs-base rounded-pill px-3 py-2 mb-4"
-								th:text="${freeAccessDaysLeft} + '-day free trial'">30-day free trial</span>
-							<ul class="list-unstyled mb-5">
+								th:text="${freeUntilBookings} ? ('Free until your first ' + ${bookingsGoalCount} + ' bookings') : (${freeAccessDaysLeft} + '-day free trial')">30-day free trial</span>
+							<ul class="list-unstyled mb-4">
 								<li class="d-flex align-items-start mb-3"><i class="ph-check-circle text-primary me-3 fs-4"></i><span>Every supplier tool is unlocked</span></li>
 								<li class="d-flex align-items-start mb-3"><i class="ph-check-circle text-primary me-3 fs-4"></i><span>No payment is needed today</span></li>
-								<li class="d-flex align-items-start"><i class="ph-check-circle text-primary me-3 fs-4"></i><span>Subscribe any time before the trial ends</span></li>
+								<li class="d-flex align-items-start"><i class="ph-check-circle text-primary me-3 fs-4"></i><span th:text="${freeUntilBookings} ? 'Subscribe any time. We\'ll remind you before your free access ends.' : 'Subscribe any time before the trial ends'">Subscribe any time before the trial ends</span></li>
 							</ul>
 							<form th:action="@{/vendor/subscription/trial-welcome-shown}" method="post" class="d-grid gap-3">
 								<button type="submit" name="next" value="subscribe" class="btn btn-primary btn-lg">Subscribe now</button>
@@ -801,16 +803,22 @@
 						<i class="ph-crown-simple text-warning" style="font-size:3rem;"></i>
 						<h5 class="mt-3" th:if="${paywallExpired}">Your subscription has ended</h5>
 						<h5 class="mt-3" th:if="${paywallInGracePeriod and !paywallOnFreeTrial}">Your subscription has expired</h5>
-						<h5 class="mt-3" th:if="${paywallInGracePeriod and paywallOnFreeTrial}">Your free trial is ending soon</h5>
+						<h5 class="mt-3" th:if="${paywallInGracePeriod and paywallOnFreeTrial and !bookingsGoalReached}">Your free access is ending soon</h5>
+						<h5 class="mt-3" th:if="${paywallInGracePeriod and paywallOnFreeTrial and bookingsGoalReached}">Congratulations on your first <span th:text="${bookingsGoalCount}">3</span> bookings!</h5>
 						<h5 class="mt-3" th:if="${paywallExpiringSoon}">Your subscription is ending soon</h5>
 						<p class="text-muted" th:if="${paywallExpired}">
 							Quotations, chatting with planners, and bookings are disabled until you renew.
 							Planners can no longer find you in search either. Renew to restore full access.
 						</p>
-						<p class="text-muted" th:if="${paywallInGracePeriod and paywallOnFreeTrial}">
-							Your free trial ends in <span th:text="${paywallFreeTrialDaysLeft}">7</span> day(s)
+						<p class="text-muted" th:if="${paywallInGracePeriod and paywallOnFreeTrial and !bookingsGoalReached}">
+							Your free access ends in <span th:text="${paywallFreeTrialDaysLeft}">7</span> day(s)
 							(<span th:text="${#temporals.format(paywallGraceEndsAt, 'MMM dd, yyyy')}">-</span>).
 							Choose a plan to keep quotations, chat, bookings and your place in planner search.
+						</p>
+						<p class="text-muted" th:if="${paywallInGracePeriod and paywallOnFreeTrial and bookingsGoalReached}">
+							Choose a plan within <span th:text="${paywallFreeTrialDaysLeft}">7</span> day(s)
+							(<span th:text="${#temporals.format(paywallGraceEndsAt, 'MMM dd, yyyy')}">-</span>)
+							to keep quotations, chat and bookings working.
 						</p>
 						<p class="text-muted" th:if="${paywallInGracePeriod and !paywallOnFreeTrial}">
 							You still have full access and stay recommended to planners, but only until

@@ -6,6 +6,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 	<title th:text="${intent == 'vendor'} ? 'Supplier Login - EventsRUs' : 'Planner Login - EventsRUs'">Login - EventsRUs</title>
 	<meta name="robots" content="noindex, nofollow">
+	<!--/* Visitor statistics (Cloudflare Web Analytics): this page is where outreach emails land. Renders only when the site token is set. */-->
+	<th:block th:replace="~{fragments/seo :: beacon}"></th:block>
 
 	<!-- Favicon -->
 	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">

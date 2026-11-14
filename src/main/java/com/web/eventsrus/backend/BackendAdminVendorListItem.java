@@ -43,7 +43,18 @@ public record BackendAdminVendorListItem(
         // WEB, ANDROID, IOS, MOBILE, UNKNOWN or null (account older than the tracking).
         String signupSource,
         // Reasons an admin should look twice at this sign-up (empty or null when nothing looks off).
-        java.util.List<String> suspiciousReasons) {
+        java.util.List<String> suspiciousReasons,
+        // Set when the free access runs "until the first N counted bookings": N, and whether it was reached.
+        Integer bookingsGoal,
+        Boolean bookingsGoalReached) {
+
+    public boolean isOnFreeAccessOffer() {
+        return bookingsGoal != null;
+    }
+
+    public boolean isFreeAccessGoalReached() {
+        return bookingsGoal != null && Boolean.TRUE.equals(bookingsGoalReached);
+    }
 
     public boolean isSuspicious() {
         return suspiciousReasons != null && !suspiciousReasons.isEmpty();

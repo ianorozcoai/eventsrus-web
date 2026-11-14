@@ -18,7 +18,8 @@ public record BackendAdminAnalytics(
 
     public record Totals(
             long planners, long suppliers, long suppliersWithListing, long suppliersVerified,
-            long proSuppliers, long active7d, long active30d) {}
+            long proSuppliers, long active7d, long active30d,
+            long onFreeAccessOffer, long reachedFirstBookings) {}
 
     public record Funnel(
             long signups, long suppliers, long suppliersWithListing,

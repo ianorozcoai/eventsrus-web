@@ -139,7 +139,7 @@
 										</div>
 
 										<div class="mb-3">
-											<label class="form-label">Business type</label>
+											<label class="form-label">Business type <span class="text-danger" title="Required">*</span></label>
 											<select th:field="*{businessTypes}" multiple="multiple" class="form-control multiselect-business-types"
 												data-enable-filtering="true" data-enable-case-insensitive-filtering="true"
 												data-filter-placeholder="Search business types..." data-number-displayed="999">
@@ -561,6 +561,13 @@
 
 				if (errorBox) {
 					errorBox.classList.add('d-none');
+				}
+
+				// Business type is required: say so before anything is sent, not after a round trip to the server.
+				var typeSelect = form.querySelector('select[name="businessTypes"]');
+				if (typeSelect && !Array.prototype.some.call(typeSelect.options, function (o) { return o.selected; })) {
+					showError('Please select at least one business type.');
+					return;
 				}
 
 				setSubmitting(true);

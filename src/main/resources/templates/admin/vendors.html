@@ -128,7 +128,13 @@
 										</thead>
 										<tbody>
 											<tr th:each="vendor : ${vendors}">
-												<td th:text="${vendor.businessName()}">Business Name</td>
+												<td>
+													<div th:text="${vendor.businessName()}">Business Name</div>
+													<span class="badge bg-info" th:if="${vendor.isOnFreeAccessOffer() and !vendor.isFreeAccessGoalReached()}"
+														th:text="'Free until ' + ${vendor.bookingsGoal()} + ' bookings'">Free until 3 bookings</span>
+													<span class="badge bg-success" th:if="${vendor.isFreeAccessGoalReached()}"
+														th:text="${vendor.bookingsGoal()} + ' bookings reached'">3 bookings reached</span>
+												</td>
 												<td>
 													<span th:each="bt, iter : ${vendor.businessTypes()}"
 														th:text="${bt.getLabel()} + (${iter.last} ? '' : ', ')">Business Type</span>

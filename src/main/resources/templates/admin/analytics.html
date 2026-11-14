@@ -157,7 +157,9 @@
 							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
 								<h3 class="mb-0" th:text="${a.totals.suppliersWithListing}">0</h3><div class="text-muted">Suppliers with a package listed</div></div></div></div>
 							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
-								<h3 class="mb-0" th:text="${a.totals.proSuppliers}">0</h3><div class="text-muted">Active PRO suppliers</div></div></div></div>
+								<h3 class="mb-0" th:text="${a.totals.payingSuppliers}">0</h3><div class="text-muted">Paying suppliers</div></div></div></div>
+							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
+								<h3 class="mb-0" th:text="${a.totals.suppliers > a.totals.payingSuppliers ? a.totals.suppliers - a.totals.payingSuppliers : 0}">0</h3><div class="text-muted">Suppliers on free access</div></div></div></div>
 							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
 								<h3 class="mb-0" th:text="${a.totals.suppliersVerified}">0</h3><div class="text-muted">Verified suppliers</div></div></div></div>
 							<div class="col-md-6 col-xl-3"><div class="card"><div class="card-body">
@@ -247,7 +249,7 @@
 									<div class="card-header"><h6 class="mb-0">Suppliers by business type</h6></div>
 									<div class="table-responsive"><table class="table">
 										<tbody>
-											<tr th:each="s : ${a.suppliersByBusinessType}"><td th:text="${s.label}">CATERING</td><td class="text-end" th:text="${s.count}">0</td></tr>
+											<tr th:each="s : ${a.suppliersByBusinessType}"><td th:text="${#strings.capitalizeWords(#strings.toLowerCase(#strings.replace(s.label, '_', ' ')))}">Catering</td><td class="text-end" th:text="${s.count}">0</td></tr>
 											<tr th:if="${a.suppliersByBusinessType.isEmpty()}"><td class="text-muted">No suppliers yet.</td></tr>
 										</tbody></table></div>
 								</div>

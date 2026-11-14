@@ -56,6 +56,10 @@ public class CloudflareTrafficService {
     @Value("${cloudflare.beacon-token:}")
     private String beaconToken;
 
+    /** Only changed in local tests, to point the service at a fake Cloudflare reply. */
+    @Value("${cloudflare.api-url:https://api.cloudflare.com/client/v4/graphql}")
+    private String apiUrl;
+
     public CloudflareTrafficService(ObjectMapper mapper) {
         this.mapper = mapper;
     }
@@ -96,7 +100,7 @@ public class CloudflareTrafficService {
                 + "}}}";
 
         String body = mapper.writeValueAsString(Map.of("query", q));
-        String raw = http.post().uri("https://api.cloudflare.com/client/v4/graphql")
+        String raw = http.post().uri(apiUrl)
                 .header("Authorization", "Bearer " + apiToken)
                 .header("Content-Type", "application/json")
                 .body(body).retrieve().body(String.class);

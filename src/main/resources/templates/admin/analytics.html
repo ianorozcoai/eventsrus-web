@@ -76,7 +76,7 @@
 								<span class="ms-3 fs-sm fw-normal"><span class="legend-dot" style="background:#7b5cf0"></span>Philippines
 									<span class="legend-dot ms-2" style="background:#cfc6f7"></span>Other countries</span></h6></div>
 							<div class="card-body">
-								<div th:with="mx=${#aggregates.max(traffic.days.![visits]) ?: 1}">
+								<div th:with="mx=${maxVisits}">
 									<div class="bars" th:if="${!traffic.days.isEmpty()}">
 										<div class="col" th:each="d : ${traffic.days}" th:title="${d.date + ': ' + d.phVisits + ' PH, ' + (d.visits - d.phVisits) + ' other'}">
 											<div class="seg-b" th:style="'height:' + ${(d.visits - d.phVisits) * 100 / (mx > 0 ? mx : 1)} + '%'"></div>

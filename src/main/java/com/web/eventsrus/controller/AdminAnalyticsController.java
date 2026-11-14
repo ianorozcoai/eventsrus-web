@@ -39,7 +39,11 @@ public class AdminAnalyticsController {
         model.addAttribute("days", range);
         model.addAttribute("goalSuppliers", goalSuppliers);
         model.addAttribute("goalPlanners", goalPlanners);
-        model.addAttribute("traffic", cloudflare.traffic(range));
+        var traffic = cloudflare.traffic(range);
+        model.addAttribute("traffic", traffic);
+        // Tallest bar of the "visits per day" chart (at least 1, so the bar heights never divide by zero).
+        model.addAttribute("maxVisits", Math.max(1L,
+                traffic.days().stream().mapToLong(CloudflareTrafficService.Day::visits).max().orElse(0L)));
         model.addAttribute("beaconInstalled", cloudflare.beaconInstalled());
 
         String jwt = AdminSession.token(session);

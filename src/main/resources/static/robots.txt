@@ -1,3 +1,13 @@
+# Link-preview crawlers (Facebook, Messenger, Instagram) must be able to read the
+# supplier sign-up page so shared links show the right title and logo. That page
+# is noindex, so search engines still skip it.
+User-agent: facebookexternalhit
+User-agent: meta-externalagent
+User-agent: Twitterbot
+Allow: /vendor/
+Disallow: /admin
+Disallow: /planner/
+
 User-agent: *
 Allow: /
 Disallow: /admin

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title>EventsRUs for suppliers: join free and get booked</title>
+	<meta name="description" content="Create your free EventsRUs supplier storefront in minutes. Add packages, photos and your logo, see who visits, and let clients pay you directly.">
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="color-scheme" content="light only">
+	<!--/* Share preview (Facebook, Viber, WhatsApp). noindex above keeps it out of search until Ian decides to open it up. */-->
+	<meta property="og:site_name" content="EventsRUs">
+	<meta property="og:type" content="website">
+	<meta property="og:title" content="EventsRUs for suppliers: join free and get booked">
+	<meta property="og:description" content="Create your free supplier storefront on EventsRUs, add packages and photos, and get found by event planners in the Philippines.">
+	<meta property="og:url" content="https://eventsrus.app/vendor/">
+	<meta property="og:image" content="https://eventsrus.app/assets/images/new-logo-login-fb.jpg">
+	<meta property="og:image:width" content="800">
+	<meta property="og:image:height" content="617">
+	<meta name="twitter:card" content="summary_large_image">
+	<th:block th:replace="~{fragments/seo :: beacon}"></th:block>
+
+	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">
+	<link rel="icon" type="image/png" sizes="32x32" th:href="@{/assets/images/favicon-32x32.png}">
+	<link rel="icon" type="image/png" sizes="16x16" th:href="@{/assets/images/favicon-16x16.png}">
+	<link rel="apple-touch-icon" th:href="@{/assets/images/apple-touch-icon.png}">
+
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" id="stylesheet" rel="stylesheet" type="text/css">
+	<script th:src="@{/assets/js/bootstrap/bootstrap.bundle.min.js}"></script>
+
+
+	<style>
+		:root {
+			--ink: #1a0e33;
+			--ink-2: #2a1752;
+			--violet: #6d3bf0;
+			--violet-2: #9b6bff;
+			--tangerine: #ff6a3d;
+			--sun: #ffc83d;
+			--mint: #12c48b;
+			--paper: #fbf8ff;
+			--blush: #fff0e8;
+			--line: #e8e1f5;
+			--muted: #5d5575;
+			--display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+		}
+		/* all.min.css is the dashboard shell (height:100%, overflow hidden, flex). This is a normal scrolling page. */
+		html, body { height: auto; overflow: visible; display: block; }
+		body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; }
+		h1, h2, h3, h4 { font-family: var(--display); letter-spacing: -.025em; text-wrap: balance; margin: 0; }
+		p { margin: 0; }
+		a { color: inherit; }
+		.wrap { max-width: 1180px; margin: 0 auto; padding: 0 1.5rem; }
+		.btn-pill {
+			display: inline-flex; align-items: center; justify-content: center; gap: .55rem;
+			border-radius: 100px; font-weight: 700; padding: .95rem 1.6rem; text-decoration: none; border: 2px solid transparent;
+			transition: transform .2s ease, box-shadow .2s ease, background .2s ease; cursor: pointer; font-size: 1rem; white-space: nowrap;
+		}
+		.btn-pill:hover { transform: translateY(-3px); text-decoration: none; }
+		.btn-hot { background: var(--tangerine); color: #fff; box-shadow: 0 10px 30px rgba(255,106,61,.4); }
+		.btn-hot:hover { color: #fff; box-shadow: 0 16px 36px rgba(255,106,61,.5); }
+		.btn-ghost { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.28); }
+		.btn-ghost:hover { color: #fff; background: rgba(255,255,255,.16); }
+		.btn-dark { background: var(--ink); color: #fff; }
+		.btn-dark:hover { color: #fff; }
+
+		/* ===== Nav ===== */
+		.nav {
+			position: fixed; z-index: 50; top: 14px; left: 50%; transform: translateX(-50%);
+			width: min(1120px, calc(100% - 24px)); display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+			background: rgba(26,14,51,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+			border: 1px solid rgba(255,255,255,.12); border-radius: 100px; padding: .55rem .6rem .55rem 1.4rem;
+		}
+		.nav img { height: 24px; display: block; }
+		.nav-links { display: flex; gap: 1.6rem; font-size: .9rem; font-weight: 600; }
+		.nav-links a { color: rgba(255,255,255,.8); text-decoration: none; }
+		.nav-links a:hover { color: #fff; }
+		.nav .btn-pill { padding: .6rem 1.2rem; font-size: .9rem; }
+		.nav-actions { display: flex; align-items: center; gap: .6rem; }
+		@media (max-width: 480px) { .nav-demo { display: none; } }
+		/* Sign-in pop-up (opened by every "Get started" button) */
+		.login-modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(26,14,51,.62); backdrop-filter: blur(6px); }
+		.login-modal.open { display: flex; }
+		.login-box { position: relative; width: 100%; max-width: 400px; max-height: 94vh; overflow-y: auto; background: #fff; color: #1a0e33; border-radius: 1.5rem; padding: 2rem 1.6rem 1.6rem; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+		.login-box img.login-logo { width: 220px; max-width: 80%; height: auto; margin-bottom: .8rem; }
+		.login-box h2 { font-size: 1.4rem; margin: 0 0 .3rem; color: #1a0e33; }
+		.login-box p { color: #5d5470; font-size: .92rem; margin: 0 0 1.2rem; }
+		.login-close { position: absolute; top: .7rem; right: .7rem; width: 2.4rem; height: 2.4rem; border: 0; border-radius: 50%; background: #f1ecfb; color: #1a0e33; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+		.login-close:hover { background: #e4dbf8; }
+		.google-wrap { border: 2px solid #e9e4f3; border-radius: 50rem; padding: 4px; }
+		#google-signin-container { width: 100%; display: flex; justify-content: center; min-height: 44px; }
+		.login-or { display: flex; align-items: center; gap: .6rem; margin: 1rem 0; color: #8a8199; font-size: .8rem; }
+		.login-or::before, .login-or::after { content: ""; flex: 1; height: 1px; background: #e4dff0; }
+		.login-demo { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .7rem 1rem; border: 2px solid #e9e4f3; border-radius: 50rem; color: #1a0e33; font-weight: 700; text-decoration: none; }
+		.login-demo:hover { border-color: var(--tangerine); color: #1a0e33; }
+		.login-demo i { color: var(--tangerine); font-size: 1.2rem; }
+		.login-error { background: #fde8e8; color: #9b1c1c; border-radius: .8rem; padding: .7rem .9rem; margin-bottom: 1rem; font-size: .9rem; text-align: left; }
+		.login-progress { display: none; align-items: center; justify-content: center; gap: .6rem; color: #5d5470; padding: .8rem 0; }
+		.login-note { font-size: .78rem !important; margin: 1.2rem 0 0 !important; }
+		@media (max-width: 760px) { .nav-links { display: none; } }
+
+		/* ===== Hero ===== */
+		.hero { position: relative; overflow: hidden; background: var(--ink); color: #fff; padding: 8.5rem 0 5.5rem; isolation: isolate; }
+		.hero::before {
+			content: ""; position: absolute; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; z-index: -1;
+			background: radial-gradient(closest-side, rgba(109,59,240,.75), rgba(109,59,240,0));
+		}
+		.hero::after {
+			content: ""; position: absolute; left: -15%; bottom: -35%; width: 60vw; height: 60vw; max-width: 760px; max-height: 760px; z-index: -1;
+			background: radial-gradient(closest-side, rgba(255,106,61,.38), rgba(255,106,61,0));
+		}
+		.confetti { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+		.confetti i { position: absolute; display: block; border-radius: 3px; opacity: .85; animation: drift 14s ease-in-out infinite alternate; }
+		@keyframes drift { from { transform: translateY(0) rotate(var(--r)); } to { transform: translateY(-22px) rotate(calc(var(--r) + 40deg)); } }
+		.hero-grid { display: grid; grid-template-columns: 1.02fr 1fr; gap: 3rem; align-items: center; }
+		@media (max-width: 960px) { .hero-grid { grid-template-columns: 1fr; } .hero { padding-top: 7rem; } }
+		.pill-tag {
+			display: inline-flex; align-items: center; gap: .5rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+			border-radius: 100px; padding: .4rem .95rem; font-size: .85rem; font-weight: 600; color: #ffe9b0;
+		}
+		.pill-tag i { color: var(--sun); }
+		.hero h1 { font-size: clamp(2.7rem, 6.4vw, 5.2rem); line-height: .98; font-weight: 800; margin: 1.25rem 0 1.4rem; }
+		.hero h1 .hl { display: inline-block; position: relative; color: var(--ink); background: var(--sun); padding: 0 .22em; margin: 0 -.05em; border-radius: .18em; transform: rotate(-1.6deg); }
+		.hero .lead { font-size: 1.18rem; line-height: 1.55; color: rgba(255,255,255,.78); max-width: 33rem; }
+		.signin-card {
+			scroll-margin-top: 110px; margin-top: 2rem; background: #fff; color: var(--ink); border-radius: 26px; padding: 1.3rem 1.4rem 1.2rem; max-width: 29rem;
+			box-shadow: 0 28px 60px rgba(0,0,0,.35);
+		}
+		.signin-card h3 { font-size: 1.15rem; font-weight: 700; margin-bottom: .2rem; }
+		.signin-card .sub { font-size: .88rem; color: var(--muted); margin-bottom: .95rem; }
+		.google-slot { min-height: 44px; display: flex; justify-content: center; }
+		.signin-progress { display: none; align-items: center; justify-content: center; gap: .6rem; color: var(--muted); padding: .7rem 0; }
+		.signin-progress.on { display: flex; }
+		.signin-card .alert { text-align: left; font-size: .88rem; margin-bottom: .8rem; }
+		.fineprint { font-size: .8rem; color: var(--muted); margin-top: .8rem; display: flex; gap: .45rem; align-items: center; justify-content: center; text-align: center; }
+		.fineprint i { color: var(--mint); font-size: 1rem; }
+		.hero-actions { display: flex; flex-wrap: wrap; gap: .8rem; margin-top: 1.1rem; }
+		.inapp-notice { text-align: left; font-size: .9rem; color: var(--ink); }
+		.inapp-notice strong { display: block; font-size: 1.05rem; margin-bottom: .35rem; }
+
+		.start-block { margin-top: 2rem; }
+		.btn-xl { font-size: 1.2rem; padding: 1.2rem 2.2rem; }
+		@media (max-width: 600px) { .btn-pill { white-space: normal; text-align: center; } .btn-xl { font-size: 1.05rem; padding: 1.05rem 1.4rem; } .hero-actions .btn-pill { flex: 1 1 100%; } }
+		.start-note { margin-top: .9rem; font-size: .92rem; color: rgba(255,255,255,.75); display: flex; gap: .5rem; align-items: center; }
+		.start-note i { color: var(--mint); font-size: 1.15rem; }
+
+		/* product mockup */
+		.stage { position: relative; padding: 1rem 0 2.5rem 0; }
+		.browser {
+			background: #fff; border-radius: 18px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.1);
+			transform: perspective(1400px) rotateY(-9deg) rotateX(3deg) rotate(1deg); transform-origin: center;
+		}
+		.browser-bar { display: flex; align-items: center; gap: .4rem; background: #f1ecfb; padding: .65rem .9rem; }
+		.browser-bar span { width: 10px; height: 10px; border-radius: 50%; background: #d3c8ee; }
+		.browser-bar em { margin-left: .8rem; background: #fff; border-radius: 100px; font-style: normal; font-size: .72rem; color: var(--muted); padding: .22rem .8rem; flex: 1; }
+		.browser img { width: 100%; height: auto; display: block; }
+		@media (max-width: 960px) { .browser { transform: none; } }
+		.chip {
+			position: absolute; background: #fff; color: var(--ink); border-radius: 16px; padding: .7rem .95rem; display: flex; gap: .7rem; align-items: center;
+			box-shadow: 0 18px 40px rgba(0,0,0,.35); font-size: .82rem; line-height: 1.25; max-width: 15.5rem;
+			opacity: 0; animation: chipIn .7s cubic-bezier(.2,1.3,.4,1) forwards, bob 5s ease-in-out infinite alternate;
+		}
+		.chip b { display: block; font-size: .86rem; }
+		.chip small { color: var(--muted); font-size: .76rem; }
+		.chip .ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-size: 1.2rem; flex: none; }
+		.chip-1 { left: -4%; top: 8%; animation-delay: 1s, 1.7s; }
+		.chip-2 { right: -3%; top: 40%; animation-delay: 2.1s, 2.8s; }
+		.chip-3 { left: 6%; bottom: 2%; animation-delay: 3.2s, 3.9s; }
+		@keyframes chipIn { from { opacity: 0; transform: translateY(26px) scale(.88); } to { opacity: 1; transform: none; } }
+		@keyframes bob { from { translate: 0 0; } to { translate: 0 -9px; } }
+		@media (max-width: 560px) { .chip { transform-origin: left; max-width: 12.5rem; font-size: .74rem; padding: .55rem .7rem; } .chip-1 { left: -2%; } .chip-2 { right: -2%; } }
+
+		/* ===== Marquee ===== */
+		.marquee { background: var(--sun); color: var(--ink); overflow: hidden; padding: 1.05rem 0; margin: 0; position: relative; z-index: 2; }
+		.marquee-wrap { overflow: hidden; margin-top: -1.1rem; position: relative; z-index: 2; }
+		.marquee-track { display: flex; gap: 2.4rem; width: max-content; animation: slide 38s linear infinite; font-family: var(--display); font-weight: 800; font-size: 1.35rem; white-space: nowrap; }
+		.marquee-track span::after { content: "✦"; margin-left: 2.4rem; color: var(--tangerine); }
+		@keyframes slide { to { transform: translateX(-50%); } }
+
+		/* ===== Sections ===== */
+		.section { padding: 6.5rem 0; }
+		.section-head { max-width: 46rem; margin-bottom: 3rem; }
+		.section-head h2 { font-size: clamp(2.1rem, 4.6vw, 3.6rem); line-height: 1.02; font-weight: 800; }
+		.section-head p { margin-top: 1rem; font-size: 1.1rem; color: var(--muted); line-height: 1.55; }
+
+		/* video */
+		.video-frame {
+			position: relative; border-radius: 28px; overflow: hidden; background: var(--ink); aspect-ratio: 16 / 9;
+			box-shadow: 0 40px 80px rgba(42,23,82,.28); border: 6px solid #fff; outline: 1px solid var(--line);
+		}
+		.video-frame img, .video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border: 0; }
+		.video-frame .veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,14,51,.15), rgba(26,14,51,.72)); }
+		.play-btn {
+			position: absolute; inset: 0; margin: auto; width: 104px; height: 104px; border-radius: 50%; border: 0; background: var(--tangerine); color: #fff;
+			display: grid; place-items: center; box-shadow: 0 0 0 14px rgba(255,106,61,.25), 0 20px 50px rgba(0,0,0,.4); cursor: pointer; transition: transform .2s ease;
+		}
+		.play-btn:hover { transform: scale(1.08); }
+		.play-btn svg { width: 40px; height: 40px; margin-left: 5px; }
+		.video-cap { position: absolute; left: 1.6rem; bottom: 1.3rem; right: 1.6rem; color: #fff; font-family: var(--display); font-weight: 700; font-size: clamp(1rem, 2.4vw, 1.6rem); text-shadow: 0 2px 12px rgba(0,0,0,.4); }
+		.video-cap small { display: block; font-family: "Inter", sans-serif; font-weight: 500; font-size: .85rem; opacity: .85; margin-top: .2rem; }
+
+		@media (max-width: 600px) {
+			.play-btn { width: 76px; height: 76px; top: -20%; box-shadow: 0 0 0 10px rgba(255,106,61,.25), 0 14px 34px rgba(0,0,0,.4); }
+			.play-btn svg { width: 30px; height: 30px; }
+			.video-cap { left: 1rem; right: 1rem; bottom: .8rem; font-size: .95rem; }
+			.video-cap small { font-size: .74rem; }
+		}
+
+		/* bento */
+		.bento { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.1rem; }
+		.tile { position: relative; border-radius: 28px; padding: 1.8rem; overflow: hidden; display: flex; flex-direction: column; transition: transform .25s ease, box-shadow .25s ease; min-height: 22rem; }
+		.tile:hover { transform: translateY(-6px); box-shadow: 0 26px 50px rgba(42,23,82,.16); }
+		.tile h3 { font-size: 1.65rem; font-weight: 800; line-height: 1.08; margin-bottom: .6rem; }
+		.tile p { font-size: .98rem; line-height: 1.5; }
+		.tile .ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 1.4rem; margin-bottom: 1.1rem; }
+		.shot { margin-top: auto; padding-top: 1.4rem; }
+		.shot img { display: block; width: 100%; height: auto; border-radius: 14px 14px 0 0; box-shadow: 0 12px 34px rgba(26,14,51,.25); }
+		.shot.bleed { margin: auto -1.8rem -1.8rem 1.4rem; padding-top: 1.4rem; }
+		.shot.bleed img { border-radius: 16px 0 0 0; width: calc(100% + 0px); }
+		.t-leads { grid-column: span 7; background: var(--violet); color: #fff; }
+		.t-leads .ico { background: rgba(255,255,255,.18); }
+		.t-leads p { color: rgba(255,255,255,.85); max-width: 28rem; }
+		.t-pack { grid-column: span 5; background: var(--blush); }
+		.t-pack .ico { background: var(--tangerine); color: #fff; }
+		.t-pay { grid-column: span 5; background: var(--ink); color: #fff; }
+		.t-pay .ico { background: var(--mint); color: #fff; }
+		.t-pay p { color: rgba(255,255,255,.8); }
+		.t-cal { grid-column: span 7; background: #fff; border: 1px solid var(--line); }
+		.t-cal .ico { background: #e9f9f3; color: var(--mint); }
+		.t-cal p, .t-pack p { color: var(--muted); }
+		.t-gal { grid-column: span 6; background: #efe8ff; }
+		.t-gal .ico { background: var(--violet); color: #fff; }
+		.t-gal p { color: var(--muted); }
+		.t-store { grid-column: span 6; background: #fff4cf; }
+		.t-store .ico { background: var(--ink); color: var(--sun); }
+		.t-store p { color: #5e5230; }
+		@media (max-width: 900px) { .tile { grid-column: span 12 !important; min-height: 0; } }
+		.opts { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.1rem; }
+		.opt { background: #fff; border: 2px solid var(--ink); border-radius: 100px; padding: .38rem .9rem; font-weight: 700; font-size: .85rem; }
+		.opt.on { background: var(--ink); color: #fff; }
+		.pay-logos { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.2rem; }
+		.pay-logos span { background: #fff; border-radius: 14px; padding: .55rem 1rem; display: grid; place-items: center; height: 46px; }
+		.pay-logos img { height: 24px; width: auto; display: block; }
+		.big-note { margin-top: 1.3rem; background: rgba(18,196,139,.16); border: 1px solid rgba(18,196,139,.5); color: #b6f5de; border-radius: 16px; padding: .8rem 1rem; font-size: .9rem; font-weight: 600; display: flex; gap: .6rem; align-items: center; }
+
+		/* steps */
+		.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; counter-reset: s; }
+		@media (max-width: 960px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+		@media (max-width: 560px) { .steps { grid-template-columns: 1fr; } }
+		.step { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 1.6rem 1.4rem; position: relative; }
+		.step .num { font-family: var(--display); font-weight: 800; font-size: 4.4rem; line-height: .9; color: var(--violet); }
+		.step:nth-child(2) .num { color: var(--tangerine); }
+		.step:nth-child(3) .num { color: var(--mint); }
+		.step:nth-child(4) .num { color: #e0a000; }
+		.step h3 { font-size: 1.25rem; font-weight: 700; margin: .8rem 0 .4rem; }
+		.step p { color: var(--muted); font-size: .95rem; line-height: 1.5; }
+
+		/* offer */
+		.offer { background: linear-gradient(120deg, var(--violet) 0%, #8a4df5 45%, var(--tangerine) 130%); color: #fff; border-radius: 40px; padding: clamp(2.2rem, 6vw, 4.5rem); position: relative; overflow: hidden; }
+		.offer::after { content: ""; position: absolute; right: -90px; top: -90px; width: 340px; height: 340px; border-radius: 50%; background: rgba(255,255,255,.12); }
+		.offer h2 { font-size: clamp(2.4rem, 6.6vw, 5.6rem); line-height: .96; font-weight: 800; position: relative; z-index: 1; max-width: 16ch; }
+		.offer .big { color: var(--sun); }
+		.offer p { margin-top: 1.4rem; max-width: 36rem; font-size: 1.12rem; line-height: 1.55; color: rgba(255,255,255,.9); position: relative; z-index: 1; }
+		.offer-list { display: flex; flex-wrap: wrap; gap: .7rem 1.6rem; margin-top: 1.8rem; font-weight: 600; position: relative; z-index: 1; }
+		.offer-list span { display: inline-flex; gap: .5rem; align-items: center; }
+		.offer-list i { color: var(--sun); font-size: 1.2rem; }
+		.offer .btn-pill { margin-top: 2rem; position: relative; z-index: 1; }
+
+		/* faq */
+		.faq { max-width: 52rem; }
+		.faq details { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 0 1.4rem; margin-bottom: .75rem; transition: box-shadow .2s ease; }
+		.faq details[open] { box-shadow: 0 16px 36px rgba(42,23,82,.1); border-color: var(--violet-2); }
+		.faq summary { cursor: pointer; list-style: none; font-family: var(--display); font-weight: 700; font-size: 1.15rem; padding: 1.2rem 0; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+		.faq summary::-webkit-details-marker { display: none; }
+		.faq summary::after { content: "+"; font-size: 1.7rem; line-height: 1; color: var(--violet); transition: transform .2s ease; }
+		.faq details[open] summary::after { transform: rotate(45deg); }
+		.faq details p { padding: 0 0 1.3rem; color: var(--muted); line-height: 1.6; max-width: 42rem; }
+
+		/* final */
+		.final { background: var(--ink); color: #fff; text-align: center; padding: 6rem 0 5rem; position: relative; overflow: hidden; isolation: isolate; }
+		.final::before { content: ""; position: absolute; left: 50%; top: -30%; width: 900px; height: 900px; transform: translateX(-50%); z-index: -1; background: radial-gradient(closest-side, rgba(109,59,240,.6), rgba(109,59,240,0)); }
+		.final h2 { font-size: clamp(2.4rem, 6vw, 4.6rem); line-height: 1; font-weight: 800; max-width: 18ch; margin: 0 auto; }
+		.final p { color: rgba(255,255,255,.75); margin: 1.2rem auto 0; max-width: 32rem; font-size: 1.1rem; }
+		.final .btn-pill { margin-top: 2rem; }
+		.stores { display: flex; justify-content: center; gap: .9rem; margin-top: 2.4rem; flex-wrap: wrap; align-items: center; }
+		.stores img { height: 56px; width: auto; display: block; }
+		.stores-note { font-size: .88rem; color: rgba(255,255,255,.6); margin-top: .8rem; }
+		.footer { background: #12091f; color: rgba(255,255,255,.6); padding: 2rem 0; font-size: .88rem; }
+		.footer .wrap { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; align-items: center; }
+		.footer .wrap > span:last-child { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; }
+		.footer a { color: rgba(255,255,255,.75); text-decoration: none; overflow-wrap: anywhere; }
+		.footer a:hover { color: #fff; }
+
+		:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+		@media (prefers-reduced-motion: reduce) {
+			.chip { animation: none; opacity: 1; }
+			.confetti i, .marquee-track { animation: none; }
+		}
+	</style>
+</head>
+
+<body>
+
+	<nav class="nav" aria-label="Main">
+		<a th:href="@{/}" aria-label="EventsRUs home"><img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs"></a>
+		<div class="nav-links">
+			<a href="#how">How it works</a>
+			<a th:href="@{/#for-planners}">For Planners</a>
+			<a href="#features">For Suppliers</a>
+			<a th:href="@{/#contact}">Contact Us</a>
+		</div>
+		<div class="nav-actions">
+			<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn-pill btn-ghost nav-demo"><i class="ph-calendar-plus"></i> Book a demo</a>
+			<a href="#signin" data-login class="btn-pill btn-hot">Get started</a>
+		</div>
+	</nav>
+
+	<!-- ============ HERO ============ -->
+	<header class="hero" id="top">
+		<div class="confetti" aria-hidden="true">
+			<i style="left:6%;top:18%;width:16px;height:16px;background:var(--sun);--r:12deg;animation-duration:11s"></i>
+			<i style="left:44%;top:9%;width:10px;height:26px;background:var(--tangerine);--r:40deg;animation-duration:15s"></i>
+			<i style="left:92%;top:14%;width:18px;height:18px;background:var(--mint);--r:70deg;animation-duration:13s;border-radius:50%"></i>
+			<i style="left:3%;top:62%;width:12px;height:30px;background:var(--violet-2);--r:-30deg;animation-duration:17s"></i>
+			<i style="left:50%;top:86%;width:22px;height:10px;background:var(--sun);--r:25deg;animation-duration:12s"></i>
+			<i style="left:78%;top:80%;width:14px;height:14px;background:var(--tangerine);--r:10deg;animation-duration:16s;border-radius:50%"></i>
+		</div>
+		<div class="wrap hero-grid">
+			<div>
+				<span class="pill-tag"><i class="ph-sparkle"></i> Free for event suppliers in the Philippines</span>
+				<h1>Get found. Get booked. <span class="hl">Get paid.</span></h1>
+				<p class="lead">Set up your own storefront on EventsRUs in minutes. Planners find you, ask for quotes and book you, and they pay you directly. We never touch your money.</p>
+
+				<div class="start-block" id="join">
+					<a href="#signin" data-login class="btn-pill btn-hot btn-xl">Get started free <i class="ph-arrow-right"></i></a>
+					<p class="start-note"><i class="ph-check-circle"></i> Free until your first 3 bookings. Sign up with Google in a minute.</p>
+				</div>
+
+				<div class="hero-actions">
+					<a href="#demo" class="btn-pill btn-ghost"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Watch the 5-minute demo</a>
+					<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn-pill btn-ghost"><i class="ph-calendar-plus"></i> Book a live demo</a>
+				</div>
+			</div>
+
+			<div class="stage" aria-hidden="true">
+				<div class="browser">
+					<div class="browser-bar"><span></span><span></span><span></span><em>eventsrus.app/vendor/storefront/sunrise-events</em></div>
+					<img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="" width="1728" height="922">
+				</div>
+				<div class="chip chip-1"><span class="ic" style="background:var(--violet)"><i class="ph-bell-ringing"></i></span><span><b>New lead</b>Angelica Reyes<br><small>Farm wedding &middot; Feb 20, 2027</small></span></div>
+				<div class="chip chip-2"><span class="ic" style="background:var(--tangerine)"><i class="ph-chat-circle-text"></i></span><span><b>Quote request</b>Sofia's 18th debut<br><small>Jan 22, 2027</small></span></div>
+				<div class="chip chip-3"><span class="ic" style="background:var(--mint)"><i class="ph-check-circle"></i></span><span><b>Paid direct to you</b>Down payment sent to your GCash</span></div>
+			</div>
+		</div>
+	</header>
+
+	<div class="marquee-wrap"><div class="marquee" aria-hidden="true">
+		<div class="marquee-track">
+			<span>Photographers</span><span>Caterers</span><span>Florists</span><span>Hosts &amp; emcees</span><span>Venues</span><span>Lights &amp; sounds</span><span>Photobooths</span><span>Stylists</span><span>Bands &amp; DJs</span><span>Cake makers</span><span>Videographers</span><span>Event planners</span>
+			<span>Photographers</span><span>Caterers</span><span>Florists</span><span>Hosts &amp; emcees</span><span>Venues</span><span>Lights &amp; sounds</span><span>Photobooths</span><span>Stylists</span><span>Bands &amp; DJs</span><span>Cake makers</span><span>Videographers</span><span>Event planners</span>
+		</div>
+	</div></div>
+
+	<!-- ============ VIDEO ============ -->
+	<section class="section" id="demo">
+		<div class="wrap">
+			<div class="section-head">
+				<h2>See your storefront come together in 5 minutes.</h2>
+				<p>A real walkthrough: sign up, add packages, upload your logo and photos, add your payment details and watch the leads come in. The names and numbers in the demo are sample data.</p>
+			</div>
+			<div class="video-frame" id="videoFrame">
+				<img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Preview of the EventsRUs supplier demo video" width="1728" height="922">
+				<div class="veil"></div>
+				<button type="button" class="play-btn" id="playBtn" aria-label="Play the supplier demo video">
+					<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+				</button>
+				<div class="video-cap">How to set up your free EventsRUs storefront<small>5 min &middot; English voice-over &middot; AI voice, sample data</small></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ FEATURES ============ -->
+	<section class="section" id="features" style="padding-top:1rem">
+		<div class="wrap">
+			<div class="section-head">
+				<h2>Everything a busy supplier needs. Nothing you don't.</h2>
+				<p>One place for your packages, your leads, your calendar and your payments.</p>
+			</div>
+
+			<div class="bento">
+				<article class="tile t-leads">
+					<span class="ico"><i class="ph-users-three"></i></span>
+					<h3>See who is looking at you</h3>
+					<p>When a planner visits your storefront, you see their name, their event and the date of the event. Reach out first and win the booking.</p>
+					<div class="shot bleed"><img th:src="@{/assets/images/vendor-landing/shot-leads.jpg}" alt="Leads list with visitor name, event and event date" width="1728" height="922"></div>
+				</article>
+
+				<article class="tile t-pack">
+					<span class="ico"><i class="ph-tag"></i></span>
+					<h3>Your prices, your way</h3>
+					<p>Show a fixed price or a range. Don't want to show prices? Choose Request for Quotation and send each client a custom quote.</p>
+					<div class="opts"><span class="opt">Fixed price</span><span class="opt">Price range</span><span class="opt on">Request for quotation</span></div>
+					<div class="shot"><img th:src="@{/assets/images/vendor-landing/shot-packages.jpg}" alt="Package list with three packages" width="1728" height="922"></div>
+				</article>
+
+				<article class="tile t-pay">
+					<span class="ico"><i class="ph-check-circle"></i></span>
+					<h3>Clients pay you directly</h3>
+					<p>Put your GCash, Maya, PayPal or bank details and QR code on your storefront. The money goes straight to your account. EventsRUs never holds it.</p>
+					<div class="pay-logos">
+						<span><img th:src="@{/assets/images/payment-methods/gcash.svg}" alt="GCash"></span>
+						<span><img th:src="@{/assets/images/payment-methods/maya.svg}" alt="Maya"></span>
+						<span><img th:src="@{/assets/images/payment-methods/paypal.svg}" alt="PayPal"></span>
+					</div>
+					<div class="big-note"><i class="ph-lock-key"></i> 100% of every payment is yours.</div>
+					<div class="shot bleed"><img th:src="@{/assets/images/vendor-landing/shot-payments.jpg}" alt="Storefront showing payment details and QR code" width="1728" height="922"></div>
+				</article>
+
+				<article class="tile t-cal">
+					<span class="ico"><i class="ph-calendar-check"></i></span>
+					<h3>One calendar for everything</h3>
+					<p>See your EventsRUs bookings next to the jobs you booked elsewhere. Sync with Google Calendar so you never double-book a date.</p>
+					<div class="shot"><img th:src="@{/assets/images/vendor-landing/shot-calendar.jpg}" alt="Booking calendar with Google Calendar sync" width="1728" height="922"></div>
+				</article>
+
+				<article class="tile t-gal">
+					<span class="ico"><i class="ph-confetti"></i></span>
+					<h3>Show your best work, sorted</h3>
+					<p>Upload your photos and group them with tags, like Weddings, Debuts or Corporate, so each package shows the right pictures.</p>
+					<div class="shot bleed"><img th:src="@{/assets/images/vendor-landing/shot-gallery.jpg}" alt="Photo gallery with tags" width="1728" height="922"></div>
+				</article>
+
+				<article class="tile t-store">
+					<span class="ico"><i class="ph-storefront"></i></span>
+					<h3>Your logo. Your own link.</h3>
+					<p>Upload your logo and get a storefront link you can put in your Facebook bio, your Viber messages and your business cards.</p>
+					<div class="shot bleed"><img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Supplier storefront with logo and gallery" width="1728" height="922"></div>
+				</article>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ STEPS ============ -->
+	<section class="section" id="how" style="padding-top:2rem">
+		<div class="wrap">
+			<div class="section-head">
+				<h2>Live in four steps.</h2>
+				<p>Most suppliers finish before their coffee gets cold.</p>
+			</div>
+			<div class="steps">
+				<div class="step"><div class="num">1</div><h3>Sign up with Google</h3><p>One tap. No new password to remember.</p></div>
+				<div class="step"><div class="num">2</div><h3>Tell us about your business</h3><p>Your name, what you offer and where you work.</p></div>
+				<div class="step"><div class="num">3</div><h3>Add packages, photos and your logo</h3><p>Plus your GCash, Maya or PayPal details so clients can pay you.</p></div>
+				<div class="step"><div class="num">4</div><h3>Get leads and bookings</h3><p>Reply to quote requests and watch your calendar fill up.</p></div>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ OFFER ============ -->
+	<section class="section" style="padding-top:1rem">
+		<div class="wrap">
+			<div class="offer">
+				<h2>Free until your <span class="big">first 3 bookings.</span></h2>
+				<p>Join now and use EventsRUs PRO at no cost until you get your first 3 bookings (up to 12 months). After that, you choose a plan. Planners always use EventsRUs for free.</p>
+				<div class="offer-list">
+					<span><i class="ph-check-circle"></i> Set up in minutes</span>
+					<span><i class="ph-check-circle"></i> Free for planners, always</span>
+					<span><i class="ph-check-circle"></i> Keep 100% of your payments</span>
+				</div>
+				<a href="#signin" data-login class="btn-pill btn-hot btn-xl">Create my free storefront <i class="ph-arrow-right"></i></a>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ FAQ ============ -->
+	<section class="section" id="faq" style="padding-top:2rem">
+		<div class="wrap">
+			<div class="section-head"><h2>Questions suppliers ask.</h2></div>
+			<div class="faq">
+				<details><summary>Is it really free?</summary><p>Yes. You use EventsRUs PRO for free until you get your first 3 bookings, for up to 12 months. After that you choose a plan. We can't promise bookings, but there is nothing to lose by trying.</p></details>
+				<details><summary>Do you take a cut of my payments?</summary><p>No. Clients pay you directly through the payment details on your storefront, such as GCash, Maya, PayPal or bank transfer. EventsRUs does not handle your clients' money.</p></details>
+				<details><summary>What if I don't want to show my prices?</summary><p>Choose Request for Quotation on any package. Clients send you their event details and you reply with a custom quote. You can mix fixed prices, price ranges and quote-only packages in one storefront.</p></details>
+				<details><summary>How do I know who is interested?</summary><p>Your Leads page shows planners who visited your storefront, with their name, their event and the event date, so you can message them first.</p></details>
+				<details><summary>Can I use it on my phone?</summary><p>Yes. The website works on any phone browser today. The Android and iPhone apps are coming soon.</p></details>
+				<details><summary>How are suppliers verified?</summary><p>The EventsRUs team reviews the ID and business details you submit before your storefront gets the Verified badge. Verification usually does not stop you from receiving bookings in the meantime.</p></details>
+				<details><summary>Can I see it before I sign up?</summary><p>Yes. Watch the 5-minute demo above, or book a live walkthrough with us.</p></details>
+			</div>
+		</div>
+	</section>
+
+	<!-- ============ FINAL ============ -->
+	<section class="final">
+		<div class="wrap">
+			<h2>Your next client is already looking.</h2>
+			<p>Open your free storefront today and be ready when they search.</p>
+			<a href="#signin" data-login class="btn-pill btn-hot btn-xl">Get started free <i class="ph-arrow-right"></i></a>
+			<div class="stores">
+				<img th:src="@{/assets/images/vendor-landing/google_badge.png}" alt="Google Play, coming soon">
+				<img th:src="@{/assets/images/vendor-landing/apple_badge.png}" alt="App Store, coming soon">
+			</div>
+			<p class="stores-note">Android and iPhone apps: coming soon</p>
+		</div>
+	</section>
+
+	<footer class="footer">
+		<div class="wrap">
+			<span>&copy; 2026 EventsRUs. Events made easy. Connections made simple.</span>
+			<span><a th:href="@{/}">For planners</a><a th:href="@{/terms}">Terms</a><a th:href="@{/privacy}">Privacy</a><a href="mailto:support@eventsrus.app">support@eventsrus.app</a></span>
+		</div>
+	</footer>
+
+	<!-- ============ SIGN-IN POP-UP ============ -->
+	<div class="login-modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+		<div class="login-box">
+			<button type="button" class="login-close" id="loginClose" aria-label="Close"><i class="ph-x"></i></button>
+			<div id="inAppNotice" hidden>
+				<img class="login-logo" th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs">
+				<h2>Open this page in your browser</h2>
+				<p>Google Sign-In doesn't work inside this app's built-in browser. Tap the menu above and choose "Open in Browser" (or "Open in Chrome" / "Open in Safari"), or copy the link below and paste it into your browser.</p>
+				<input type="text" id="currentPageUrl" readonly style="width:100%;padding:.6rem .8rem;border:1px solid #d8d2e6;border-radius:.7rem;margin-bottom:.6rem">
+				<button type="button" id="copyPageUrlButton" class="btn-pill btn-hot" style="padding:.6rem 1.4rem;border:0">Copy link</button>
+				<p id="copyPageUrlConfirm" hidden style="margin-top:.6rem">Link copied!</p>
+			</div>
+			<div id="loginContent">
+				<img class="login-logo" th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs">
+				<h2 id="loginTitle">Supplier Login</h2>
+				<p>Sign in to manage your storefront, bookings, and subscription.</p>
+				<div th:if="${loginError}" class="login-error" th:text="${loginError}">Error</div>
+				<div id="login-error" class="login-error" hidden></div>
+				<div class="google-wrap" id="googleWrap"><div id="google-signin-container"></div></div>
+				<div class="login-progress" id="signin-progress"><span>Signing you in&hellip;</span></div>
+				<p class="login-note">The same Google account used across the EventsRUs app.</p>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://accounts.google.com/gsi/client" async defer id="gsi-script"></script>
+	<script th:inline="javascript">
+		var googleClientId = /*[[${googleClientId}]]*/ '';
+		var loginIntent = /*[[${intent}]]*/ 'vendor';
+		var hadLoginError = /*[[${loginError != null}]]*/ false;
+		var isInAppBrowser = /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || '');
+		var modal = document.getElementById('loginModal');
+		var googleRendered = false;
+
+		function renderGoogle() {
+			if (googleRendered || isInAppBrowser) { return; }
+			if (!(window.google && google.accounts && google.accounts.id)) { return; }
+			var container = document.getElementById('google-signin-container');
+			var width = Math.max(200, Math.min(400, container.offsetWidth));
+			google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential });
+			google.accounts.id.renderButton(container, { type: 'standard', theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', logo_alignment: 'left', width: width });
+			googleRendered = true;
+		}
+		function openLogin() {
+			modal.classList.add('open');
+			document.body.style.overflow = 'hidden';
+			renderGoogle();
+		}
+		function closeLogin() {
+			modal.classList.remove('open');
+			document.body.style.overflow = '';
+		}
+		document.querySelectorAll('[data-login]').forEach(function (a) {
+			a.addEventListener('click', function (e) { e.preventDefault(); openLogin(); });
+		});
+		document.getElementById('loginClose').addEventListener('click', closeLogin);
+		modal.addEventListener('click', function (e) { if (e.target === modal) { closeLogin(); } });
+		document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeLogin(); } });
+		document.getElementById('gsi-script').addEventListener('load', function () { if (modal.classList.contains('open')) { renderGoogle(); } });
+		if (hadLoginError || location.hash === '#signin') { openLogin(); }
+
+		if (isInAppBrowser) {
+			document.getElementById('loginContent').hidden = true;
+			document.getElementById('inAppNotice').hidden = false;
+			var urlField = document.getElementById('currentPageUrl');
+			urlField.value = window.location.href.split('#')[0];
+			document.getElementById('copyPageUrlButton').addEventListener('click', function () {
+				function showCopied() { document.getElementById('copyPageUrlConfirm').hidden = false; }
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(urlField.value).then(showCopied);
+				} else {
+					urlField.select();
+					document.execCommand('copy');
+					showCopied();
+				}
+			});
+		}
+
+		function handleGoogleCredential(response) {
+			var errorBox = document.getElementById('login-error');
+			var wrap = document.getElementById('googleWrap');
+			var progress = document.getElementById('signin-progress');
+			errorBox.hidden = true;
+			wrap.style.display = 'none';
+			progress.style.display = 'flex';
+			function showError(message) {
+				errorBox.textContent = message;
+				errorBox.hidden = false;
+				progress.style.display = 'none';
+				wrap.style.display = '';
+			}
+			var body = new URLSearchParams();
+			body.set('idToken', response.credential);
+			body.set('intent', loginIntent);
+			fetch('/login/google', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+				.then(function (res) { return res.json(); })
+				.then(function (result) {
+					if (result.success) { window.location.href = result.redirectTo; }
+					else { showError(result.error || 'Sign-in failed. Please try again.'); }
+				})
+				.catch(function () { showError('Could not reach the server. Please try again.'); });
+		}
+	</script>
+	<script>
+		// Demo video: nothing from YouTube loads until the visitor presses play.
+		document.getElementById('playBtn').addEventListener('click', function () {
+			var f = document.getElementById('videoFrame');
+			f.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/hczWUsloSrY?autoplay=1&rel=0" title="EventsRUs supplier demo" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+		});
+	</script>
+</body>
+</html>

@@ -54,7 +54,22 @@ public class AuthWebController {
         if (WebSession.isLoggedIn(session)) {
             return "redirect:" + ("VENDOR".equals(WebSession.role(session)) ? "/vendor/dashboard" : "/vendor/onboarding");
         }
-        return loginPage(model, "vendor");
+        // The supplier landing page (video, features, offer, FAQ). Its "Get started" buttons open the Google
+        // sign-in as a pop-up on the same page, so no separate login screen is needed here.
+        model.addAttribute("googleClientId", googleClientId);
+        model.addAttribute("intent", "vendor");
+        return "vendor-landing";
+    }
+
+    /** Short-lived experiment URL; the landing page lives at /vendor/ now. Keeps any stray /supplier links working. */
+    @GetMapping({"/supplier", "/supplier/"})
+    public String supplierRedirect(
+            @RequestParam(required = false) String ref,
+            @RequestParam(required = false) String promo,
+            HttpSession session) {
+        WebSession.stashReferralCodeIfAbsent(session, ref);
+        WebSession.stashPromoCode(session, promo);
+        return "redirect:/vendor/";
     }
 
     private String loginPage(Model model, String intent) {

@@ -39,7 +39,8 @@ public enum BusinessType {
     INTERACTIVE_BAR_MIXOLOGY_SERVICES("Interactive Bar & Mixology Services"),
     LIVE_EVENT_PAINTERS_SKETCH_ARTISTS("Live Event Painters & Sketch Artists"),
     SPECIAL_EFFECTS("Special Effects"),
-    FLORAL_SERVICES("Floral Services");
+    FLORAL_SERVICES("Floral Services"),
+    COFFEE_AND_BEVERAGE_BARS("Coffee & Beverage Bars");
 
     private final String label;
 

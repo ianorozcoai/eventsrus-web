@@ -122,6 +122,7 @@
 												<th>Bookings</th>
 												<th>Referrals Made</th>
 												<th>Last Login</th>
+												<th>Registered</th>
 												<th class="d-none">Operating Areas</th>
 												<th></th>
 											</tr>
@@ -151,6 +152,8 @@
 													<span class="badge" th:classappend="${vendor.referralCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${vendor.referralCount()}">0</span>
 												</td>
 												<td th:text="${vendor.lastLoginAt() != null ? #temporals.format(vendor.lastLoginAt(), 'MMM d, yyyy h:mm a') : 'Never'}">Never</td>
+												<td th:attr="data-order=${vendor.createdAt() != null ? vendor.createdAt().toEpochMilli() : 0}"
+													th:text="${vendor.createdAt() != null ? #temporals.format(vendor.createdAt(), 'MMM d, yyyy h:mm a') : '-'}">Nov 18, 2026</td>
 												<td class="d-none" th:text="${#strings.listJoin(vendor.operatingAreas(), ', ')}">Areas</td>
 												<td class="text-end">
 													<!--/* Burger-icon action menu - same pattern as the vendor's own
@@ -575,7 +578,8 @@
 			// time, so initializing a table inside a hidden tab pane
 			// collapses every column to zero width. Deferring its init to
 			// the tab's own "shown" event (first time only) avoids that.
-			var vendorsTable = $('#vendorsTable').DataTable({ pageLength: 20 });
+			// Newest registration first (column 6 is "Registered"), so a new supplier is always at the top.
+				var vendorsTable = $('#vendorsTable').DataTable({ pageLength: 20, order: [ [6, 'desc'] ] });
 			var incompleteTable = null;
 			var testVendorsTable = null;
 			var paymentOverdueTable = null;
@@ -606,7 +610,7 @@
 			});
 
 			// Business Type and Operating Area both work the same way now -
-			// a vendor matches if its column (1 for Business Type, 6 for
+			// a vendor matches if its column (1 for Business Type, 7 for
 			// Operating Area - the latter a hidden, comma-joined column
 			// since it's no longer shown directly) contains ANY of the
 			// selected values. Can't use DataTables' built-in column search
@@ -644,7 +648,7 @@
 				if (selected.length === 0) {
 					return true;
 				}
-				var cellValue = searchData[6];
+				var cellValue = searchData[7];
 				return selected.some(function (area) { return cellValue.indexOf(area) !== -1; });
 			});
 			$('#vendorOperatingAreaFilter').on('change', function () {

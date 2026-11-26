@@ -50,6 +50,7 @@
 										<th>Mobile Number</th>
 										<th>Location</th>
 										<th>Events</th>
+										<th>Last Login</th>
 										<th>Joined</th>
 										<th></th>
 									</tr>
@@ -66,7 +67,8 @@
 										<td th:with="c=${planner.city()}, s=${planner.state()}"
 											th:text="${#strings.isEmpty(c) and #strings.isEmpty(s)} ? 'No location' : (${#strings.isEmpty(c)} ? ${s} : (${#strings.isEmpty(s)} ? ${c} : ${c} + ', ' + ${s}))">City, Province</td>
 										<td th:text="${planner.eventsCount()}">0</td>
-										<td th:text="${#temporals.format(planner.joinedAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
+										<td class="text-nowrap" th:attr="data-order=${planner.lastLoginAt() != null ? planner.lastLoginAt().toEpochMilli() : 0}" th:text="${planner.lastLoginAt() != null ? #temporals.format(planner.lastLoginAt(), 'MMM d, yyyy h:mm a') : 'Never'}">Never</td>
+										<td th:attr="data-order=${planner.joinedAt() != null ? planner.joinedAt().toEpochMilli() : 0}" th:text="${#temporals.format(planner.joinedAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
 										<td class="text-end">
 											<a th:href="@{/admin/planners/{id}(id=${planner.id()})}" class="btn btn-light btn-sm">
 												<i class="ph-eye me-1"></i> View Profile
@@ -108,7 +110,7 @@
 	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-			$('#plannersTable').DataTable({ pageLength: 20 });
+			$('#plannersTable').DataTable({ pageLength: 20, order: [[6, 'desc']] });
 		});
 	</script>
 

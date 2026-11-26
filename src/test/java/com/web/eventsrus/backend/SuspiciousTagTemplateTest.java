@@ -32,7 +32,7 @@ class SuspiciousTagTemplateTest {
 
     private static AdminPlannerSummary planner(List<String> reasons) {
         return new AdminPlannerSummary(1L, "Jamie", "Cruz", "a@b.com", "5551234567", "Manila", "NCR",
-                Instant.parse("2026-11-08T00:00:00Z"), 0, "ANDROID", reasons);
+                Instant.parse("2026-11-08T00:00:00Z"), 0, "ANDROID", reasons, null);
     }
 
     @Test

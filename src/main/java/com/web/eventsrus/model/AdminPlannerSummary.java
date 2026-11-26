@@ -20,7 +20,8 @@ public record AdminPlannerSummary(
         Instant joinedAt,
         int eventsCount,
         String signupSource,
-        java.util.List<String> suspiciousReasons) {
+        java.util.List<String> suspiciousReasons,
+        Instant lastLoginAt) {
 
     public boolean isSuspicious() {
         return suspiciousReasons != null && !suspiciousReasons.isEmpty();

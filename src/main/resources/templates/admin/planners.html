@@ -44,31 +44,32 @@
 						<div class="table-responsive">
 							<table id="plannersTable" class="table table-hover w-100">
 								<thead>
-									<tr>
-										<th>Name</th>
-										<th>Email</th>
-										<th>Mobile Number</th>
-										<th>Location</th>
-										<th>Events</th>
-										<th>Last Login</th>
-										<th>Joined</th>
-										<th></th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr th:each="planner : ${planners}">
-										<td>
-											<div th:text="${planner.firstName()} + ' ' + ${planner.lastName()}">Name</div>
-											<div class="text-muted fs-sm" th:text="'Signed up from: ' + ${planner.signupSourceLabel()}">Signed up from: Website</div>
-											<span class="badge bg-danger" th:if="${planner.isSuspicious()}" th:title="${#strings.listJoin(planner.suspiciousReasons(), '; ')}">Check this account</span>
-										</td>
-										<td th:text="${planner.email()}">email@example.com</td>
-										<td th:text="${planner.mobileNumber()}">+63 900 000 0000</td>
-										<td th:with="c=${planner.city()}, s=${planner.state()}"
-											th:text="${#strings.isEmpty(c) and #strings.isEmpty(s)} ? 'No location' : (${#strings.isEmpty(c)} ? ${s} : (${#strings.isEmpty(s)} ? ${c} : ${c} + ', ' + ${s}))">City, Province</td>
-										<td th:text="${planner.eventsCount()}">0</td>
-										<td class="text-nowrap" th:attr="data-order=${planner.lastLoginAt() != null ? planner.lastLoginAt().toEpochMilli() : 0}" th:text="${planner.lastLoginAt() != null ? #temporals.format(planner.lastLoginAt(), 'MMM d, yyyy h:mm a') : 'Never'}">Never</td>
-										<td th:attr="data-order=${planner.joinedAt() != null ? planner.joinedAt().toEpochMilli() : 0}" th:text="${#temporals.format(planner.joinedAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
+										<tr>
+											<th>Name</th>
+											<th>Contact</th>
+											<th>Activity</th>
+											<th></th>
+										</tr>
+										</thead>
+										<tbody>
+										<tr th:each="planner : ${planners}">
+											<td>
+												<div class="fw-semibold" th:text="${planner.firstName()} + ' ' + ${planner.lastName()}">Name</div>
+												<span class="badge bg-danger" th:if="${planner.isSuspicious()}" th:title="${#strings.listJoin(planner.suspiciousReasons(), '; ')}">Check this account</span>
+											</td>
+											<td>
+												<div th:text="${planner.email()}">email@example.com</div>
+												<div class="text-muted fs-sm" th:text="${planner.mobileNumber()}">+63 900 000 0000</div>
+												<div class="text-muted fs-sm" th:with="c=${planner.city()}, s=${planner.state()}"
+													th:text="${#strings.isEmpty(c) and #strings.isEmpty(s)} ? 'No location' : (${#strings.isEmpty(c)} ? ${s} : (${#strings.isEmpty(s)} ? ${c} : ${c} + ', ' + ${s}))">City, Province</div>
+											</td>
+											<!--/* Activity: events, last login, joined and signup source stacked in one column. Sorts (and opens) by the exact join time, newest first. */-->
+											<td class="text-nowrap text-start" th:attr="data-order=${planner.joinedAt() != null ? planner.joinedAt().toEpochMilli() : 0}">
+												<div><span class="text-muted fs-sm me-1">Events</span><span class="badge" th:classappend="${planner.eventsCount() > 0} ? 'bg-primary' : 'bg-secondary'" th:text="${planner.eventsCount()}">0</span></div>
+												<div class="fs-sm"><span class="text-muted">Last login:</span> <span th:text="${planner.lastLoginAt() != null ? #temporals.format(planner.lastLoginAt(), 'MMM d, yyyy h:mm a') : 'Never'}">Never</span></div>
+												<div class="fs-sm"><span class="text-muted">Joined:</span> <span th:text="${planner.joinedAt() != null ? #temporals.format(planner.joinedAt(), 'MMM d, yyyy h:mm a') : '-'}">Nov 18, 2026</span></div>
+												<div class="fs-sm"><span class="text-muted">Signed up from:</span> <span th:text="${planner.signupSourceLabel()}">Website</span></div>
+											</td>
 										<td class="text-end">
 											<a th:href="@{/admin/planners/{id}(id=${planner.id()})}" class="btn btn-light btn-sm">
 												<i class="ph-eye me-1"></i> View Profile
@@ -110,7 +111,7 @@
 	<script th:src="@{/assets/js/vendor/tables/datatables/dataTables.bootstrap5.min.js}"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
-			$('#plannersTable').DataTable({ pageLength: 20, order: [ [6, 'desc'] ] });
+			$('#plannersTable').DataTable({ pageLength: 20, order: [ [2, 'desc'] ] });
 		});
 	</script>
 

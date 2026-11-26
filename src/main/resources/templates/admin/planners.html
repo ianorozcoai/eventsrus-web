@@ -63,7 +63,8 @@
 										</td>
 										<td th:text="${planner.email()}">email@example.com</td>
 										<td th:text="${planner.mobileNumber()}">+63 900 000 0000</td>
-										<td th:text="${planner.city()} + ', ' + ${planner.state()}">City, Province</td>
+										<td th:with="c=${planner.city()}, s=${planner.state()}"
+											th:text="${#strings.isEmpty(c) and #strings.isEmpty(s)} ? 'No location' : (${#strings.isEmpty(c)} ? ${s} : (${#strings.isEmpty(s)} ? ${c} : ${c} + ', ' + ${s}))">City, Province</td>
 										<td th:text="${planner.eventsCount()}">0</td>
 										<td th:text="${#temporals.format(planner.joinedAt(), 'MMM d, yyyy')}">Jan 1, 2026</td>
 										<td class="text-end">

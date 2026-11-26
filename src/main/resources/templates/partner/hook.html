@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<th:block th:replace="~{fragments/funnel :: head('Planners are looking for a supplier like you | EventsRUs', 'Event planners in the Philippines are searching for suppliers right now. See how EventsRUs puts your business in front of them, free to start.')}"></th:block>
+	<style>
+		.h1-hero { padding: 0 0 3.5rem; }
+		.h1-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2.5rem; align-items: center; padding-top: 1.5rem; }
+		@media (max-width: 900px) { .h1-grid { grid-template-columns: 1fr; padding-top: .5rem; } }
+		.h1-hero h1 { font-size: clamp(2.5rem, 6.4vw, 4.8rem); line-height: .99; font-weight: 800; margin: 1.1rem 0 1.2rem; }
+		.h1-hero .lead { font-size: 1.2rem; line-height: 1.5; color: rgba(255,255,255,.8); max-width: 32rem; }
+		.cta { margin-top: 1.8rem; }
+		.cta-note { margin-top: .8rem; font-size: .92rem; color: rgba(255,255,255,.75); display: flex; gap: .5rem; align-items: center; }
+		.cta-note i { color: var(--mint); font-size: 1.15rem; }
+		.stage { position: relative; display: grid; place-items: center; padding: 1rem 0 2rem; }
+		.chip { position: absolute; background: #fff; color: var(--ink); border-radius: 16px; padding: .65rem .9rem; display: flex; gap: .65rem; align-items: center; box-shadow: 0 18px 40px rgba(0,0,0,.35); font-size: .8rem; line-height: 1.25; max-width: 14rem; z-index: 3; opacity: 0; animation: chipIn .7s cubic-bezier(.2,1.3,.4,1) forwards, bob 5s ease-in-out infinite alternate; }
+		.chip b { display: block; font-size: .85rem; }
+		.chip small { color: var(--muted); font-size: .74rem; }
+		.chip .ic { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-size: 1.15rem; flex: none; }
+		.chip-1 { left: -2%; top: 6%; animation-delay: 1s, 1.7s; }
+		.chip-2 { right: -2%; top: 44%; animation-delay: 2s, 2.7s; }
+		.chip-3 { left: 0; bottom: 4%; animation-delay: 3s, 3.7s; }
+		@keyframes chipIn { from { opacity: 0; transform: translateY(26px) scale(.88); } to { opacity: 1; transform: none; } }
+		@keyframes bob { from { translate: 0 0; } to { translate: 0 -9px; } }
+		@media (max-width: 560px) { .chip { max-width: 11.5rem; font-size: .72rem; padding: .5rem .65rem; } .chip-1 { left: -4%; } .chip-2 { right: -4%; } .chip-3 { left: -2%; } }
+		@media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } }
+	</style>
+</head>
+<body>
+
+	<header class="hero h1-hero">
+		<div class="confetti" aria-hidden="true">
+			<i style="left:6%;top:18%;width:16px;height:16px;background:var(--sun);--r:12deg;animation-duration:11s"></i>
+			<i style="left:46%;top:9%;width:10px;height:26px;background:var(--tangerine);--r:40deg;animation-duration:15s"></i>
+			<i style="left:92%;top:14%;width:18px;height:18px;background:var(--mint);--r:70deg;animation-duration:13s;border-radius:50%"></i>
+			<i style="left:3%;top:62%;width:12px;height:30px;background:var(--violet-2);--r:-30deg;animation-duration:17s"></i>
+			<i style="left:50%;top:86%;width:22px;height:10px;background:var(--sun);--r:25deg;animation-duration:12s"></i>
+		</div>
+		<div class="wrap">
+			<th:block th:replace="~{fragments/funnel :: top(1)}"></th:block>
+			<div class="h1-grid">
+				<div>
+					<span class="pill-tag"><i class="ph-sparkle"></i> For event suppliers in the Philippines</span>
+					<h1>Planners are looking for a supplier like you. <span class="hl">Be the one they find.</span></h1>
+					<p class="lead">Debuts, weddings, birthdays, corporate parties. Every week, planners search for photographers, caterers, hosts, venues and more. EventsRUs is where they look.</p>
+
+					<div class="cta">
+						<a th:href="@{/partner/opportunity}" class="btn-pill btn-hot btn-xl">Next: see how it works <i class="ph-arrow-right"></i></a>
+						<p class="cta-note"><i class="ph-timer"></i> Takes 1 minute. Free to join.</p>
+					</div>
+				</div>
+
+				<div class="stage">
+					<div class="video-frame tall" id="videoFrame">
+						<div class="veil"></div>
+						<button type="button" class="play-btn" data-video="e5PjxlZ5C2o" aria-label="Play the 30-second EventsRUs story"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+						<div class="video-cap">Watch the 30-second story<small>Brian, Nicole and Jessica</small></div>
+					</div>
+					<div class="chip chip-1"><span class="ic" style="background:var(--violet)"><i class="ph-bell-ringing"></i></span><span><b>New lead</b>Angelica Reyes<br><small>Farm wedding &middot; Feb 20</small></span></div>
+					<div class="chip chip-2"><span class="ic" style="background:var(--tangerine)"><i class="ph-chat-circle-text"></i></span><span><b>Quote request</b>Sofia's 18th debut<br><small>Jan 22</small></span></div>
+					<div class="chip chip-3"><span class="ic" style="background:var(--mint)"><i class="ph-check-circle"></i></span><span><b>Paid direct to you</b>Down payment sent to your GCash</span></div>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<div class="marquee-wrap" aria-hidden="true">
+		<div class="marquee-track">
+			<span>Photographers</span><span>Caterers</span><span>Florists</span><span>Hosts &amp; emcees</span><span>Venues</span><span>Lights &amp; sounds</span><span>Photobooths</span><span>Stylists</span><span>Bands &amp; DJs</span><span>Cake makers</span><span>Videographers</span><span>Event planners</span>
+			<span>Photographers</span><span>Caterers</span><span>Florists</span><span>Hosts &amp; emcees</span><span>Venues</span><span>Lights &amp; sounds</span><span>Photobooths</span><span>Stylists</span><span>Bands &amp; DJs</span><span>Cake makers</span><span>Videographers</span><span>Event planners</span>
+		</div>
+	</div>
+
+	<th:block th:replace="~{fragments/funnel :: foot}"></th:block>
+	<script th:replace="~{fragments/funnel :: player}"></script>
+</body>
+</html>

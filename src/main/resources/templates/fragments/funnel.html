@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--/* Shared head, styles, top bar and footer for the 3-page supplier recruitment funnel (/partner/, /partner/opportunity, /partner/join).
+     Colours and fonts are copied from vendor-landing.html on purpose, so the live /vendor/ page is untouched.
+     Use inside <head>: <th:block th:replace="~{fragments/funnel :: head('Title', 'Description')}"/>
+     Use at the top of <body>: <th:block th:replace="~{fragments/funnel :: top(2)}"/> (2 = current step) */-->
+
+<th:block th:fragment="head(title, description)">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<title th:text="${title}">EventsRUs for suppliers</title>
+	<meta name="description" th:content="${description}">
+	<meta name="robots" content="noindex, nofollow">
+	<meta name="color-scheme" content="light only">
+	<meta property="og:site_name" content="EventsRUs">
+	<meta property="og:type" content="website">
+	<meta property="og:title" th:content="${title}">
+	<meta property="og:description" th:content="${description}">
+	<meta property="og:image" content="https://eventsrus.app/assets/images/new-logo-login-fb.jpg">
+	<meta property="og:image:width" content="800">
+	<meta property="og:image:height" content="617">
+	<meta name="twitter:card" content="summary_large_image">
+	<th:block th:replace="~{fragments/seo :: beacon}"></th:block>
+
+	<link rel="icon" type="image/svg+xml" th:href="@{/assets/images/icon.svg}">
+	<link rel="icon" type="image/png" sizes="32x32" th:href="@{/assets/images/favicon-32x32.png}">
+	<link rel="apple-touch-icon" th:href="@{/assets/images/apple-touch-icon.png}">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+	<link th:href="@{/assets/fonts/inter/inter.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/icons/phosphor/styles.min.css}" rel="stylesheet" type="text/css">
+	<link th:href="@{/assets/css/all.min.css}" rel="stylesheet" type="text/css">
+
+	<style>
+		:root {
+			--ink: #1a0e33; --ink-2: #2a1752; --violet: #6d3bf0; --violet-2: #9b6bff; --tangerine: #ff6a3d; --sun: #ffc83d;
+			--mint: #12c48b; --paper: #fbf8ff; --blush: #fff0e8; --line: #e8e1f5; --muted: #5d5575;
+			--display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+		}
+		/* all.min.css is the dashboard shell (height:100%, overflow hidden, flex). This is a normal scrolling page. */
+		html, body { height: auto; overflow: visible; display: block; }
+		body { margin: 0; font-family: "Inter", system-ui, sans-serif; color: var(--ink); background: var(--paper); -webkit-font-smoothing: antialiased; }
+		h1, h2, h3 { font-family: var(--display); letter-spacing: -.025em; text-wrap: balance; margin: 0; }
+		p { margin: 0; }
+		a { color: inherit; }
+		.wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.4rem; }
+		.btn-pill {
+			display: inline-flex; align-items: center; justify-content: center; gap: .55rem; border-radius: 100px; font-weight: 700;
+			padding: .95rem 1.6rem; text-decoration: none; border: 2px solid transparent; cursor: pointer; font-size: 1rem;
+			transition: transform .2s ease, box-shadow .2s ease;
+		}
+		.btn-pill:hover { transform: translateY(-3px); text-decoration: none; }
+		.btn-hot { background: var(--tangerine); color: #fff; box-shadow: 0 10px 30px rgba(255,106,61,.4); }
+		.btn-hot:hover { color: #fff; box-shadow: 0 16px 36px rgba(255,106,61,.5); }
+		.btn-ghost { background: rgba(255,255,255,.08); color: #fff; border-color: rgba(255,255,255,.3); }
+		.btn-ghost:hover { color: #fff; background: rgba(255,255,255,.16); }
+		.btn-line { background: #fff; color: var(--ink); border-color: var(--ink); }
+		.btn-line:hover { color: var(--ink); }
+		.btn-xl { font-size: 1.2rem; padding: 1.2rem 2.2rem; }
+		@media (max-width: 600px) { .btn-pill { text-align: center; } .btn-xl { font-size: 1.05rem; padding: 1.1rem 1.4rem; width: 100%; } }
+
+		/* top bar with the 1-2-3 progress */
+		.bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 0; }
+		.bar img { height: 26px; display: block; }
+		.steps-dots { display: flex; align-items: center; gap: .5rem; font-size: .8rem; font-weight: 700; }
+		.steps-dots span { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 2px solid currentColor; opacity: .45; }
+		.steps-dots span.on { background: var(--sun); border-color: var(--sun); color: var(--ink); opacity: 1; }
+		.steps-dots span.done { background: var(--mint); border-color: var(--mint); color: #fff; opacity: 1; }
+		.steps-dots em { font-style: normal; opacity: .7; margin-right: .3rem; }
+
+		/* dark hero used by pages 1 and 3 */
+		.hero { position: relative; overflow: hidden; background: var(--ink); color: #fff; isolation: isolate; }
+		.hero::before { content: ""; position: absolute; inset: -20% -10% auto auto; width: 70vw; height: 70vw; max-width: 900px; max-height: 900px; z-index: -1; background: radial-gradient(closest-side, rgba(109,59,240,.75), rgba(109,59,240,0)); }
+		.hero::after { content: ""; position: absolute; left: -15%; bottom: -35%; width: 60vw; height: 60vw; max-width: 760px; max-height: 760px; z-index: -1; background: radial-gradient(closest-side, rgba(255,106,61,.38), rgba(255,106,61,0)); }
+		.confetti { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+		.confetti i { position: absolute; display: block; border-radius: 3px; opacity: .85; animation: drift 14s ease-in-out infinite alternate; }
+		@keyframes drift { from { transform: translateY(0) rotate(var(--r)); } to { transform: translateY(-22px) rotate(calc(var(--r) + 40deg)); } }
+		.pill-tag { display: inline-flex; align-items: center; gap: .5rem; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); border-radius: 100px; padding: .4rem .95rem; font-size: .85rem; font-weight: 600; color: #ffe9b0; }
+		.pill-tag i { color: var(--sun); }
+		.hl { display: inline-block; color: var(--ink); background: var(--sun); padding: 0 .22em; border-radius: .18em; transform: rotate(-1.6deg); }
+
+		.marquee-wrap { overflow: hidden; background: var(--sun); color: var(--ink); padding: 1rem 0; }
+		.marquee-track { display: flex; gap: 2.4rem; width: max-content; animation: slide 38s linear infinite; font-family: var(--display); font-weight: 800; font-size: 1.3rem; white-space: nowrap; }
+		.marquee-track span::after { content: "✦"; margin-left: 2.4rem; color: var(--tangerine); }
+		@keyframes slide { to { transform: translateX(-50%); } }
+
+		.section { padding: 4.5rem 0; }
+		.section-head { max-width: 44rem; margin-bottom: 2.4rem; }
+		.section-head h2 { font-size: clamp(2rem, 4.4vw, 3.3rem); line-height: 1.04; font-weight: 800; }
+		.section-head p { margin-top: .9rem; font-size: 1.1rem; color: var(--muted); line-height: 1.55; }
+
+		/* video */
+		.video-frame { position: relative; overflow: hidden; background: var(--ink); box-shadow: 0 30px 70px rgba(42,23,82,.3); border: 6px solid #fff; outline: 1px solid var(--line); }
+		.video-frame.wide { border-radius: 26px; aspect-ratio: 16 / 9; }
+		.video-frame.tall { border-radius: 32px; aspect-ratio: 9 / 16; width: min(100%, 270px); margin: 0 auto; }
+		.video-frame iframe, .video-frame img { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: cover; }
+		.video-frame .veil { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(26,14,51,.15), rgba(26,14,51,.78)); }
+		.video-frame.tall { background: linear-gradient(160deg, var(--violet), var(--tangerine)); }
+		.play-btn { position: absolute; inset: 0; margin: auto; width: 88px; height: 88px; border-radius: 50%; border: 0; background: var(--tangerine); color: #fff; display: grid; place-items: center; box-shadow: 0 0 0 12px rgba(255,106,61,.28), 0 18px 44px rgba(0,0,0,.4); cursor: pointer; transition: transform .2s ease; }
+		.play-btn:hover { transform: scale(1.08); }
+		.play-btn svg { width: 34px; height: 34px; margin-left: 4px; }
+		.video-cap { position: absolute; left: 1.2rem; right: 1.2rem; bottom: 1rem; color: #fff; font-family: var(--display); font-weight: 700; font-size: 1.05rem; text-shadow: 0 2px 12px rgba(0,0,0,.45); text-align: center; }
+		.video-cap small { display: block; font-family: "Inter", sans-serif; font-weight: 500; font-size: .78rem; opacity: .85; margin-top: .15rem; }
+
+		.back-link { display: inline-block; margin-top: 1.1rem; font-size: .92rem; font-weight: 600; opacity: .75; text-decoration: none; }
+		.back-link:hover { opacity: 1; text-decoration: underline; }
+
+		.footer { background: #12091f; color: rgba(255,255,255,.6); padding: 2rem 0; font-size: .88rem; }
+		.footer .wrap { display: flex; flex-wrap: wrap; gap: 1rem 2rem; justify-content: space-between; align-items: center; }
+		.footer .wrap > span:last-child { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; }
+		.footer a { color: rgba(255,255,255,.75); text-decoration: none; overflow-wrap: anywhere; }
+		.footer a:hover { color: #fff; }
+		:focus-visible { outline: 3px solid var(--sun); outline-offset: 3px; }
+		@media (prefers-reduced-motion: reduce) { .confetti i, .marquee-track { animation: none; } }
+	</style>
+</th:block>
+
+<!--/* step = 1, 2 or 3; dark = true on dark heroes so the logo and dots stay readable */-->
+<div th:fragment="top(step)" class="bar">
+	<a th:href="@{/}" aria-label="EventsRUs home"><img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs"></a>
+	<div class="steps-dots" style="color:#fff" aria-label="Step">
+		<em>Step</em>
+		<span th:classappend="${step == 1} ? 'on' : (${step > 1} ? 'done' : '')">1</span>
+		<span th:classappend="${step == 2} ? 'on' : (${step > 2} ? 'done' : '')">2</span>
+		<span th:classappend="${step == 3} ? 'on' : ''">3</span>
+	</div>
+</div>
+
+<footer th:fragment="foot" class="footer">
+	<div class="wrap">
+		<span>&copy; 2026 EventsRUs. Events made easy. Connections made simple.</span>
+		<span><a th:href="@{/}">For planners</a><a th:href="@{/terms}">Terms</a><a th:href="@{/privacy}">Privacy</a><a href="mailto:support@eventsrus.app">support@eventsrus.app</a></span>
+	</div>
+</footer>
+
+<!--/* Click-to-play: nothing from YouTube loads until the visitor presses play. Button needs data-video="ID" and sits inside .video-frame. */-->
+<script th:fragment="player">
+	document.querySelectorAll('.play-btn[data-video]').forEach(function (b) {
+		b.addEventListener('click', function () {
+			var f = b.closest('.video-frame');
+			f.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + b.dataset.video + '?autoplay=1&rel=0&playsinline=1" title="EventsRUs video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+		});
+	});
+</script>
+
+</html>

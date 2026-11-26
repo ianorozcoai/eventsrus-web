@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<th:block th:replace="~{fragments/funnel :: head('Register as an EventsRUs Partner | free to start', 'Register as an EventsRUs Partner on the website or download the app. Free until your first 3 bookings.')}"></th:block>
+	<style>
+		.j-hero { padding-bottom: 3.5rem; }
+		.j-hero h1 { font-size: clamp(2.4rem, 6vw, 4.4rem); line-height: 1; font-weight: 800; margin: 1.5rem 0 1rem; max-width: 18ch; }
+		.j-hero .lead { font-size: 1.15rem; line-height: 1.5; color: rgba(255,255,255,.8); max-width: 34rem; }
+		.recap { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; margin-top: 1.5rem; font-weight: 600; }
+		.recap span { display: inline-flex; gap: .45rem; align-items: center; }
+		.recap i { color: var(--sun); font-size: 1.2rem; }
+
+		.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: -2.6rem; position: relative; z-index: 2; }
+		@media (max-width: 760px) { .ways { grid-template-columns: 1fr; } }
+		.way { background: #fff; border-radius: 28px; padding: 1.8rem 1.6rem; box-shadow: 0 24px 56px rgba(42,23,82,.18); border: 1px solid var(--line); display: flex; flex-direction: column; gap: .9rem; }
+		.way .tag { align-self: flex-start; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: var(--blush); color: var(--tangerine); border-radius: 100px; padding: .3rem .8rem; }
+		.way h2 { font-size: 1.7rem; font-weight: 800; line-height: 1.08; }
+		.way p { color: var(--muted); line-height: 1.5; }
+		.way .btn-pill { align-self: flex-start; }
+		.stores { display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; margin-top: .2rem; }
+		.stores img { height: 54px; width: auto; display: block; }
+		.inapp { display: none; background: #fff4cf; border: 1px solid #f0d27a; color: #5e5230; border-radius: 16px; padding: .8rem 1rem; font-size: .9rem; line-height: 1.45; }
+		.inapp.on { display: block; }
+		.ph-only { font-size: .8rem; color: var(--muted); }
+
+		.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; counter-reset: s; }
+		@media (max-width: 760px) { .how { grid-template-columns: 1fr; } }
+		.how div { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 1.3rem; }
+		.how b { font-family: var(--display); font-size: 2.6rem; line-height: 1; color: var(--violet); display: block; }
+		.how div:nth-child(2) b { color: var(--tangerine); } .how div:nth-child(3) b { color: var(--mint); }
+		.how h3 { font-size: 1.1rem; font-weight: 700; margin: .4rem 0 .25rem; }
+		.how p { color: var(--muted); font-size: .94rem; line-height: 1.5; }
+
+		.faq { max-width: 52rem; }
+		.faq details { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 0 1.4rem; margin-bottom: .75rem; }
+		.faq details[open] { box-shadow: 0 16px 36px rgba(42,23,82,.1); border-color: var(--violet-2); }
+		.faq summary { cursor: pointer; list-style: none; font-family: var(--display); font-weight: 700; font-size: 1.12rem; padding: 1.15rem 0; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+		.faq summary::-webkit-details-marker { display: none; }
+		.faq summary::after { content: "+"; font-size: 1.7rem; line-height: 1; color: var(--violet); transition: transform .2s ease; }
+		.faq details[open] summary::after { transform: rotate(45deg); }
+		.faq details p { padding: 0 0 1.25rem; color: var(--muted); line-height: 1.6; max-width: 42rem; }
+
+		.final { background: var(--ink); color: #fff; text-align: center; padding: 5rem 0 4.5rem; position: relative; overflow: hidden; isolation: isolate; }
+		.final::before { content: ""; position: absolute; left: 50%; top: -30%; width: 900px; height: 900px; transform: translateX(-50%); z-index: -1; background: radial-gradient(closest-side, rgba(109,59,240,.6), rgba(109,59,240,0)); }
+		.final h2 { font-size: clamp(2.2rem, 5.6vw, 4rem); line-height: 1; font-weight: 800; max-width: 18ch; margin: 0 auto; }
+		.final p { color: rgba(255,255,255,.75); margin: 1.1rem auto 0; max-width: 32rem; font-size: 1.1rem; }
+		.final .btn-pill { margin-top: 1.8rem; }
+		.final .alt { display: flex; justify-content: center; gap: .8rem; flex-wrap: wrap; margin-top: 1rem; }
+	</style>
+</head>
+<body>
+
+	<header class="hero j-hero">
+		<div class="confetti" aria-hidden="true">
+			<i style="left:6%;top:20%;width:16px;height:16px;background:var(--sun);--r:12deg;animation-duration:11s"></i>
+			<i style="left:90%;top:16%;width:18px;height:18px;background:var(--mint);--r:70deg;animation-duration:13s;border-radius:50%"></i>
+			<i style="left:50%;top:80%;width:22px;height:10px;background:var(--tangerine);--r:25deg;animation-duration:12s"></i>
+		</div>
+		<div class="wrap">
+			<th:block th:replace="~{fragments/funnel :: top(3)}"></th:block>
+			<h1>Ready? <span class="hl">Become an EventsRUs Partner.</span></h1>
+			<p class="lead">Pick the way that suits you. Both take only a few minutes, and both are free to start.</p>
+			<div class="recap">
+				<span><i class="ph-check-circle"></i> Free until your first 3 bookings</span>
+				<span><i class="ph-check-circle"></i> Keep 100% of your payments</span>
+				<span><i class="ph-check-circle"></i> Free for planners, always</span>
+			</div>
+		</div>
+	</header>
+
+	<section style="padding-bottom:1rem">
+		<div class="wrap">
+			<div class="ways">
+				<article class="way">
+					<span class="tag">Way 1</span>
+					<h2>Register on the website</h2>
+					<p>Sign in with Google, tell us about your business and add your packages, photos and logo.</p>
+					<div class="inapp" id="inapp"><b>Opened from Facebook or Instagram?</b> Google sign-in doesn't work inside their built-in browser. Tap the menu (&#8942; or &middot;&middot;&middot;) and choose "Open in browser", or use the app on the right.</div>
+					<a th:href="@{/vendor/#signin}" class="btn-pill btn-hot btn-xl">Register as a Partner <i class="ph-arrow-right"></i></a>
+				</article>
+				<article class="way">
+					<span class="tag">Way 2</span>
+					<h2>Download the app</h2>
+					<p>Manage leads, quotes and your calendar from your phone. Sign up inside the app with the same Google account.</p>
+					<div class="stores">
+						<a href="https://play.google.com/store/apps/details?id=com.eventsrus.eventsrus_ui" target="_blank" rel="noopener"><img th:src="@{/assets/images/vendor-landing/google_badge.png}" alt="Get EventsRUs on Google Play"></a>
+						<a href="https://apps.apple.com/ph/app/eventsrus/id6833962913" target="_blank" rel="noopener"><img th:src="@{/assets/images/vendor-landing/apple_badge.png}" alt="Download EventsRUs on the App Store"></a>
+					</div>
+					<p class="ph-only">Free download for Android and iPhone, available in the Philippines.</p>
+				</article>
+			</div>
+		</div>
+	</section>
+
+	<section class="section" style="padding-bottom:1rem">
+		<div class="wrap">
+			<div class="section-head"><h2>Watch how it works.</h2><p>A 5-minute walkthrough: sign up, add packages, upload your logo and photos, add your payment details and watch the leads come in. Sample data, AI voice-over.</p></div>
+			<div class="video-frame wide">
+				<img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Preview of the EventsRUs supplier demo video" width="1728" height="922">
+				<div class="veil"></div>
+				<button type="button" class="play-btn" data-video="hczWUsloSrY" aria-label="Play the supplier demo video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+				<div class="video-cap">How to set up your free EventsRUs storefront<small>5 min &middot; English voice-over</small></div>
+			</div>
+		</div>
+	</section>
+
+	<section class="section" style="padding-bottom:1rem">
+		<div class="wrap">
+			<div class="section-head"><h2>Live in three steps.</h2></div>
+			<div class="how">
+				<div><b>1</b><h3>Sign up</h3><p>One tap with Google. No new password.</p></div>
+				<div><b>2</b><h3>Build your storefront</h3><p>Business details, packages, photos, logo and payment details.</p></div>
+				<div><b>3</b><h3>Reply to leads</h3><p>Send quotes, get booked and watch your calendar fill.</p></div>
+			</div>
+		</div>
+	</section>
+
+	<section class="section">
+		<div class="wrap">
+			<div class="section-head"><h2>Still wondering?</h2></div>
+			<div class="faq">
+				<details><summary>Is it really free?</summary><p>Yes. You use EventsRUs PRO for free until you get your first 3 bookings, for up to 12 months. A booking counts when a planner books you on EventsRUs and submits their payment in the app.</p></details>
+				<details><summary>What if I get no bookings?</summary><p>We can't promise bookings, so we don't charge you until you've had your first 3. If you don't get them, you can stay on the free period for up to 12 months.</p></details>
+				<details><summary>What happens after my 3 bookings?</summary><p>You choose a plan, and you get a 30-day grace period to decide. Plan prices are shown in the app before you pay anything.</p></details>
+				<details><summary>Do you take a cut of my payments?</summary><p>No. Clients pay you directly through your GCash, Maya, PayPal or bank details. EventsRUs never holds your clients' money.</p></details>
+				<details><summary>I'm not good with technology.</summary><p>If you can use Facebook and GCash, you can do this. Watch the 5-minute video above, or book a live walkthrough with us and we'll show you.</p></details>
+				<details><summary>Who are the planners?</summary><p>Event planners and hosts in the Philippines, organising debuts, weddings, birthdays and corporate events. Planners use EventsRUs for free, always.</p></details>
+				<details><summary>Can I stop any time?</summary><p>Yes. There is no contract to sign.</p></details>
+			</div>
+		</div>
+	</section>
+
+	<section class="final">
+		<div class="wrap">
+			<h2>Your next client is already looking.</h2>
+			<p>Open your free storefront today and be ready when they search.</p>
+			<a th:href="@{/vendor/#signin}" class="btn-pill btn-hot btn-xl">Register as a Partner <i class="ph-arrow-right"></i></a>
+			<div class="alt">
+				<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn-pill btn-ghost"><i class="ph-calendar-plus"></i> Prefer a live demo? Book one</a>
+			</div>
+			<a th:href="@{/partner/opportunity}" class="back-link" style="color:#fff"><i class="ph-arrow-left"></i> Back</a>
+		</div>
+	</section>
+
+	<th:block th:replace="~{fragments/funnel :: foot}"></th:block>
+	<script th:replace="~{fragments/funnel :: player}"></script>
+	<script>
+		// Facebook/Instagram's built-in browser can't do Google sign-in, so warn people before they tap the button.
+		if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || '')) {
+			document.getElementById('inapp').classList.add('on');
+		}
+	</script>
+</body>
+</html>

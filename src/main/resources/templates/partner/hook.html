@@ -1,76 +1,104 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="fil" xmlns:th="http://www.thymeleaf.org">
 <head>
-	<th:block th:replace="~{fragments/funnel :: head('Planners are looking for a supplier like you | EventsRUs', 'Event planners in the Philippines are searching for suppliers right now. See how EventsRUs puts your business in front of them, free to start.')}"></th:block>
+	<th:block th:replace="~{fragments/funnel :: head('Magkano ang halaga ng isa pang booking sa iyo? | EventsRUs', 'I-type ang usual package price mo at tingnan kung magkano ang puwedeng maging 3 bookings. Libre ang EventsRUs hanggang makuha mo sila.')}"></th:block>
 	<style>
-		.h1-hero { padding: 0 0 3.5rem; }
-		.h1-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 2.5rem; align-items: center; padding-top: 1.5rem; }
-		@media (max-width: 900px) { .h1-grid { grid-template-columns: 1fr; padding-top: .5rem; } }
-		.h1-hero h1 { font-size: clamp(2.5rem, 6.4vw, 4.8rem); line-height: .99; font-weight: 800; margin: 1.1rem 0 1.2rem; }
-		.h1-hero .lead { font-size: 1.2rem; line-height: 1.5; color: rgba(255,255,255,.8); max-width: 32rem; }
-		.cta { margin-top: 1.8rem; }
-		.cta-note { margin-top: .8rem; font-size: .92rem; color: rgba(255,255,255,.75); display: flex; gap: .5rem; align-items: center; }
-		.cta-note i { color: var(--mint); font-size: 1.15rem; }
-		.stage { position: relative; display: grid; place-items: center; padding: 1rem 0 2rem; }
-		.chip { position: absolute; background: #fff; color: var(--ink); border-radius: 16px; padding: .65rem .9rem; display: flex; gap: .65rem; align-items: center; box-shadow: 0 18px 40px rgba(0,0,0,.35); font-size: .8rem; line-height: 1.25; max-width: 14rem; z-index: 3; opacity: 0; animation: chipIn .7s cubic-bezier(.2,1.3,.4,1) forwards, bob 5s ease-in-out infinite alternate; }
-		.chip b { display: block; font-size: .85rem; }
-		.chip small { color: var(--muted); font-size: .74rem; }
-		.chip .ic { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: #fff; font-size: 1.15rem; flex: none; }
-		.chip-1 { left: -2%; top: 6%; animation-delay: 1s, 1.7s; }
-		.chip-2 { right: -2%; top: 44%; animation-delay: 2s, 2.7s; }
-		.chip-3 { left: 0; bottom: 4%; animation-delay: 3s, 3.7s; }
-		@keyframes chipIn { from { opacity: 0; transform: translateY(26px) scale(.88); } to { opacity: 1; transform: none; } }
-		@keyframes bob { from { translate: 0 0; } to { translate: 0 -9px; } }
-		@media (max-width: 560px) { .chip { max-width: 11.5rem; font-size: .72rem; padding: .5rem .65rem; } .chip-1 { left: -4%; } .chip-2 { right: -4%; } .chip-3 { left: -2%; } }
-		@media (prefers-reduced-motion: reduce) { .chip { animation: none; opacity: 1; } }
+		.hk { max-width: 760px; margin: 0 auto; padding: 0 1.3rem 3rem; }
+		.hk-bar { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 0; }
+		.hk-bar img { height: 34px; width: auto; display: block; }
+		.hk-bar span { font-weight: 800; font-size: .85rem; border-radius: 100px; padding: .35rem .9rem; }
+		.eyebrow { display: inline-block; font-weight: 800; font-size: .82rem; letter-spacing: .08em; text-transform: uppercase; margin-top: 1.4rem; }
+		.hk h1 { font-size: clamp(2.7rem, 9.4vw, 5.2rem); line-height: .95; font-weight: 800; margin: .7rem 0 1.4rem; letter-spacing: -.035em; }
+		.hk h1 u { text-decoration: none; }
+		.ask { font-size: 1.2rem; font-weight: 700; margin-bottom: .7rem; }
+		.field { display: flex; align-items: center; border-radius: 22px; padding: .35rem 1.1rem; }
+		.field b { font-family: var(--display); font-size: 2.2rem; margin-right: .4rem; }
+		.field input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-family: var(--display); font-weight: 800; font-size: clamp(2.2rem, 9vw, 3.4rem); padding: .2rem 0; }
+		.quick { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+		.quick button { border: 2px solid; background: transparent; border-radius: 100px; padding: .4rem .95rem; font-weight: 700; font-size: .92rem; cursor: pointer; }
+		.result { margin-top: 1.8rem; border-radius: 28px; padding: 1.7rem 1.6rem 1.5rem; position: relative; overflow: hidden; }
+		.result::after { content: ""; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%; }
+		.result small { display: block; font-weight: 700; font-size: .95rem; }
+		.big { font-family: var(--display); font-weight: 800; font-size: clamp(3.2rem, 14vw, 6rem); line-height: 1; margin: .35rem 0 .6rem; letter-spacing: -.03em; position: relative; z-index: 1; }
+		.result p { color: rgba(255,255,255,.9); line-height: 1.5; font-size: 1.05rem; position: relative; z-index: 1; }
+		.result p b { color: #fff; }
+		.result .fine { margin-top: .7rem; font-size: .8rem; color: rgba(255,255,255,.65); }
+		.punch { margin-top: 1.8rem; font-size: 1.15rem; line-height: 1.55; }
+		.punch b { padding: 0 .25em; border-radius: .2em; }
+		.go { margin-top: 1.6rem; }
+		.go .btn-xl { width: 100%; }
+		.go p { margin-top: .8rem; text-align: center; font-size: .92rem; }
+		.vid-link { display: block; margin: 1.6rem auto 0; background: none; border: 0; font-weight: 700; text-decoration: underline; cursor: pointer; font-size: .95rem; }
+		.vid-wrap { margin-top: 1rem; display: none; }
+		.vid-wrap.on { display: block; }
+		@media (min-width: 700px) { .go .btn-xl { width: auto; } }
 	</style>
+	<th:block th:replace="~{fragments/funnel :: theme}"></th:block>
 </head>
 <body>
-
-	<header class="hero h1-hero">
-		<div class="confetti" aria-hidden="true">
-			<i style="left:6%;top:18%;width:16px;height:16px;background:var(--sun);--r:12deg;animation-duration:11s"></i>
-			<i style="left:46%;top:9%;width:10px;height:26px;background:var(--tangerine);--r:40deg;animation-duration:15s"></i>
-			<i style="left:92%;top:14%;width:18px;height:18px;background:var(--mint);--r:70deg;animation-duration:13s;border-radius:50%"></i>
-			<i style="left:3%;top:62%;width:12px;height:30px;background:var(--violet-2);--r:-30deg;animation-duration:17s"></i>
-			<i style="left:50%;top:86%;width:22px;height:10px;background:var(--sun);--r:25deg;animation-duration:12s"></i>
+	<div class="hk">
+		<div class="hk-bar">
+			<a th:href="@{/}" aria-label="EventsRUs home"><img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs"></a>
+			<span>Step 1 of 3</span>
 		</div>
-		<div class="wrap">
-			<th:block th:replace="~{fragments/funnel :: top(1)}"></th:block>
-			<div class="h1-grid">
-				<div>
-					<span class="pill-tag"><i class="ph-sparkle"></i> For event suppliers in the Philippines</span>
-					<h1>Planners are looking for a supplier like you. <span class="hl">Be the one they find.</span></h1>
-					<p class="lead">Debuts, weddings, birthdays, corporate parties. Every week, planners search for photographers, caterers, hosts, venues and more. EventsRUs is where they look.</p>
 
-					<div class="cta">
-						<a th:href="@{/partner/opportunity}" class="btn-pill btn-hot btn-xl">Next: see how it works <i class="ph-arrow-right"></i></a>
-						<p class="cta-note"><i class="ph-timer"></i> Takes 1 minute. Free to join.</p>
-					</div>
-				</div>
+		<span class="eyebrow">Para sa mga event supplier sa Pilipinas</span>
+		<h1>Magkano ang halaga ng <u>ISA pang booking</u> para sa'yo?</h1>
 
-				<div class="stage">
-					<div class="video-frame tall" id="videoFrame">
-						<div class="veil"></div>
-						<button type="button" class="play-btn" data-video="e5PjxlZ5C2o" aria-label="Play the 30-second EventsRUs story"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-						<div class="video-cap">Watch the 30-second story<small>Brian, Nicole and Jessica</small></div>
-					</div>
-					<div class="chip chip-1"><span class="ic" style="background:var(--violet)"><i class="ph-bell-ringing"></i></span><span><b>New lead</b>Angelica Reyes<br><small>Farm wedding &middot; Feb 20</small></span></div>
-					<div class="chip chip-2"><span class="ic" style="background:var(--tangerine)"><i class="ph-chat-circle-text"></i></span><span><b>Quote request</b>Sofia's 18th debut<br><small>Jan 22</small></span></div>
-					<div class="chip chip-3"><span class="ic" style="background:var(--mint)"><i class="ph-check-circle"></i></span><span><b>Paid direct to you</b>Down payment sent to your GCash</span></div>
-				</div>
+		<p class="ask">I-type ang usual package price mo:</p>
+		<label class="field" for="price"><b>&#8369;</b><input id="price" type="text" inputmode="numeric" autocomplete="off" value="25,000" aria-label="Usual package price mo, sa pesos"></label>
+		<div class="quick" id="quick" aria-label="Quick picks">
+			<button type="button" data-v="10000">&#8369;10,000</button>
+			<button type="button" data-v="25000" class="on">&#8369;25,000</button>
+			<button type="button" data-v="50000">&#8369;50,000</button>
+			<button type="button" data-v="100000">&#8369;100,000</button>
+		</div>
+
+		<div class="result" aria-live="polite">
+			<small>3 bookings na ganito ang presyo =</small>
+			<div class="big">&#8369;<span id="total">75,000</span></div>
+			<p>Ito ang total na pwedeng mong kitain sa <b>first 3 EventsRUs bookings mo</b>. At <b>&#8369;0</b> ang babayaran mo sa EventsRUs hanggang makuha mo ito.</p>
+			<p class="fine">Hula lang ito gamit ang sarili mong input or booking income, hindi pangako. Hindi namin ma-guarantee ang bookings.</p>
+		</div>
+
+		<p class="punch">Ngayon mismo, may mga planner/clients na naghahanap ng photographer, caterer, host, venue at iba pa. Ime-message nila ang mga supplier na <b>madaling mahanap, madaling makausap, at madaling bayaran.</b> Ikaw ba 'yon?</p>
+
+		<div class="go">
+			<a th:href="@{/partner/opportunity}" class="btn-pill btn-hot btn-xl">Ipakita kung paano <i class="ph-arrow-right"></i></a>
+			<p>1 minuto lang &middot; Libre mag-join</p>
+		</div>
+
+		<button type="button" class="vid-link" id="vidLink">O panoorin ang 30-second story</button>
+		<div class="vid-wrap" id="vidWrap">
+			<div class="video-frame wide" style="aspect-ratio:9/16;width:min(100%,270px);margin:0 auto;border-radius:28px;background:linear-gradient(160deg,var(--violet),var(--tangerine))">
+				<button type="button" class="play-btn" data-video="e5PjxlZ5C2o" aria-label="I-play ang 30-second story"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
 			</div>
-		</div>
-	</header>
-
-	<div class="marquee-wrap" aria-hidden="true">
-		<div class="marquee-track">
-			<span>Photographers</span><span>Caterers</span><span>Florists</span><span>Hosts &amp; emcees</span><span>Venues</span><span>Lights &amp; sounds</span><span>Photobooths</span><span>Stylists</span><span>Bands &amp; DJs</span><span>Cake makers</span><span>Videographers</span><span>Event planners</span>
-			<span>Photographers</span><span>Caterers</span><span>Florists</span><span>Hosts &amp; emcees</span><span>Venues</span><span>Lights &amp; sounds</span><span>Photobooths</span><span>Stylists</span><span>Bands &amp; DJs</span><span>Cake makers</span><span>Videographers</span><span>Event planners</span>
 		</div>
 	</div>
 
-	<th:block th:replace="~{fragments/funnel :: foot}"></th:block>
 	<script th:replace="~{fragments/funnel :: player}"></script>
+	<script>
+		(function () {
+			var input = document.getElementById('price'), totalEl = document.getElementById('total'), quick = document.querySelectorAll('#quick button');
+			var shown = 75000, raf;
+			function parse() { var n = parseInt(input.value.replace(/[^0-9]/g, ''), 10); return isNaN(n) ? 0 : Math.min(n, 10000000); }
+			function fmt(n) { return Math.round(n).toLocaleString('en-PH'); }
+			function animate(to) {
+				cancelAnimationFrame(raf);
+				if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { shown = to; totalEl.textContent = fmt(to); return; }
+				var from = shown, t0 = performance.now();
+				(function step(t) {
+					var p = Math.min(1, (t - t0) / 500);
+					shown = from + (to - from) * (1 - Math.pow(1 - p, 3));
+					totalEl.textContent = fmt(shown);
+					if (p < 1) { raf = requestAnimationFrame(step); }
+				})(t0);
+			}
+			function update() { var v = parse(); input.value = v ? fmt(v) : ''; animate(v * 3); quick.forEach(function (b) { b.classList.toggle('on', Number(b.dataset.v) === v); }); }
+			input.addEventListener('input', update);
+			quick.forEach(function (b) { b.addEventListener('click', function () { input.value = b.dataset.v; update(); }); });
+			document.getElementById('vidLink').addEventListener('click', function () { document.getElementById('vidWrap').classList.add('on'); this.style.display = 'none'; });
+		})();
+	</script>
 </body>
 </html>

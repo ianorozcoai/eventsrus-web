@@ -117,6 +117,67 @@
 	</style>
 </th:block>
 
+<!--/* Flyer theme (navy, purple, magenta, champagne gold). Include AFTER each page's own <style> so it wins. */-->
+<th:block th:fragment="theme">
+	<style>
+		:root { --gold: #e8c88a; --gold-2: #c99a55; --navy: #150c3d; --ink: #fff; --muted: rgba(255,255,255,.74); --line: rgba(255,255,255,.16); --paper: #150c3d; }
+		html, body { background: #150c3d; color: #fff; }
+		body { background:
+			radial-gradient(60vw 50vh at 8% 4%, rgba(122,47,208,.55), transparent 70%),
+			radial-gradient(55vw 55vh at 100% 38%, rgba(217,63,156,.32), transparent 70%),
+			radial-gradient(70vw 60vh at 0% 96%, rgba(122,47,208,.4), transparent 70%),
+			linear-gradient(180deg, #1a0f4d, #120a36 60%, #1a0f4d); background-attachment: fixed; }
+		.hero, .final { background: transparent; }
+		.hero::before { background: radial-gradient(closest-side, rgba(217,63,156,.35), rgba(217,63,156,0)); }
+		.hero::after { background: radial-gradient(closest-side, rgba(232,200,138,.18), rgba(232,200,138,0)); }
+		.hl { background: linear-gradient(135deg, #f3dfb2, #d6ad6c); color: #241260; }
+		.btn-hot { background: linear-gradient(135deg, #8a3bdc, #e0409a); box-shadow: 0 12px 34px rgba(224,64,154,.45); color: #fff; }
+		.btn-hot:hover { box-shadow: 0 18px 40px rgba(224,64,154,.6); }
+		.btn-ghost { border-color: rgba(232,200,138,.6); color: var(--gold); background: rgba(232,200,138,.08); }
+		.btn-ghost:hover { color: #fff; }
+		.pill-tag { color: var(--gold); border-color: rgba(232,200,138,.4); background: rgba(232,200,138,.08); }
+		.pill-tag i { color: var(--gold); }
+		.steps-dots span.on { background: linear-gradient(135deg, #f3dfb2, #d6ad6c); border-color: transparent; color: #241260; }
+		.top2 { background: rgba(10,5,40,.55); }
+		.footer { background: #0c0628; }
+
+		/* glass cards */
+		.want, .moment, .how div, .way, .faq details, .shot-card.sc-blush, .shot-card.sc-mint, .shot-card.sc-ink, .field {
+			background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); color: #fff; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+		.shot-card.sc-violet { background: linear-gradient(150deg, #5b21b6, #8a3bdc); }
+		.want .ico { background: linear-gradient(135deg, #7a2fd0, #d93f9c) !important; }
+		.moment .num, .how b { color: var(--gold) !important; }
+		.way .tag { background: rgba(232,200,138,.15); color: var(--gold); }
+		.way { box-shadow: 0 24px 56px rgba(0,0,0,.35); }
+		.faq details[open] { border-color: var(--gold); box-shadow: none; }
+		.faq summary::after { color: var(--gold); }
+		.offer { background: linear-gradient(120deg, #4a1fa8 0%, #8a3bdc 50%, #d93f9c 120%); }
+		.offer .big { color: var(--gold); }
+		.play-btn { background: linear-gradient(135deg, #8a3bdc, #e0409a); box-shadow: 0 0 0 12px rgba(224,64,154,.28), 0 18px 44px rgba(0,0,0,.4); }
+		.video-frame { border-color: rgba(255,255,255,.2); outline: 0; }
+		.back-link { color: #fff !important; }
+		.marquee-wrap { background: linear-gradient(90deg, #d6ad6c, #f3dfb2, #d6ad6c); color: #241260; }
+
+		/* page 1 */
+		.hk-bar span { background: rgba(255,255,255,.1); border: 1px solid rgba(232,200,138,.5); color: var(--gold); }
+		.eyebrow { color: var(--gold); }
+		.hk h1 u { background: linear-gradient(transparent 64%, rgba(232,200,138,.4) 64%); }
+		.field { border: 2px solid var(--gold); box-shadow: 0 0 44px rgba(224,64,154,.35); }
+		.field b { color: var(--gold); }
+		.field input { color: #fff; }
+		.quick button { border-color: rgba(232,200,138,.6); color: #fff; }
+		.quick button:hover, .quick button.on { background: linear-gradient(135deg, #f3dfb2, #d6ad6c); color: #241260; border-color: transparent; }
+		.result { background: linear-gradient(135deg, #3b1d8a, #7a2fd0 60%, #d93f9c); }
+		.result::after { background: radial-gradient(closest-side, rgba(232,200,138,.4), transparent); }
+		.result small { color: var(--gold); }
+		.big { color: #fff; }
+		.punch b { background: rgba(232,200,138,.22); color: var(--gold); }
+		.go p { color: var(--muted); }
+		.vid-link { color: var(--gold); }
+		.inapp { background: rgba(232,200,138,.15); border-color: rgba(232,200,138,.5); color: #f3dfb2; }
+	</style>
+</th:block>
+
 <!--/* step = 1, 2 or 3; dark = true on dark heroes so the logo and dots stay readable */-->
 <div th:fragment="top(step)" class="bar">
 	<a th:href="@{/}" aria-label="EventsRUs home"><img th:src="@{/assets/images/logo-navbar.svg}" alt="EventsRUs"></a>

@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="fil" xmlns:th="http://www.thymeleaf.org">
 <head>
-	<th:block th:replace="~{fragments/funnel :: head('Get discovered, get inquiries, get booked | EventsRUs', 'See how an EventsRUs storefront helps event suppliers get found by planners, receive inquiries and get paid directly.')}"></th:block>
+	<th:block th:replace="~{fragments/funnel :: head('Mahanap, magka-inquiry, ma-book | EventsRUs', 'Tingnan kung paano ka matutulungan ng EventsRUs storefront na mahanap ng clients, makatanggap ng inquiries at mabayaran nang direkta.')}"></th:block>
 	<style>
-		.top2 { background: var(--ink); color: #fff; }
+		.top2 { color: #fff; }
 		.intro { padding: 2.4rem 0 1rem; }
-		.intro h1 { font-size: clamp(2.2rem, 5.4vw, 4rem); line-height: 1; font-weight: 800; max-width: 18ch; }
+		.intro h1 { font-size: clamp(2.1rem, 5.2vw, 3.8rem); line-height: 1.02; font-weight: 800; max-width: 20ch; }
 		.intro p { margin-top: 1rem; font-size: 1.15rem; color: var(--muted); line-height: 1.55; max-width: 38rem; }
 
 		.wants { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 		@media (max-width: 900px) { .wants { grid-template-columns: repeat(2, 1fr); } }
 		@media (max-width: 560px) { .wants { grid-template-columns: 1fr; } }
-		.want { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 1.5rem 1.4rem; transition: transform .25s ease, box-shadow .25s ease; }
-		.want:hover { transform: translateY(-5px); box-shadow: 0 22px 44px rgba(42,23,82,.12); }
+		.want { border-radius: 24px; padding: 1.5rem 1.4rem; transition: transform .25s ease; }
+		.want:hover { transform: translateY(-5px); }
 		.want .ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; font-size: 1.4rem; color: #fff; margin-bottom: 1rem; }
 		.want h3 { font-size: 1.3rem; font-weight: 800; line-height: 1.1; margin-bottom: .45rem; }
 		.want p { color: var(--muted); font-size: .96rem; line-height: 1.5; }
@@ -21,34 +21,28 @@
 		@media (max-width: 760px) { .shots { grid-template-columns: 1fr; } }
 		.shot-card { border-radius: 28px; padding: 1.6rem 1.6rem 0; overflow: hidden; display: flex; flex-direction: column; }
 		.shot-card h3 { font-size: 1.5rem; font-weight: 800; line-height: 1.08; margin-bottom: .5rem; }
-		.shot-card p { font-size: .98rem; line-height: 1.5; }
-		.shot-card img { margin-top: auto; padding-top: 1.2rem; display: block; width: 100%; height: auto; border-radius: 14px 14px 0 0; }
+		.shot-card p { font-size: .98rem; line-height: 1.5; color: rgba(255,255,255,.82); }
 		.shot-card .im { margin-top: auto; padding-top: 1.2rem; }
-		.shot-card .im img { padding-top: 0; box-shadow: 0 12px 34px rgba(26,14,51,.25); }
-		.sc-violet { background: var(--violet); color: #fff; } .sc-violet p { color: rgba(255,255,255,.85); }
-		.sc-blush { background: var(--blush); } .sc-blush p { color: var(--muted); }
-		.sc-ink { background: var(--ink); color: #fff; } .sc-ink p { color: rgba(255,255,255,.8); }
-		.sc-mint { background: #e9f9f3; } .sc-mint p { color: var(--muted); }
+		.shot-card .im img { display: block; width: 100%; height: auto; border-radius: 14px 14px 0 0; box-shadow: 0 12px 34px rgba(0,0,0,.4); }
 
 		.day { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; }
 		@media (max-width: 960px) { .day { grid-template-columns: repeat(2, 1fr); } }
 		@media (max-width: 560px) { .day { grid-template-columns: 1fr; } }
-		.moment { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 1.5rem 1.3rem; }
-		.moment .num { font-family: var(--display); font-weight: 800; font-size: 3.6rem; line-height: .9; color: var(--violet); }
-		.moment:nth-child(2) .num { color: var(--tangerine); } .moment:nth-child(3) .num { color: var(--mint); } .moment:nth-child(4) .num { color: #e0a000; }
+		.moment { border-radius: 24px; padding: 1.5rem 1.3rem; }
+		.moment .num { font-family: var(--display); font-weight: 800; font-size: 3.6rem; line-height: .9; }
 		.moment h3 { font-size: 1.2rem; font-weight: 700; margin: .7rem 0 .35rem; }
 		.moment p { color: var(--muted); font-size: .94rem; line-height: 1.5; }
 
-		.offer { background: linear-gradient(120deg, var(--violet) 0%, #8a4df5 45%, var(--tangerine) 130%); color: #fff; border-radius: 36px; padding: clamp(2rem, 6vw, 4rem); position: relative; overflow: hidden; }
-		.offer::after { content: ""; position: absolute; right: -90px; top: -90px; width: 320px; height: 320px; border-radius: 50%; background: rgba(255,255,255,.12); }
-		.offer h2 { font-size: clamp(2.2rem, 6vw, 4.8rem); line-height: .97; font-weight: 800; position: relative; z-index: 1; max-width: 16ch; }
-		.offer .big { color: var(--sun); }
+		.offer { color: #fff; border-radius: 36px; padding: clamp(2rem, 6vw, 4rem); position: relative; overflow: hidden; }
+		.offer::after { content: ""; position: absolute; right: -90px; top: -90px; width: 320px; height: 320px; border-radius: 50%; background: rgba(255,255,255,.1); }
+		.offer h2 { font-size: clamp(2.1rem, 5.6vw, 4.4rem); line-height: .98; font-weight: 800; position: relative; z-index: 1; max-width: 16ch; }
 		.offer p { margin-top: 1.2rem; max-width: 36rem; font-size: 1.1rem; line-height: 1.55; color: rgba(255,255,255,.92); position: relative; z-index: 1; }
 		.offer .fine { font-size: .85rem; opacity: .8; }
-		.offer .btn-pill { margin-top: 1.8rem; position: relative; z-index: 1; }
+		.offer .btn-pill { margin-top: 1.8rem; position: relative; z-index: 1; background: linear-gradient(135deg, #f3dfb2, #d6ad6c); color: #241260; box-shadow: 0 12px 34px rgba(0,0,0,.35); }
 		.nav-row { text-align: center; }
 		.nav-row .back-link { display: block; margin-top: 1rem; }
 	</style>
+	<th:block th:replace="~{fragments/funnel :: theme}"></th:block>
 </head>
 <body>
 
@@ -56,45 +50,48 @@
 
 	<section class="intro">
 		<div class="wrap">
-			<h1>Your business, in front of the people who are ready to book.</h1>
-			<p>You already do great work. EventsRUs helps the right clients find it, trust it and reach you.</p>
+			<h1>Ang business mo, nasa harap ng mga taong ready nang mag-book.</h1>
+			<p>Alam namin ang hirap na pinag-daanan mo para itayo ang iyong Negosyo. Alam din namin ang hirap na kinakaharap mo para lang makakuha ng next client mo. Kaya nandito si EventsRUs para tulungan kang mahanap, makausap at ma-book ng mga clients na kailangan ng tulong mo para maisakatuparan ang pangarap nilang memorable event.</p>
 		</div>
 	</section>
 
 	<section class="section" style="padding-bottom:1rem">
 		<div class="wrap">
-			<div class="section-head"><h2>What you want. What EventsRUs gives you.</h2></div>
+			<div class="section-head"><h2>Ang gusto mo. Ang ibinibigay ng EventsRUs.</h2></div>
 			<div class="wants">
-				<article class="want"><span class="ico" style="background:var(--violet)"><i class="ph-magnifying-glass"></i></span><h3>Be discovered</h3><p>Planners browse suppliers by category and place. Your storefront puts you in that list, even while you're busy at an event.</p></article>
-				<article class="want"><span class="ico" style="background:var(--tangerine)"><i class="ph-storefront"></i></span><h3>Look professional</h3><p>Your logo, your best photos and your packages on one clean page, with your own link for your Facebook bio and Viber.</p></article>
-				<article class="want"><span class="ico" style="background:#e0a000"><i class="ph-chat-circle-text"></i></span><h3>Get more inquiries</h3><p>Clients send quote requests straight to you. You also see who visited your page, with their event and date, so you can reach out first.</p></article>
-				<article class="want"><span class="ico" style="background:var(--mint)"><i class="ph-wallet"></i></span><h3>Get paid your way</h3><p>Clients pay you directly by GCash, Maya, PayPal or bank transfer. EventsRUs never holds your money.</p></article>
-				<article class="want"><span class="ico" style="background:var(--ink-2)"><i class="ph-calendar-check"></i></span><h3>Stay organised</h3><p>One calendar for your bookings, synced with Google Calendar, so you never double-book a date.</p></article>
-				<article class="want"><span class="ico" style="background:var(--violet-2)"><i class="ph-trend-up"></i></span><h3>Grow without chasing</h3><p>Stop explaining your packages one chat at a time. Send one link and let your storefront do the talking.</p></article>
+				<article class="want"><span class="ico"><i class="ph-magnifying-glass"></i></span><h3>Mahanap ka</h3><p>Nagba-browse ang clients ng suppliers by category at lugar. Nasa listahan ka, kahit busy ka sa event.</p></article>
+				<article class="want"><span class="ico"><i class="ph-storefront"></i></span><h3>Mukhang professional</h3><p>Logo, best photos at packages mo sa isang malinis na page, may sarili kang link para sa Facebook bio at Viber.</p></article>
+				<article class="want"><span class="ico"><i class="ph-chat-circle-text"></i></span><h3>Mas maraming inquiries</h3><p>Diretso sa'yo ang quote requests. Makikita mo rin kung sino ang bumisita sa page mo, with event type (Birthday or Wedding, etc.) at date ng event, para ikaw ang unang mag-reach out.</p></article>
+				<article class="want"><span class="ico"><i class="ph-wallet"></i></span><h3>Bayad na gusto mo</h3><p>Direkta kang babayaran ng clients via GCash, Maya, PayPal o bank transfer. Hindi hinahawakan ng EventsRUs ang pera mo.</p></article>
+				<article class="want"><span class="ico"><i class="ph-calendar-check"></i></span><h3>Organisado</h3><p>Isang calendar para sa lahat ng bookings mo, naka-sync sa Google Calendar, para walang double-booking.</p></article>
+				<article class="want"><span class="ico"><i class="ph-trend-up"></i></span><h3>Lumago nang hindi naghahabol</h3><p>Tigil na sa pag-explain ng packages isa-isa sa chat. Ipadala ang isang link at hayaang magsalita ang storefront mo.</p></article>
+				<article class="want"><span class="ico"><i class="ph-kanban"></i></span><h3>Organisado ang lahat</h3><p><b>Sa social media:</b> sa chat mo pa tina-track ang bookings at clients, kaya nagkakahalo-halo. <b>Sa EventsRUs:</b> nasa iisang lugar ang chat, quotations at bookings.</p></article>
+				<article class="want"><span class="ico"><i class="ph-arrows-clockwise"></i></span><h3>Madali kang ma-rebook</h3><p><b>Sa social media:</b> nawawala ang usapan sa personal chats ng client, kaya hindi ka na niya naaalala. <b>Sa EventsRUs:</b> mula sa saved events niya, isang click lang para i-rebook ka.</p></article>
+				<article class="want"><span class="ico"><i class="ph-bell-ringing"></i></span><h3>Instant na notification</h3><p><b>Sa social media:</b> kailangan mong bantayan ang chats para hindi ka maka-miss ng inquiry. <b>Sa EventsRUs app:</b> download lang ang app mula sa Google Play (for Android) or App Store (for iPhone) at agad kang makakatanggap ng notification para sa messages, quotation requests at booking confirmations.</p></article>
 			</div>
 		</div>
 	</section>
 
 	<section class="section" style="padding-bottom:1rem">
 		<div class="wrap">
-			<div class="section-head"><h2>See it for yourself.</h2><p>Real screens from the supplier side. The names and numbers are sample data.</p></div>
+			<div class="section-head"><h2>Tingnan mo mismo.</h2><p>Totoong screens mula sa supplier side. Sample data lang ang mga pangalan at numbers.</p></div>
 			<div class="shots">
-				<article class="shot-card sc-violet"><h3>See who's looking at you</h3><p>Visitor name, event and event date, so you can message them first.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-leads.jpg}" alt="Leads list with visitor name, event and event date" width="1728" height="922" loading="lazy"></div></article>
-				<article class="shot-card sc-blush"><h3>Your prices, your way</h3><p>Fixed price, a range, or "Request for quotation". You choose.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-packages.jpg}" alt="Package list with three packages" width="1728" height="922" loading="lazy"></div></article>
-				<article class="shot-card sc-ink"><h3>Clients pay you directly</h3><p>Your GCash, Maya, PayPal or bank details and QR code, right on your storefront.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-payments.jpg}" alt="Storefront showing payment details and QR code" width="1728" height="922" loading="lazy"></div></article>
-				<article class="shot-card sc-mint"><h3>Your logo. Your own link.</h3><p>A storefront that looks like your brand and shows your best work.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Supplier storefront with logo and gallery" width="1728" height="922" loading="lazy"></div></article>
+				<article class="shot-card sc-violet"><h3>Alamin kung sino ang tumitingin sa'yo</h3><p>Pangalan ng bisita, event at date, para ikaw ang unang mag-message.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-leads.jpg}" alt="Leads list na may pangalan, event at event date" width="1728" height="922" loading="lazy"></div></article>
+				<article class="shot-card sc-blush"><h3>Presyo mo, paraan mo</h3><p>Fixed price, range, o "Request for quotation". Ikaw ang pipili.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-packages.jpg}" alt="Listahan ng tatlong packages" width="1728" height="922" loading="lazy"></div></article>
+				<article class="shot-card sc-ink"><h3>Direkta ang bayad sa'yo</h3><p>GCash, Maya, PayPal o bank details at QR code, nasa storefront mo na.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-payments.jpg}" alt="Storefront na may payment details at QR code" width="1728" height="922" loading="lazy"></div></article>
+				<article class="shot-card sc-mint"><h3>Logo mo. Link mo.</h3><p>Storefront na kamukha ng brand mo at nagpapakita ng best work mo.</p><div class="im"><img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Supplier storefront na may logo at gallery" width="1728" height="922" loading="lazy"></div></article>
 			</div>
 		</div>
 	</section>
 
 	<section class="section" style="padding-bottom:1rem">
 		<div class="wrap">
-			<div class="section-head"><h2>A typical booking on EventsRUs.</h2></div>
+			<div class="section-head"><h2>Ganito ang typical na booking sa EventsRUs.</h2></div>
 			<div class="day">
-				<div class="moment"><div class="num">1</div><h3>A planner finds you</h3><p>They browse your category and open your storefront.</p></div>
-				<div class="moment"><div class="num">2</div><h3>You get the lead</h3><p>You see their name, event and date, or they send a quote request.</p></div>
-				<div class="moment"><div class="num">3</div><h3>You send your quote</h3><p>Reply with your package or a custom quotation.</p></div>
-				<div class="moment"><div class="num">4</div><h3>Booked and paid</h3><p>The client pays you directly. The date goes on your calendar.</p></div>
+				<div class="moment"><div class="num">1</div><h3>Nahanap ka ng client</h3><p>Nagba-browse sila sa category mo at binuksan ang storefront mo.</p></div>
+				<div class="moment"><div class="num">2</div><h3>Dumating ang lead</h3><p>Makikita mo ang pangalan, event at date nila, o magpapadala sila ng quote request.</p></div>
+				<div class="moment"><div class="num">3</div><h3>Magpadala ng quote</h3><p>Sagutin gamit ang package mo o custom quotation.</p></div>
+				<div class="moment"><div class="num">4</div><h3>Booked na at bayad na</h3><p>Direkta kang babayaran ng client. Pasok na sa calendar mo ang date.</p></div>
 			</div>
 		</div>
 	</section>
@@ -102,12 +99,12 @@
 	<section class="section">
 		<div class="wrap">
 			<div class="offer">
-				<h2>Free until your <span class="big">first 3 bookings.</span></h2>
-				<p>Join now and use EventsRUs PRO at no cost until you get your first 3 bookings (up to 12 months). After that, you choose a plan. Planners always use EventsRUs for free.</p>
-				<p class="fine">We can't promise bookings, but there is nothing to lose by trying.</p>
-				<a th:href="@{/partner/join}" class="btn-pill btn-hot btn-xl">Next: join as a partner <i class="ph-arrow-right"></i></a>
+				<h2>Libre hanggang sa <span class="big" style="font-size:inherit;color:var(--gold);display:inline">first 3 bookings mo.</span></h2>
+				<p>Mag-join ngayon at gamitin ang EventsRUs PRO nang libre hanggang makuha mo ang first 3 bookings mo (hanggang 12 buwan). Pagkatapos, ikaw ang pipili ng plan. Laging libre ang EventsRUs para sa clients.</p>
+				<p class="fine">Hindi namin ma-promise ang bookings, pero wala kang mawawala kung susubukan.</p>
+				<a th:href="@{/partner/join}" class="btn-pill btn-xl">Next: mag-join bilang Partner <i class="ph-arrow-right"></i></a>
 			</div>
-			<div class="nav-row"><a th:href="@{/partner/}" class="back-link" style="color:var(--ink)"><i class="ph-arrow-left"></i> Back</a></div>
+			<div class="nav-row"><a th:href="@{/partner/}" class="back-link"><i class="ph-arrow-left"></i> Back</a></div>
 		</div>
 	</section>
 

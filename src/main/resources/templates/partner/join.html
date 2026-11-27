@@ -1,69 +1,67 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="fil" xmlns:th="http://www.thymeleaf.org">
 <head>
-	<th:block th:replace="~{fragments/funnel :: head('Register as an EventsRUs Partner | free to start', 'Register as an EventsRUs Partner on the website or download the app. Free until your first 3 bookings.')}"></th:block>
+	<th:block th:replace="~{fragments/funnel :: head('Maging EventsRUs Partner | libre sa simula', 'Mag-register bilang EventsRUs Partner sa website o i-download ang app. Libre hanggang first 3 bookings mo.')}"></th:block>
 	<style>
 		.j-hero { padding-bottom: 3.5rem; }
-		.j-hero h1 { font-size: clamp(2.4rem, 6vw, 4.4rem); line-height: 1; font-weight: 800; margin: 1.5rem 0 1rem; max-width: 18ch; }
-		.j-hero .lead { font-size: 1.15rem; line-height: 1.5; color: rgba(255,255,255,.8); max-width: 34rem; }
+		.j-hero h1 { font-size: clamp(2.3rem, 5.8vw, 4.2rem); line-height: 1.02; font-weight: 800; margin: 1.5rem 0 1rem; max-width: 18ch; }
+		.j-hero .lead { font-size: 1.15rem; line-height: 1.5; color: rgba(255,255,255,.82); max-width: 34rem; }
 		.recap { display: flex; flex-wrap: wrap; gap: .6rem 1.4rem; margin-top: 1.5rem; font-weight: 600; }
 		.recap span { display: inline-flex; gap: .45rem; align-items: center; }
-		.recap i { color: var(--sun); font-size: 1.2rem; }
+		.recap i { color: var(--gold); font-size: 1.2rem; }
 
-		.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: -2.6rem; position: relative; z-index: 2; }
+		.ways { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: -2.2rem; position: relative; z-index: 2; }
 		@media (max-width: 760px) { .ways { grid-template-columns: 1fr; } }
-		.way { background: #fff; border-radius: 28px; padding: 1.8rem 1.6rem; box-shadow: 0 24px 56px rgba(42,23,82,.18); border: 1px solid var(--line); display: flex; flex-direction: column; gap: .9rem; }
-		.way .tag { align-self: flex-start; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: var(--blush); color: var(--tangerine); border-radius: 100px; padding: .3rem .8rem; }
+		.way { border-radius: 28px; padding: 1.8rem 1.6rem; display: flex; flex-direction: column; gap: .9rem; }
+		.way .tag { align-self: flex-start; font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 100px; padding: .3rem .8rem; }
 		.way h2 { font-size: 1.7rem; font-weight: 800; line-height: 1.08; }
 		.way p { color: var(--muted); line-height: 1.5; }
 		.way .btn-pill { align-self: flex-start; }
 		.stores { display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; margin-top: .2rem; }
 		.stores img { height: 54px; width: auto; display: block; }
-		.inapp { display: none; background: #fff4cf; border: 1px solid #f0d27a; color: #5e5230; border-radius: 16px; padding: .8rem 1rem; font-size: .9rem; line-height: 1.45; }
+		.inapp { display: none; background: rgba(232,200,138,.15); border: 1px solid rgba(232,200,138,.5); color: #f3dfb2; border-radius: 16px; padding: .8rem 1rem; font-size: .9rem; line-height: 1.45; }
 		.inapp.on { display: block; }
 		.ph-only { font-size: .8rem; color: var(--muted); }
 
-		.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; counter-reset: s; }
+		.how { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
 		@media (max-width: 760px) { .how { grid-template-columns: 1fr; } }
-		.how div { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 1.3rem; }
-		.how b { font-family: var(--display); font-size: 2.6rem; line-height: 1; color: var(--violet); display: block; }
-		.how div:nth-child(2) b { color: var(--tangerine); } .how div:nth-child(3) b { color: var(--mint); }
+		.how div { border-radius: 22px; padding: 1.3rem; }
+		.how b { font-family: var(--display); font-size: 2.6rem; line-height: 1; display: block; }
 		.how h3 { font-size: 1.1rem; font-weight: 700; margin: .4rem 0 .25rem; }
 		.how p { color: var(--muted); font-size: .94rem; line-height: 1.5; }
 
 		.faq { max-width: 52rem; }
-		.faq details { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 0 1.4rem; margin-bottom: .75rem; }
-		.faq details[open] { box-shadow: 0 16px 36px rgba(42,23,82,.1); border-color: var(--violet-2); }
+		.faq details { border-radius: 20px; padding: 0 1.4rem; margin-bottom: .75rem; }
 		.faq summary { cursor: pointer; list-style: none; font-family: var(--display); font-weight: 700; font-size: 1.12rem; padding: 1.15rem 0; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 		.faq summary::-webkit-details-marker { display: none; }
-		.faq summary::after { content: "+"; font-size: 1.7rem; line-height: 1; color: var(--violet); transition: transform .2s ease; }
+		.faq summary::after { content: "+"; font-size: 1.7rem; line-height: 1; transition: transform .2s ease; }
 		.faq details[open] summary::after { transform: rotate(45deg); }
 		.faq details p { padding: 0 0 1.25rem; color: var(--muted); line-height: 1.6; max-width: 42rem; }
 
-		.final { background: var(--ink); color: #fff; text-align: center; padding: 5rem 0 4.5rem; position: relative; overflow: hidden; isolation: isolate; }
-		.final::before { content: ""; position: absolute; left: 50%; top: -30%; width: 900px; height: 900px; transform: translateX(-50%); z-index: -1; background: radial-gradient(closest-side, rgba(109,59,240,.6), rgba(109,59,240,0)); }
+		.final { text-align: center; padding: 5rem 0 4.5rem; background: rgba(8,4,30,.45); }
 		.final h2 { font-size: clamp(2.2rem, 5.6vw, 4rem); line-height: 1; font-weight: 800; max-width: 18ch; margin: 0 auto; }
-		.final p { color: rgba(255,255,255,.75); margin: 1.1rem auto 0; max-width: 32rem; font-size: 1.1rem; }
+		.final p { color: var(--muted); margin: 1.1rem auto 0; max-width: 32rem; font-size: 1.1rem; }
 		.final .btn-pill { margin-top: 1.8rem; }
 		.final .alt { display: flex; justify-content: center; gap: .8rem; flex-wrap: wrap; margin-top: 1rem; }
 	</style>
+	<th:block th:replace="~{fragments/funnel :: theme}"></th:block>
 </head>
 <body>
 
 	<header class="hero j-hero">
 		<div class="confetti" aria-hidden="true">
-			<i style="left:6%;top:20%;width:16px;height:16px;background:var(--sun);--r:12deg;animation-duration:11s"></i>
-			<i style="left:90%;top:16%;width:18px;height:18px;background:var(--mint);--r:70deg;animation-duration:13s;border-radius:50%"></i>
-			<i style="left:50%;top:80%;width:22px;height:10px;background:var(--tangerine);--r:25deg;animation-duration:12s"></i>
+			<i style="left:6%;top:20%;width:14px;height:14px;background:var(--gold);--r:12deg;animation-duration:11s"></i>
+			<i style="left:90%;top:16%;width:16px;height:16px;background:#d93f9c;--r:70deg;animation-duration:13s;border-radius:50%"></i>
+			<i style="left:50%;top:80%;width:20px;height:9px;background:var(--gold);--r:25deg;animation-duration:12s"></i>
 		</div>
 		<div class="wrap">
 			<th:block th:replace="~{fragments/funnel :: top(3)}"></th:block>
-			<h1>Ready? <span class="hl">Become an EventsRUs Partner.</span></h1>
-			<p class="lead">Pick the way that suits you. Both take only a few minutes, and both are free to start.</p>
+			<h1>Ready na? <span class="hl">Maging EventsRUs Partner.</span></h1>
+			<p class="lead">Pumili ng paraang bagay sa'yo. Ilang minuto lang ang dalawa, at pareho itong libre sa simula.</p>
 			<div class="recap">
-				<span><i class="ph-check-circle"></i> Free until your first 3 bookings</span>
-				<span><i class="ph-check-circle"></i> Keep 100% of your payments</span>
-				<span><i class="ph-check-circle"></i> Free for planners, always</span>
+				<span><i class="ph-check-circle"></i> Libre hanggang first 3 bookings</span>
+				<span><i class="ph-check-circle"></i> 100% ng bayad ay sa'yo</span>
+				<span><i class="ph-check-circle"></i> Laging libre para sa planners</span>
 			</div>
 		</div>
 	</header>
@@ -72,21 +70,21 @@
 		<div class="wrap">
 			<div class="ways">
 				<article class="way">
-					<span class="tag">Way 1</span>
-					<h2>Register on the website</h2>
-					<p>Sign in with Google, tell us about your business and add your packages, photos and logo.</p>
-					<div class="inapp" id="inapp"><b>Opened from Facebook or Instagram?</b> Google sign-in doesn't work inside their built-in browser. Tap the menu (&#8942; or &middot;&middot;&middot;) and choose "Open in browser", or use the app on the right.</div>
-					<a th:href="@{/vendor/#signin}" class="btn-pill btn-hot btn-xl">Register as a Partner <i class="ph-arrow-right"></i></a>
+					<span class="tag">Paraan 1</span>
+					<h2>Mag-register sa website</h2>
+					<p>Mag-sign in gamit ang Google, ikuwento ang business mo at idagdag ang packages, photos at logo.</p>
+					<div class="inapp" id="inapp"><b>Galing sa Facebook o Instagram?</b> Hindi gumagana ang Google sign-in sa built-in browser nila. I-tap ang menu (&#8942; o &middot;&middot;&middot;) at piliin ang "Open in browser", o gamitin ang app sa kabila.</div>
+					<a th:href="@{/vendor/#signin}" data-login class="btn-pill btn-hot btn-xl">Mag-register bilang Partner <i class="ph-arrow-right"></i></a>
 				</article>
 				<article class="way">
-					<span class="tag">Way 2</span>
-					<h2>Download the app</h2>
-					<p>Manage leads, quotes and your calendar from your phone. Sign up inside the app with the same Google account.</p>
+					<span class="tag">Paraan 2</span>
+					<h2>I-download ang app</h2>
+					<p>I-manage ang leads, quotes at calendar mo sa phone. Mag-sign up sa app gamit ang parehong Google account.</p>
 					<div class="stores">
 						<a href="https://play.google.com/store/apps/details?id=com.eventsrus.eventsrus_ui" target="_blank" rel="noopener"><img th:src="@{/assets/images/vendor-landing/google_badge.png}" alt="Get EventsRUs on Google Play"></a>
 						<a href="https://apps.apple.com/ph/app/eventsrus/id6833962913" target="_blank" rel="noopener"><img th:src="@{/assets/images/vendor-landing/apple_badge.png}" alt="Download EventsRUs on the App Store"></a>
 					</div>
-					<p class="ph-only">Free download for Android and iPhone, available in the Philippines.</p>
+					<p class="ph-only">Libreng i-download sa Android at iPhone, available sa Pilipinas.</p>
 				</article>
 			</div>
 		</div>
@@ -94,58 +92,197 @@
 
 	<section class="section" style="padding-bottom:1rem">
 		<div class="wrap">
-			<div class="section-head"><h2>Watch how it works.</h2><p>A 5-minute walkthrough: sign up, add packages, upload your logo and photos, add your payment details and watch the leads come in. Sample data, AI voice-over.</p></div>
-			<div class="video-frame wide">
-				<img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Preview of the EventsRUs supplier demo video" width="1728" height="922">
+			<div class="section-head"><h2>Panoorin kung paano.</h2><p>Piliin kung website o app ang gagamitin mo. Website: 5-minutong walkthrough: mag-sign up, magdagdag ng packages, mag-upload ng logo at photos, ilagay ang payment details at panoorin ang pagpasok ng leads. Sample data, AI voice-over (English).</p></div>
+			<div class="vid-tabs" role="tablist" style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.2rem">
+				<button type="button" class="btn vid-tab" data-target="vidApp" aria-selected="true" style="border:2px solid var(--violet);border-radius:999px;padding:.55rem 1.2rem;font-weight:700;background:var(--violet);color:#fff;cursor:pointer">Sa App (Google Play / App Store)</button>
+				<button type="button" class="btn vid-tab" data-target="vidWeb" aria-selected="false" style="border:2px solid var(--violet);border-radius:999px;padding:.55rem 1.2rem;font-weight:700;background:#fff;color:var(--violet);cursor:pointer">Sa Website</button>
+			</div>
+			<div class="video-frame wide" id="vidWeb" hidden>
+				<img th:src="@{/assets/images/vendor-landing/shot-storefront.jpg}" alt="Preview ng supplier demo video" width="1728" height="922">
 				<div class="veil"></div>
-				<button type="button" class="play-btn" data-video="hczWUsloSrY" aria-label="Play the supplier demo video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
-				<div class="video-cap">How to set up your free EventsRUs storefront<small>5 min &middot; English voice-over</small></div>
+				<button type="button" class="play-btn" data-video="hczWUsloSrY" aria-label="I-play ang supplier demo video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+				<div class="video-cap">Paano i-set up ang libreng EventsRUs storefront mo<small>5 min &middot; English voice-over</small></div>
+			</div>
+			<div class="video-frame wide" id="vidApp">
+				<img th:src="@{/assets/images/vendor-landing/shot-app-demo.jpg}" alt="Preview ng app demo video" width="1728" height="922">
+				<div class="veil"></div>
+				<button type="button" class="play-btn" data-video="vzuzJFib2gU" aria-label="I-play ang app demo video"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+				<div class="video-cap">Paano gamitin ang EventsRUs app sa phone<small>Android &amp; iPhone</small></div>
 			</div>
 		</div>
+		<script>
+		document.querySelectorAll('.vid-tab').forEach(function (t) {
+			t.addEventListener('click', function () {
+				document.querySelectorAll('.vid-tab').forEach(function (o) {
+					var on = o === t;
+					o.setAttribute('aria-selected', on);
+					o.style.background = on ? 'var(--violet)' : '#fff';
+					o.style.color = on ? '#fff' : 'var(--violet)';
+					var f = document.getElementById(o.dataset.target);
+					f.hidden = !on;
+					// stop a playing video when its tab is hidden: reload paused
+					f.querySelectorAll('iframe').forEach(function (i) { i.src = i.src.replace('autoplay=1', 'autoplay=0'); });
+				});
+			});
+		});
+	</script>
 	</section>
 
 	<section class="section" style="padding-bottom:1rem">
 		<div class="wrap">
-			<div class="section-head"><h2>Live in three steps.</h2></div>
+			<div class="section-head"><h2>Live na sa tatlong steps.</h2></div>
 			<div class="how">
-				<div><b>1</b><h3>Sign up</h3><p>One tap with Google. No new password.</p></div>
-				<div><b>2</b><h3>Build your storefront</h3><p>Business details, packages, photos, logo and payment details.</p></div>
-				<div><b>3</b><h3>Reply to leads</h3><p>Send quotes, get booked and watch your calendar fill.</p></div>
+				<div><b>1</b><h3>Mag-sign up</h3><p>Isang tap gamit ang Google. Walang bagong password.</p></div>
+				<div><b>2</b><h3>Buuin ang storefront</h3><p>Business details, packages, photos, logo at payment details.</p></div>
+				<div><b>3</b><h3>Sagutin ang leads</h3><p>Magpadala ng quotes, ma-book, at panoorin ang calendar mong mapuno.</p></div>
 			</div>
 		</div>
 	</section>
 
 	<section class="section">
 		<div class="wrap">
-			<div class="section-head"><h2>Still wondering?</h2></div>
+			<div class="section-head"><h2>May tanong pa?</h2></div>
 			<div class="faq">
-				<details><summary>Is it really free?</summary><p>Yes. You use EventsRUs PRO for free until you get your first 3 bookings, for up to 12 months. A booking counts when a planner books you on EventsRUs and submits their payment in the app.</p></details>
-				<details><summary>What if I get no bookings?</summary><p>We can't promise bookings, so we don't charge you until you've had your first 3. If you don't get them, you can stay on the free period for up to 12 months.</p></details>
-				<details><summary>What happens after my 3 bookings?</summary><p>You choose a plan, and you get a 30-day grace period to decide. Plan prices are shown in the app before you pay anything.</p></details>
-				<details><summary>Do you take a cut of my payments?</summary><p>No. Clients pay you directly through your GCash, Maya, PayPal or bank details. EventsRUs never holds your clients' money.</p></details>
-				<details><summary>I'm not good with technology.</summary><p>If you can use Facebook and GCash, you can do this. Watch the 5-minute video above, or book a live walkthrough with us and we'll show you.</p></details>
-				<details><summary>Who are the planners?</summary><p>Event planners and hosts in the Philippines, organising debuts, weddings, birthdays and corporate events. Planners use EventsRUs for free, always.</p></details>
-				<details><summary>Can I stop any time?</summary><p>Yes. There is no contract to sign.</p></details>
+				<details><summary>Libre ba talaga?</summary><p>Oo. Libre mong magagamit ang EventsRUs PRO hanggang makuha mo ang first 3 bookings mo, hanggang 12 months. Counted na booking kapag nag-book sa'yo ang client sa EventsRUs at nag-upload ng payment screenshot sa app.</p></details>
+				<details><summary>Paano kung walang booking?</summary><p>Hindi namin ma-promise ang bookings, kaya hindi ka sisingilin hangga't wala pa ang first 3. Kung wala pa rin, puwede kang manatili sa libreng period hanggang 12 buwan.</p></details>
+				<details><summary>Ano'ng mangyayari pagkatapos ng 3 bookings?</summary><p>Pipili ka ng plan, at may 30-day grace period ka para magdesisyon. Makikita ang presyo ng plans sa app bago ka magbayad.</p></details>
+				<details><summary>Kumukuha ba kayo ng cut sa bayad sa akin ng client?</summary><p>Hindi. Direkta kang binabayaran ng clients sa GCash, Maya, PayPal o bank details mo. Hindi hinahawakan ng EventsRUs ang pera na bayad ng clients mo.</p></details>
+				<details><summary>Hindi ako techy.</summary><p>Kung kaya mong mag-Facebook at mag-GCash, kaya mo 'to. Panoorin ang 5-minutong video sa itaas, o mag-book ng live walkthrough at ituturo namin.</p></details>
+				<details><summary>Puwede ba akong huminto anumang oras?</summary><p>Oo. Walang contract na pipirmahan.</p></details>
 			</div>
 		</div>
 	</section>
 
 	<section class="final">
 		<div class="wrap">
-			<h2>Your next client is already looking.</h2>
-			<p>Open your free storefront today and be ready when they search.</p>
-			<a th:href="@{/vendor/#signin}" class="btn-pill btn-hot btn-xl">Register as a Partner <i class="ph-arrow-right"></i></a>
+			<h2>Naghahanap na ang next client mo.</h2>
+			<p>Buksan ang libreng storefront mo ngayon at maging handa pagdating nila.</p>
+			<a th:href="@{/vendor/#signin}" data-login class="btn-pill btn-hot btn-xl">Mag-register bilang Partner <i class="ph-arrow-right"></i></a>
 			<div class="alt">
-				<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn-pill btn-ghost"><i class="ph-calendar-plus"></i> Prefer a live demo? Book one</a>
+				<a href="https://cal.com/eventsrus/vendor-onboarding-demo" target="_blank" rel="noopener" class="btn-pill btn-ghost"><i class="ph-calendar-plus"></i> Gusto ng live demo? Mag-book</a>
 			</div>
-			<a th:href="@{/partner/opportunity}" class="back-link" style="color:#fff"><i class="ph-arrow-left"></i> Back</a>
+			<a th:href="@{/partner/opportunity}" class="back-link"><i class="ph-arrow-left"></i> Back</a>
 		</div>
 	</section>
 
+	<style>
+		/* Sign-in pop-up (same look as /vendor/) */
+		.login-modal { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 1rem; background: rgba(26,14,51,.62); backdrop-filter: blur(6px); }
+		.login-modal.open { display: flex; }
+		.login-box { position: relative; width: 100%; max-width: 400px; max-height: 94vh; overflow-y: auto; background: #fff; color: #1a0e33; border-radius: 1.5rem; padding: 2rem 1.6rem 1.6rem; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.4); }
+		.login-box img.login-logo { width: 220px; max-width: 80%; height: auto; margin-bottom: .8rem; }
+		.login-box h2 { font-size: 1.4rem; margin: 0 0 .3rem; color: #1a0e33; }
+		.login-box p { color: #5d5470; font-size: .92rem; margin: 0 0 1.2rem; }
+		.login-close { position: absolute; top: .7rem; right: .7rem; width: 2.4rem; height: 2.4rem; border: 0; border-radius: 50%; background: #f1ecfb; color: #1a0e33; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+		.google-wrap { border: 2px solid #e9e4f3; border-radius: 50rem; padding: 4px; }
+		#google-signin-container { width: 100%; display: flex; justify-content: center; min-height: 44px; }
+		.login-error { background: #fde8e8; color: #9b1c1c; border-radius: .8rem; padding: .7rem .9rem; margin-bottom: 1rem; font-size: .9rem; text-align: left; }
+		.login-progress { display: none; align-items: center; justify-content: center; gap: .6rem; color: #5d5470; padding: .8rem 0; }
+		.login-note { font-size: .78rem !important; margin: 1.2rem 0 0 !important; }
+	</style>
+	<div class="login-modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+		<div class="login-box">
+			<button type="button" class="login-close" id="loginClose" aria-label="Close"><i class="ph-x"></i></button>
+			<div id="inAppNotice" hidden>
+				<img class="login-logo" th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs">
+				<h2>Open this page in your browser</h2>
+				<p>Google Sign-In doesn't work inside this app's built-in browser. Tap the menu above and choose "Open in Browser" (or "Open in Chrome" / "Open in Safari"), or copy the link below and paste it into your browser.</p>
+				<input type="text" id="currentPageUrl" readonly style="width:100%;padding:.6rem .8rem;border:1px solid #d8d2e6;border-radius:.7rem;margin-bottom:.6rem">
+				<button type="button" id="copyPageUrlButton" class="btn-pill btn-hot" style="padding:.6rem 1.4rem;border:0">Copy link</button>
+				<p id="copyPageUrlConfirm" hidden style="margin-top:.6rem">Link copied!</p>
+			</div>
+			<div id="loginContent">
+				<img class="login-logo" th:src="@{/assets/images/logo-login.svg}" alt="EventsRUs">
+				<h2 id="loginTitle">Supplier Login</h2>
+				<p>Sign in to manage your storefront, bookings, and subscription.</p>
+				<div id="login-error" class="login-error" hidden></div>
+				<div class="google-wrap" id="googleWrap"><div id="google-signin-container"></div></div>
+				<div class="login-progress" id="signin-progress"><span>Signing you in&hellip;</span></div>
+				<p class="login-note">The same Google account used across the EventsRUs app.</p>
+			</div>
+		</div>
+	</div>
+	<script src="https://accounts.google.com/gsi/client" async defer id="gsi-script"></script>
+	<script th:inline="javascript">
+		var googleClientId = /*[[${googleClientId}]]*/ '';
+		var loginIntent = /*[[${intent}]]*/ 'vendor';
+		var isInAppBrowser = /FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || '');
+		var modal = document.getElementById('loginModal');
+		var googleRendered = false;
+
+		function renderGoogle() {
+			if (googleRendered || isInAppBrowser) { return; }
+			if (!(window.google && google.accounts && google.accounts.id)) { return; }
+			var container = document.getElementById('google-signin-container');
+			var width = Math.max(200, Math.min(400, container.offsetWidth));
+			google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential });
+			google.accounts.id.renderButton(container, { type: 'standard', theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', logo_alignment: 'left', width: width });
+			googleRendered = true;
+		}
+		function openLogin() {
+			modal.classList.add('open');
+			document.body.style.overflow = 'hidden';
+			renderGoogle();
+		}
+		function closeLogin() {
+			modal.classList.remove('open');
+			document.body.style.overflow = '';
+		}
+		document.querySelectorAll('[data-login]').forEach(function (a) {
+			a.addEventListener('click', function (e) { e.preventDefault(); openLogin(); });
+		});
+		document.getElementById('loginClose').addEventListener('click', closeLogin);
+		modal.addEventListener('click', function (e) { if (e.target === modal) { closeLogin(); } });
+		document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeLogin(); } });
+		document.getElementById('gsi-script').addEventListener('load', function () { if (modal.classList.contains('open')) { renderGoogle(); } });
+		if (location.hash === '#signin') { openLogin(); }
+
+		if (isInAppBrowser) {
+			document.getElementById('loginContent').hidden = true;
+			document.getElementById('inAppNotice').hidden = false;
+			var urlField = document.getElementById('currentPageUrl');
+			urlField.value = window.location.href.split('#')[0];
+			document.getElementById('copyPageUrlButton').addEventListener('click', function () {
+				function showCopied() { document.getElementById('copyPageUrlConfirm').hidden = false; }
+				if (navigator.clipboard && navigator.clipboard.writeText) {
+					navigator.clipboard.writeText(urlField.value).then(showCopied);
+				} else {
+					urlField.select();
+					document.execCommand('copy');
+					showCopied();
+				}
+			});
+		}
+
+		function handleGoogleCredential(response) {
+			var errorBox = document.getElementById('login-error');
+			var wrap = document.getElementById('googleWrap');
+			var progress = document.getElementById('signin-progress');
+			errorBox.hidden = true;
+			wrap.style.display = 'none';
+			progress.style.display = 'flex';
+			function showError(message) {
+				errorBox.textContent = message;
+				errorBox.hidden = false;
+				progress.style.display = 'none';
+				wrap.style.display = '';
+			}
+			var body = new URLSearchParams();
+			body.set('idToken', response.credential);
+			body.set('intent', loginIntent);
+			fetch('/login/google', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+				.then(function (res) { return res.json(); })
+				.then(function (result) {
+					if (result.success) { window.location.href = result.redirectTo; }
+					else { showError(result.error || 'Sign-in failed. Please try again.'); }
+				})
+				.catch(function () { showError('Could not reach the server. Please try again.'); });
+		}
+	</script>
 	<th:block th:replace="~{fragments/funnel :: foot}"></th:block>
 	<script th:replace="~{fragments/funnel :: player}"></script>
 	<script>
-		// Facebook/Instagram's built-in browser can't do Google sign-in, so warn people before they tap the button.
+		// Hindi gumagana ang Google sign-in sa built-in browser ng Facebook/Instagram, kaya binabalaan natin bago i-tap.
 		if (/FBAN|FBAV|FB_IAB|FBIOS|FB4A|Instagram/i.test(navigator.userAgent || '')) {
 			document.getElementById('inapp').classList.add('on');
 		}

@@ -201,7 +201,19 @@
 	document.querySelectorAll('.play-btn[data-video]').forEach(function (b) {
 		b.addEventListener('click', function () {
 			var f = b.closest('.video-frame');
-			f.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + b.dataset.video + '?autoplay=1&rel=0&playsinline=1" title="EventsRUs video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+			// Phones: play full screen (playsinline=0 makes iPhone use its own full-screen player).
+			var mobile = window.matchMedia('(pointer: coarse) and (max-width: 900px)').matches;
+			f.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + b.dataset.video + '?autoplay=1&rel=0&playsinline=' + (mobile ? 0 : 1) + '" title="EventsRUs video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>';
+			if (mobile) {
+				var i = f.querySelector('iframe'), go = i.requestFullscreen || i.webkitRequestFullscreen;
+				if (go) {
+					try {
+						var p = go.call(i);
+						// data-orient: "portrait" for the phone-shaped videos, "landscape" for the 16:9 one (best effort).
+						if (p && p.then) { p.then(function () { if (b.dataset.orient && screen.orientation && screen.orientation.lock) { screen.orientation.lock(b.dataset.orient).catch(function () {}); } }).catch(function () {}); }
+					} catch (e) {}
+				}
+			}
 		});
 	});
 </script>
